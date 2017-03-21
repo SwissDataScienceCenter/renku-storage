@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.table
+
+import slick.jdbc.JdbcProfile
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 17/03/17.
   */
-sealed trait Constraint
+trait JdbcProfileComponent {
 
-sealed trait UniqueConstraint extends Constraint
+  val profile: JdbcProfile
 
-case class PropertyKeyConstraint(name: String,
-                                 elementType: ElementType,
-                                 keys: Set[String]) extends UniqueConstraint
+}

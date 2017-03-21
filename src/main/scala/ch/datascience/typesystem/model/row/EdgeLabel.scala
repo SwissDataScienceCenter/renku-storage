@@ -16,15 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
 
-import org.janusgraph.core.{JanusGraph, JanusGraphFactory}
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityType
+import org.janusgraph.core.Multiplicity
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 16/03/17.
   */
-object LocalGraph {
+case class EdgeLabel(id: UUID,
+                     graphDomainId: UUID,
+                     name: String,
+                     multiplicity: Multiplicity = Multiplicity.SIMPLE)
+  extends AbstractEntity {
 
-  def loadGraph(): JanusGraph = JanusGraphFactory.open("./conf/janusgraph-berkeleyje-es.properties")
+  override val entityType: EntityType = EntityType.EDGE_LABEL
 
 }

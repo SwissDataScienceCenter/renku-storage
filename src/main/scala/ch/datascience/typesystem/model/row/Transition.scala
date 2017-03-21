@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
+
+import java.time.Instant
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityState
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 17/03/17.
   */
-sealed abstract class ElementType
-
-case object VertexType extends ElementType
-
-case object EdgeType extends ElementType
+case class Transition(entityId: UUID, from: Long, toState: EntityState, toTimestamp: Instant)

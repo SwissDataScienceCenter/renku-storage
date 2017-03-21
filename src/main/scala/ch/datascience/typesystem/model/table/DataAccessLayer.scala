@@ -16,34 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.table
+
+import slick.jdbc.JdbcProfile
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 17/03/17.
   */
-trait GraphDomain {
+class DataAccessLayer(val profile: JdbcProfile) extends EntityComponent with StateComponent with TransitionComponent
+  with AbstractEntityComponent with GraphDomainComponent with PropertyKeyComponent with JdbcProfileComponent {
 
-  def authority: Authority
-
-  def namespace: String
-
-  def version: Int
-
-  def edgeLabels: Map[String, GraphDomain.EdgeLabel]
-
-  def propertyKeys: Map[String, GraphDomain.PropertyKey]
-
-  def constraints: Set[Constraint]
-
-
-}
-
-object GraphDomain {
-
-  case class EdgeLabel(name: String, version: String)
-
-  case class PropertyKey(name: String, version:String, cardinality: Cardinality, dataType: DataType)
-
-  def builder(): GraphDomainBuilder = new GraphDomainBuilder()
+  val tables = Seq(
+    entities,
+    states,
+    transitions,
+    graphDomains,
+    propertyKeys
+  )
 
 }

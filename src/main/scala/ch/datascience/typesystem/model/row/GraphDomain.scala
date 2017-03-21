@@ -16,21 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
+import java.util.UUID
 
-import scala.util.Try
+import ch.datascience.typesystem.model.EntityType
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 15/03/17.
   */
-trait TypeManager {
+case class GraphDomain(id: UUID, namespace: String) extends AbstractEntity {
 
-  def findDomain(namespace: String): Option[GraphDomain]
-
-  def createDomain(domain: GraphDomain): Try[GraphDomain]
-
-  def findAuthority(name: String): Option[Authority]
-
-  def createAuthority(authority: Authority): Try[Authority]
+  override val entityType: EntityType = EntityType.GRAPH_DOMAIN
 
 }

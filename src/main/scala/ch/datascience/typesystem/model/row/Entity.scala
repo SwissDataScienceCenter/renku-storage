@@ -16,19 +16,13 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
+
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityType
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 17/03/17.
   */
-trait Authority {
-
-  def name: String
-
-}
-
-object Authority {
-
-  def builder(): AuthorityBuilder = new AuthorityBuilder()
-
-}
+case class Entity(id: UUID, entityType: EntityType)

@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
+
+import java.time.Instant
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityState
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 17/03/17.
   */
-sealed abstract class Cardinality
-
-object Cardinality {
-  case object Single extends Cardinality
-  case object List extends Cardinality
-  case object Set extends Cardinality
-}
+case class State(id: Option[Long], entityId: UUID, state: EntityState, timestamp: Instant)

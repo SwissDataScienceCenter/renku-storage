@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.model.row
+
+import java.util.UUID
+
+import ch.datascience.typesystem.model.{DataType, EntityType}
+import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 16/03/17.
   */
-class AuthorityBuilder(private val _name: Option[String]) {
+case class PropertyKey(id: UUID,
+                       graphDomainId: UUID,
+                       name: String,
+                       dataType: DataType = DataType.STRING,
+                       cardinality: Cardinality = Cardinality.single)
+  extends AbstractEntity {
 
-  def this() {
-    this(None)
-  }
-
-  def name(name: String): AuthorityBuilder = {
-    new AuthorityBuilder(Some(name))
-  }
-
-  def make(): Authority = _name match {
-    case None => throw new IllegalArgumentException("authority name must be provided")
-    case Some(name) => AuthorityImpl(name)
-  }
-
-  case class AuthorityImpl(name: String) extends Authority
+  override val entityType: EntityType = EntityType.PROPERTY_KEY
 
 }
