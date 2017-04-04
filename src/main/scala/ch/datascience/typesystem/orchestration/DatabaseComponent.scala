@@ -16,24 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.orchestration
 
-import org.junit._
-import Assert._
+import ch.datascience.typesystem.model.table.DataAccessLayer
+import slick.jdbc.JdbcBackend.Database
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 04/04/17.
   */
-@Test
-class AppTest {
+trait DatabaseComponent {
 
-  @Test
-  def testScalaOK(): Unit = {
+  val db: Database
+
+  val dal: DataAccessLayer
+
+  def close(): Unit = {
+    db.close()
   }
-
-//  @Test
-//  def testScalaKO(): Unit = {
-//    assertEquals(true, false)
-//  }
 
 }

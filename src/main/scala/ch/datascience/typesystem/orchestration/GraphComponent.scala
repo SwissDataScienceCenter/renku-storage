@@ -16,24 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem
+package ch.datascience.typesystem.orchestration
 
-import org.junit._
-import Assert._
+import ch.datascience.typesystem.graphdb.GraphAccessLayer
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 04/04/17.
   */
-@Test
-class AppTest {
+trait GraphComponent {
 
-  @Test
-  def testScalaOK(): Unit = {
-  }
-
-//  @Test
-//  def testScalaKO(): Unit = {
-//    assertEquals(true, false)
-//  }
+  val gal: GraphAccessLayer
 
 }
