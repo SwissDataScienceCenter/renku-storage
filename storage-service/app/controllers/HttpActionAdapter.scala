@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-import javax.inject.Inject
+package controllers
 
-import org.pac4j.play.filters.SecurityFilter
-import play.api.http.DefaultHttpFilters
-import play.filters.headers.SecurityHeadersFilter
-import play.filters.hosts.AllowedHostsFilter
+import org.pac4j.core.context.HttpConstants
+import org.pac4j.play.PlayWebContext
+import org.pac4j.play.http.DefaultHttpActionAdapter
+import play.mvc.Results
+import play.mvc.Result
 
-/**
- * Add the following filters by default to all projects
- * 
- * https://www.playframework.com/documentation/latest/ScalaCsrf 
- * https://www.playframework.com/documentation/latest/AllowedHostsFilter
- * https://www.playframework.com/documentation/latest/SecurityHeaders
- */
-class Filters @Inject() (
-  allowedHostsFilter: AllowedHostsFilter,
-  securityHeadersFilter: SecurityHeadersFilter,
-  securityFilter: SecurityFilter
-) extends DefaultHttpFilters(
-  allowedHostsFilter, 
-  securityHeadersFilter,
-  securityFilter
-)
+class HttpActionAdapter extends DefaultHttpActionAdapter {
+
+  override def adapt(code: Int, context: PlayWebContext): Result = {
+    if (code == HttpConstants.UNAUTHORIZED) {
+      Results.unauthorized("401").as(HttpConstants.HTML_CONTENT_TYPE)
+    } else if (code == HttpConstants.FORBIDDEN) {
+      Results.forbidden("403").as(HttpConstants.HTML_CONTENT_TYPE)
+    } else {
+      super.adapt(code, context)
+    }
+  }
+}
