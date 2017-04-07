@@ -38,7 +38,7 @@ import scala.concurrent.duration.FiniteDuration
 class ProxyController @Inject() extends Controller {
 
   // Create a minioClient with the Minio Server name, Port, Access key and Secret key.
-  val minioClient = new MinioClient("https://play.minio.io:9000", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
+  val minioClient = new MinioClient("https://internal.datascience.ch:9000", "SDSCSDSC", "SDSC2017")
 
   def read_object = Action { implicit request =>
     val bucket = request.getQueryString("bucket")
@@ -53,11 +53,11 @@ class ProxyController @Inject() extends Controller {
 
   def forward: BodyParser[Result] = BodyParser { req =>
     Accumulator.source[ByteString].mapFuture { source =>
+      val size = req.headers.get("Content-Length")
       implicit val system = ActorSystem("Sys")
       implicit val materializer = ActorMaterializer()
       val bucket = req.getQueryString("bucket")
       val name = req.getQueryString("name")
-      val size = req.getQueryString("size")
       val isExist = minioClient.bucketExists(bucket.get)
       if (!isExist) minioClient.makeBucket(bucket.get)
       val inputStream = source.runWith(

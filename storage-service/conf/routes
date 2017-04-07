@@ -5,7 +5,7 @@
 
 # An example controller showing a sample home page
 GET     /read                           controllers.ProxyController.read_object
-GET     /write                           controllers.ProxyController.write_object
+POST    /write                           controllers.ProxyController.write_object
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
