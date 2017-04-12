@@ -1,4 +1,3 @@
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.13")
 /*
  * Copyright 2017 - Swiss Data Science Center (SDSC)
  * A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -17,3 +16,5 @@ addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.13")
  * limitations under the License.
  */
 
+// The Play plugin
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.13")
