@@ -17,7 +17,8 @@
  */
 
 organization := "ch.datascience"
-version := "0.0.1"
+name := "graph-type-manager"
+version := "0.0.1-SNAPSHOT"
 scalaVersion := "2.11.8"
 
 resolvers ++= Seq(
@@ -31,6 +32,7 @@ resolvers ++= Seq(
 val janusgraph_version = "0.1.0-SNAPSHOT"
 
 libraryDependencies ++= Seq(
+  "ch.datascience" %% "graph-type-utils" % version.value,
   "com.typesafe.slick" %% "slick" % "3.2.0",
   "org.janusgraph" % "janusgraph-core" % janusgraph_version,
   "org.janusgraph" % "janusgraph-berkeleyje" % janusgraph_version,
