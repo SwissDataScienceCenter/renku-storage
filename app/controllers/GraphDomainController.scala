@@ -16,21 +16,18 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-type-ws"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package controllers
 
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  "SDSC Snapshots" at "https://internal.datascience.ch:8081/nexus/content/repositories/snapshots/"
-)
+import javax.inject._
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+import injected.JanusGraphConfig
+import play.api.mvc._
 
-libraryDependencies ++= Seq(
-  filters,
-  "ch.datascience" %% "graph-type-utils" % version.value,
-  "ch.datascience" %% "graph-type-manager" % version.value,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-)
+@Singleton
+class GraphDomainController @Inject() (protected val janusGraphConfig: JanusGraphConfig) extends Controller {
+
+  def index = Action { implicit request =>
+    Ok(janusGraphConfig.get)
+  }
+
+}

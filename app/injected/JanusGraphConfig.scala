@@ -16,21 +16,19 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-type-ws"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package injected
 
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  "SDSC Snapshots" at "https://internal.datascience.ch:8081/nexus/content/repositories/snapshots/"
-)
+import com.typesafe.config.ConfigFactory
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+/**
+  * Created by johann on 12/04/17.
+  */
+class JanusGraphConfig {
 
-libraryDependencies ++= Seq(
-  filters,
-  "ch.datascience" %% "graph-type-utils" % version.value,
-  "ch.datascience" %% "graph-type-manager" % version.value,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-)
+  def get: String = {
+    val config = ConfigFactory.load().getConfig("janusgraph")
+    val using = config.getString("default")
+    config.getString(s"configs.$using.file")
+  }
+
+}
