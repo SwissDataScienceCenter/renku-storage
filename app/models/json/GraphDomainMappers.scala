@@ -16,22 +16,28 @@
  * limitations under the License.
  */
 
-package controllers
+package models
+package json
 
-import javax.inject._
+import java.util.UUID
 
-import injected.OrchestrationLayer
-import models.json.GraphDomainMappers._
-import play.api.libs.concurrent.Execution.Implicits._
+import ch.datascience.typesystem.model.row.GraphDomain
 import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.functional.syntax._
 
-@Singleton
-class GraphDomainController @Inject()(protected val orchestrator: OrchestrationLayer) extends Controller {
+/**
+  * Created by johann on 13/04/17.
+  */
+object GraphDomainMappers {
 
-  def index: Action[AnyContent] = Action.async { implicit request =>
-    val all = orchestrator.graphDomains.all()
-    all.map(seq => Json.toJson(seq)).map(json => Ok(json))
-  }
+  implicit val graphDomainWrites: Writes[GraphDomain] = (
+    (JsPath \ "id").write[UUID] and
+      (JsPath \ "namespace").write[String]
+  )(unlift(GraphDomain.unapply))
+
+  implicit val graphDomainReads: Reads[GraphDomain] = (
+    (JsPath \ "id").read[UUID] and
+      (JsPath \ "namespace").read[String]
+  )(GraphDomain)
 
 }

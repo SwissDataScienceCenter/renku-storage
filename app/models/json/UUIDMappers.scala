@@ -16,22 +16,29 @@
  * limitations under the License.
  */
 
-package controllers
+package models.json
 
-import javax.inject._
+import java.util.UUID
 
-import injected.OrchestrationLayer
-import models.json.GraphDomainMappers._
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
-import play.api.mvc._
 
-@Singleton
-class GraphDomainController @Inject()(protected val orchestrator: OrchestrationLayer) extends Controller {
+/**
+  * Created by johann on 13/04/17.
+  */
+object UUIDMappers {
 
-  def index: Action[AnyContent] = Action.async { implicit request =>
-    val all = orchestrator.graphDomains.all()
-    all.map(seq => Json.toJson(seq)).map(json => Ok(json))
+  implicit val uuidWrites: Writes[UUID] = new Writes[UUID] {
+    def writes(uuid: UUID): JsValue = Json.toJson(uuid.toString)
+  }
+
+  implicit val uuidReads: Reads[UUID] = new Reads[UUID] {
+    def reads(json: JsValue): JsResult[UUID] = json.validate[String] flatMap { str =>
+      try {
+        JsSuccess(UUID.fromString(str))
+      } catch {
+        case e: IllegalArgumentException => JsError(e.getMessage)
+      }
+    }
   }
 
 }
