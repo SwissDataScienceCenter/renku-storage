@@ -29,7 +29,7 @@ import scala.concurrent.{Await, Future}
 /**
   * Created by johann on 04/04/17.
   */
-trait PropertyKeyOrchestrator { this: ExecutionComponent with DatabaseComponent with GraphComponent =>
+trait PropertyKeyComponent { this: ExecutionComponent with DatabaseComponent with GraphComponent =>
 
   import profile.api._
 

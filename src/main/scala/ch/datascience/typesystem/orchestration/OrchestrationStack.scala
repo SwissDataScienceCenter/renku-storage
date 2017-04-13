@@ -39,5 +39,5 @@ class OrchestrationStack(
   extends ExecutionComponent
     with DatabaseComponent
     with GraphComponent
-    with GraphDomainOrchestrator
-    with PropertyKeyOrchestrator
+    with GraphDomainComponent
+    with PropertyKeyComponent
