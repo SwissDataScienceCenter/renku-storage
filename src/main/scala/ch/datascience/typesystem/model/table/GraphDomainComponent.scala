@@ -58,4 +58,6 @@ trait GraphDomainComponent { this: JdbcProfileComponent with EntityComponent wit
 
   }
 
+  _schemas += graphDomains.schema
+
 }

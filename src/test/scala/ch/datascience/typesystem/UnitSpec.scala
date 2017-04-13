@@ -18,22 +18,11 @@
 
 package ch.datascience.typesystem
 
-import org.junit._
-import Assert._
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
-  * Created by johann on 07/03/17.
+  * Created by johann on 10/04/17.
   */
-@Test
-class AppTest {
-
-  @Test
-  def testScalaOK(): Unit = {
-  }
-
-//  @Test
-//  def testScalaKO(): Unit = {
-//    assertEquals(true, false)
-//  }
+abstract class UnitSpec extends FlatSpec with Matchers {
 
 }
