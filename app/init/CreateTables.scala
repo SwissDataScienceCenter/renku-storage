@@ -16,26 +16,31 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-type-ws"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package init
 
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  "SDSC Snapshots" at "https://internal.datascience.ch:8081/nexus/content/repositories/snapshots/"
-)
+import ch.datascience.typesystem.external.DatabaseConfigComponent
+import ch.datascience.typesystem.model.table.DatabaseStack
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+import scala.concurrent.Future
 
-libraryDependencies ++= Seq(
-  filters,
-  "com.typesafe.play" %% "play-slick" % "2.1.0",
-  "ch.datascience" %% "graph-type-utils" % version.value,
-  "ch.datascience" %% "graph-type-manager" % version.value,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-)
+/**
+  * Created by johann on 13/04/17.
+  */
+object CreateTables extends DatabaseConfigComponent[JdbcProfile] {
 
-lazy val initDB = taskKey[Unit]("Initialize database")
+  val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("slick.dbs.sqldb")
 
-fullRunTask(initDB, Runtime, "init.Main")
+  def createTables(): Future[Unit] = {
+
+    import profile.api._
+
+    val dal = new DatabaseStack(dbConfig)
+
+    val createSchemas: DBIO[Unit] = dal.schemas.map(_.asInstanceOf[profile.SchemaDescription]).reduce((x, y) => x ++ y).create
+
+    db.run(createSchemas)
+  }
+
+}

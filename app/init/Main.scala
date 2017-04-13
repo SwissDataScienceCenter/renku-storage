@@ -16,26 +16,21 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-type-ws"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package init
 
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  "SDSC Snapshots" at "https://internal.datascience.ch:8081/nexus/content/repositories/snapshots/"
-)
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+/**
+  * Created by johann on 13/04/17.
+  */
+object Main {
 
-libraryDependencies ++= Seq(
-  filters,
-  "com.typesafe.play" %% "play-slick" % "2.1.0",
-  "ch.datascience" %% "graph-type-utils" % version.value,
-  "ch.datascience" %% "graph-type-manager" % version.value,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-)
+  def main(args: Array[String]): Unit = {
 
-lazy val initDB = taskKey[Unit]("Initialize database")
+    val f = CreateTables.createTables()
+    Await.result(f, Duration.Inf)
 
-fullRunTask(initDB, Runtime, "init.Main")
+  }
+
+}
