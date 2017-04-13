@@ -16,35 +16,22 @@
  * limitations under the License.
  */
 
-//package ch.datascience.typesystem.graphdb
-//
-//import org.janusgraph.core.JanusGraph
-//import org.janusgraph.core.schema.JanusGraphManagement
-//
-//import scala.concurrent.{ExecutionContext, Future}
-//
-///**
-//  * Created by johann on 21/03/17.
-//  */
-//trait JanusGraphManager {
-//
-//  val graph: JanusGraph
-//
-//  protected val ec: ExecutionContext
-//
-//  def run[A](f: (JanusGraphManagement) => A): Future[A] = run(GraphManagementAction(f))
-//
-//  def run[A](f: GraphManagementAction[A]): Future[A] = Future {
-//    val mgmt = graph.openManagement()
-//    try {
-//      val result: A = f(mgmt)
-//      mgmt.commit()
-//      result
-//    } catch {
-//      case e: Exception =>
-//        mgmt.rollback()
-//        throw e
-//    }
-//  } (ec)
-//
-//}
+package ch.datascience.typesystem.external
+
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
+
+/**
+  * Created by johann on 13/04/17.
+  */
+trait DatabaseConfigComponent[Profile <: JdbcProfile] {
+
+  protected val dbConfig: DatabaseConfig[Profile]
+
+  protected final lazy val profile: Profile = dbConfig.profile
+
+  // Would be nice but is broken :/
+//  protected final def db: Profile#Backend#Database = dbConfig.db
+    protected final def db: Profile#Backend#Database = profile.api.Database.forConfig("", config = dbConfig.config)
+
+}

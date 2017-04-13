@@ -16,22 +16,22 @@
  * limitations under the License.
  */
 
-//package ch.datascience.typesystem.model.table
-//
-//import slick.jdbc.JdbcProfile
-//
-///**
-//  * Created by johann on 17/03/17.
-//  */
-//class DataAccessLayer(val profile: JdbcProfile) extends EntityComponent with StateComponent with TransitionComponent
-//  with AbstractEntityComponent with GraphDomainComponent with PropertyKeyComponent with JdbcProfileComponent {
-//
-//  val tables = Seq(
-//    entities,
-//    states,
-//    transitions,
-//    graphDomains,
-//    propertyKeys
-//  )
-//
-//}
+package ch.datascience.typesystem.model.table
+
+import ch.datascience.typesystem.external.DatabaseConfigComponent
+import slick.basic.BasicProfile
+import scala.collection.mutable
+
+/**
+  * Created by johann on 13/04/17.
+  */
+trait SchemasComponent { this : JdbcProfileComponent =>
+
+  import profile.api._
+
+  final type Schema = profile.SchemaDescription
+
+  protected final lazy val _schemas: mutable.Builder[Schema, Seq[Schema]] = Seq.newBuilder[Schema]
+  final def schemas: Seq[Schema] = _schemas.result()
+
+}

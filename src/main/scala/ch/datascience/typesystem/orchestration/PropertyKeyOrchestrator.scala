@@ -31,7 +31,7 @@ import scala.concurrent.{Await, Future}
   */
 trait PropertyKeyOrchestrator { this: ExecutionComponent with DatabaseComponent with GraphComponent =>
 
-  import dal.profile.api._
+  import profile.api._
 
   object propertyKeys {
 
