@@ -16,22 +16,27 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.row
-
-import java.util.UUID
-
-import ch.datascience.typesystem.model.EntityType
-import org.janusgraph.core.Multiplicity
+package ch.datascience.typesystem.model
 
 /**
-  * Created by johann on 16/03/17.
+  * Created by johann on 14/04/17.
   */
-case class EdgeLabel(id: UUID,
-                     graphDomainId: UUID,
-                     name: String,
-                     multiplicity: Multiplicity = Multiplicity.SIMPLE)
-  extends AbstractEntity {
+sealed abstract class EntityType(val name: String)
 
-  override val entityType: EntityType = EntityType.EdgeLabel
+object EntityType {
+
+  def apply(name: String): EntityType = name.toLowerCase match {
+    case GraphDomain.name => GraphDomain
+    case PropertyKey.name => PropertyKey
+    case EdgeLabel.name => EdgeLabel
+  }
+
+  case object GraphDomain extends EntityType(name = "graph_domain")
+
+  case object PropertyKey extends EntityType(name = "property_key")
+
+  case object EdgeLabel extends EntityType(name = "edge_label")
+
+  def valueOf(name: String): EntityType = EntityType.apply(name)
 
 }
