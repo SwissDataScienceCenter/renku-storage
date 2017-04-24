@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.table
+package ch.datascience.typesystem.relationaldb.row
 
-import ch.datascience.typesystem.external.DatabaseConfigComponent
-import slick.jdbc.JdbcProfile
+import java.time.Instant
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityState
 
 /**
   * Created by johann on 17/03/17.
   */
-trait JdbcProfileComponent extends DatabaseConfigComponent[JdbcProfile]
+case class Transition(entityId: UUID, from: Long, toState: EntityState, toTimestamp: Instant)

@@ -16,21 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.table
+package ch.datascience.typesystem.relationaldb.row
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import java.time.Instant
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityState
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 17/03/17.
   */
-class DatabaseStack(protected val dbConfig: DatabaseConfig[JdbcProfile])
-  extends JdbcProfileComponent
-    with SchemasComponent
-    with ImplicitsComponent
-    with EntityComponent
-    with StateComponent
-    with TransitionComponent
-    with AbstractEntityComponent
-    with GraphDomainComponent
-    with PropertyKeyComponent
+case class State(id: Option[Long], entityId: UUID, state: EntityState, timestamp: Instant)

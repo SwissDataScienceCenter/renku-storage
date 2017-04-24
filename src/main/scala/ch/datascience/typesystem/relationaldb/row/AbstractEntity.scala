@@ -16,22 +16,19 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.orchestration
+package ch.datascience.typesystem.relationaldb.row
 
-import ch.datascience.typesystem.external.DatabaseConfigComponent
-import ch.datascience.typesystem.relationaldb.DatabaseStack
-import slick.jdbc.JdbcBackend.Database
-import slick.jdbc.JdbcProfile
+import java.util.UUID
+
+import ch.datascience.typesystem.model.EntityType
 
 /**
-  * Created by johann on 04/04/17.
+  * Created by johann on 17/03/17.
   */
-trait DatabaseComponent extends DatabaseConfigComponent[JdbcProfile] {
+trait AbstractEntity {
 
-  protected def dal: DatabaseStack
+  val id: UUID
 
-  def close(): Unit = {
-    db.close()
-  }
+  val entityType: EntityType
 
 }

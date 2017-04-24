@@ -16,13 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.row
+package ch.datascience.typesystem.relationaldb.row
 
 import java.util.UUID
 
 import ch.datascience.typesystem.model.EntityType
+import ch.datascience.typesystem.{Cardinality, DataType}
 
 /**
-  * Created by johann on 17/03/17.
+  * Created by johann on 16/03/17.
   */
-case class Entity(id: UUID, entityType: EntityType)
+case class PropertyKey(id: UUID,
+                       graphDomainId: UUID,
+                       name: String,
+                       dataType: DataType = DataType.String,
+                       cardinality: Cardinality = Cardinality.Single)
+  extends AbstractEntity {
+
+  override val entityType: EntityType = EntityType.PropertyKey
+
+}

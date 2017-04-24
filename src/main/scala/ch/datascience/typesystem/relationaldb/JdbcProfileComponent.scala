@@ -16,16 +16,12 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.row
-import java.util.UUID
+package ch.datascience.typesystem.relationaldb
 
-import ch.datascience.typesystem.model.EntityType
+import ch.datascience.typesystem.external.DatabaseConfigComponent
+import slick.jdbc.JdbcProfile
 
 /**
-  * Created by johann on 15/03/17.
+  * Created by johann on 17/03/17.
   */
-case class GraphDomain(id: UUID, namespace: String) extends AbstractEntity {
-
-  override val entityType: EntityType = EntityType.GraphDomain
-
-}
+trait JdbcProfileComponent extends DatabaseConfigComponent[JdbcProfile]

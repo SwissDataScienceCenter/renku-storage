@@ -16,14 +16,18 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.row
+package ch.datascience.typesystem.relationaldb
 
-import java.time.Instant
-import java.util.UUID
-
-import ch.datascience.typesystem.model.EntityState
+import scala.collection.mutable
 
 /**
-  * Created by johann on 17/03/17.
+  * Created by johann on 13/04/17.
   */
-case class Transition(entityId: UUID, from: Long, toState: EntityState, toTimestamp: Instant)
+trait SchemasComponent { this : JdbcProfileComponent =>
+
+  final type Schema = profile.SchemaDescription
+
+  protected final lazy val _schemas: mutable.Builder[Schema, Seq[Schema]] = Seq.newBuilder[Schema]
+  final def schemas: Seq[Schema] = _schemas.result()
+
+}

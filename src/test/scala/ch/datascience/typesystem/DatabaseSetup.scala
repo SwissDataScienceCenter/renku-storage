@@ -19,7 +19,7 @@
 package ch.datascience.typesystem
 
 import ch.datascience.typesystem.external.DatabaseConfigComponent
-import ch.datascience.typesystem.model.table.DatabaseStack
+import ch.datascience.typesystem.relationaldb.DatabaseStack
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -48,6 +48,7 @@ trait DatabaseSetup extends BeforeAndAfterAll with DatabaseConfigComponent[JdbcP
   val dal = new DatabaseStack(dbConfig)
 
   override protected def beforeAll(): Unit = {
+    println("CreateDB")
     val createSchemas: DBIO[Unit] = dal.schemas.map(_.asInstanceOf[profile.SchemaDescription]).reduce((x, y) => x ++ y).create
     val run = db.run(createSchemas)
     Await.result(run, Duration.Inf)
@@ -58,6 +59,7 @@ trait DatabaseSetup extends BeforeAndAfterAll with DatabaseConfigComponent[JdbcP
   override protected def afterAll(): Unit = {
     try super.afterAll()
     finally {
+      println("DeleteDB")
       val deleteSchemas: DBIO[Unit] = dal.schemas.map(_.asInstanceOf[profile.SchemaDescription]).reduce((x,y) => x ++ y).drop
       val run = db.run(deleteSchemas)
       Await.result(run, Duration.Inf)

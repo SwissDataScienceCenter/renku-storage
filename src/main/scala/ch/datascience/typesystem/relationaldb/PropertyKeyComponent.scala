@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.table
+package ch.datascience.typesystem.relationaldb
 
 import java.util.UUID
 
+import ch.datascience.typesystem.model.{PropertyKey => PropertyKeyModel}
+import ch.datascience.typesystem.relationaldb.row.{GraphDomain, PropertyKey}
 import ch.datascience.typesystem.{Cardinality, DataType}
-import ch.datascience.typesystem.model.EntityType
-import ch.datascience.typesystem.model.row.{Entity, GraphDomain, PropertyKey}
-import slick.jdbc.JdbcProfile
-import slick.lifted.{CompiledFunction, ForeignKeyQuery, Index, ProvenShape}
+import slick.lifted.{CompiledFunction, ForeignKeyQuery, Index, MappedProjection, ProvenShape}
 
 /**
   * Created by johann on 17/03/17.
@@ -64,8 +63,40 @@ trait PropertyKeyComponent { this: JdbcProfileComponent with SchemasComponent wi
 
   object propertyKeys extends TableQuery(new PropertyKeys(_)) with AbstractEntitiesTableQuery[PropertyKey, PropertyKeys] {
 
-    val findByNamespaceAndName: CompiledFunction[(Rep[String], Rep[String]) => Query[PropertyKeys, PropertyKey, Seq], (Rep[String], Rep[String]), (String, String), Query[PropertyKeys, PropertyKey, Seq], Seq[PropertyKey]] =
-          Compiled { (namespace: Rep[String], name: Rep[String]) => for { (gd, pk) <- graphDomains join this if gd.namespace === namespace && pk.name === name } yield pk }
+    lazy val withGraphDomain: Query[(GraphDomains, PropertyKeys), (GraphDomain, PropertyKey), Seq] = for {
+      pk <- this
+      gd <- pk.graphDomain
+    } yield (gd, pk)
+
+    lazy val withGraphDomainAsModel: Query[MappedProjection[PropertyKeyModel, (String, String, DataType, Cardinality)], PropertyKeyModel, Seq] = {
+      for {
+        (gd, pk) <- this.withGraphDomain
+      } yield mapToModel(gd, pk)
+    }
+
+    lazy val findByIdAsModel: CompiledFunction[Rep[UUID] => Query[MappedProjection[PropertyKeyModel, (String, String, DataType, Cardinality)], PropertyKeyModel, Seq], Rep[UUID], UUID, Query[MappedProjection[PropertyKeyModel, (String, String, DataType, Cardinality)], PropertyKeyModel, Seq], Seq[PropertyKeyModel]] = Compiled {
+      (entityId: Rep[UUID]) => for {
+        (gd, pk) <- this.withGraphDomain
+        if pk.id === entityId
+      } yield mapToModel(gd, pk)
+    }
+
+    lazy val findByNamespaceAndName: CompiledFunction[(Rep[String], Rep[String]) => Query[PropertyKeys, PropertyKey, Seq], (Rep[String], Rep[String]), (String, String), Query[PropertyKeys, PropertyKey, Seq], Seq[PropertyKey]] = Compiled {
+      (namespace: Rep[String], name: Rep[String]) => for {
+        (gd, pk) <- this.withGraphDomain
+        if gd.namespace === namespace && pk.name === name
+      } yield pk
+    }
+
+    lazy val findByNamespaceAndNameAsModel = Compiled {
+      (namespace: Rep[String], name: Rep[String]) => for {
+        (gd, pk) <- this.withGraphDomain
+        if gd.namespace === namespace && pk.name === name
+      } yield mapToModel(gd, pk)
+    }
+
+
+    private[this] def mapToModel(gd: GraphDomains, pk: PropertyKeys) = (gd.namespace, pk.name, pk.dataType, pk.cardinality).mapTo[PropertyKeyModel]
 
   }
 

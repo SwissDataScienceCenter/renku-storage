@@ -16,23 +16,31 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.model.row
+package ch.datascience.typesystem.model
 
-import java.util.UUID
+import ch.datascience.typesystem.{Cardinality, DataType, PropertyDefinition => PropertyKeyBase}
 
-import ch.datascience.typesystem.{Cardinality, DataType}
-import ch.datascience.typesystem.model.EntityType
+import scala.util.matching.Regex
 
 /**
-  * Created by johann on 16/03/17.
+  * Created by johann on 24/04/17.
   */
-case class PropertyKey(id: UUID,
-                       graphDomainId: UUID,
+case class PropertyKey(namespace: String,
                        name: String,
                        dataType: DataType = DataType.String,
                        cardinality: Cardinality = Cardinality.Single)
-  extends AbstractEntity {
+  extends PropertyKeyBase[String] {
 
-  override val entityType: EntityType = EntityType.PropertyKey
+  override lazy val key: String = s"$namespace:$name"
 
 }
+
+//object PropertyKey {
+//
+//  lazy val fqdnRegex: Regex = "([^:]*):(.*)".r
+//
+//  def apply(fqdn: String, dataType: DataType, cardinality: Cardinality): PropertyKey = fqdn match {
+//    case fqdnRegex(namespace, name) => PropertyKey(namespace, name, dataType, cardinality)
+//  }
+//
+//}
