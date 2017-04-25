@@ -5,7 +5,7 @@ import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
 import org.pac4j.core.context.WebContext
 import org.pac4j.core.profile.CommonProfile
 
-class CustomAuthorizer extends ProfileAuthorizer[CommonProfile] {
+class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
 
   def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
     return isAnyAuthorized(context, profiles)
