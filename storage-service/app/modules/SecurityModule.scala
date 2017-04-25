@@ -19,7 +19,7 @@
 package modules
 
 import com.google.inject.AbstractModule
-import controllers.{CustomAuthorizer, HttpActionAdapter, RoleAdminAuthGenerator}
+import controllers.{StorageManagerAuthorizer, HttpActionAdapter, UserTokenAuthorizer}
 import org.pac4j.core.client.Clients
 import org.pac4j.oidc.client.OidcClient
 import play.api.{Configuration, Environment}
@@ -47,21 +47,27 @@ class SecurityModule(environment: Environment, configuration: Configuration) ext
     oidcClient.addAuthorizationGenerator(new RoleAdminAuthGenerator)
    */
 
-    val jwtAuthenticator = new JwtAuthenticator()
-    val key = Base64.getDecoder.decode(configuration.getString("publicKey").get)
-    val spec = new X509EncodedKeySpec(key)
-    val kf = KeyFactory.getInstance("RSA")
-    val pair = new KeyPair(kf.generatePublic(spec), null)
-    jwtAuthenticator.addSignatureConfiguration(new RSASignatureConfiguration(pair))
-    val parameterClient = new ParameterClient("token", jwtAuthenticator)
-    parameterClient.setSupportGetRequest(true)
-    parameterClient.setSupportPostRequest(false)
+    val user_jwtAuthenticator = new JwtAuthenticator()
+    val user_key = Base64.getDecoder.decode(configuration.getString("publicKey").get)
+    val user_spec = new X509EncodedKeySpec(user_key)
+    val user_kf = KeyFactory.getInstance("RSA")
+    val user_pair = new KeyPair(user_kf.generatePublic(user_spec), null)
+    user_jwtAuthenticator.addSignatureConfiguration(new RSASignatureConfiguration(user_pair))
+    val user_parameterClient = new ParameterClient("user_token", user_jwtAuthenticator)
+    user_parameterClient.setSupportGetRequest(true)
+    user_parameterClient.setSupportPostRequest(true)
 
+    val server_jwtAuthenticator = new JwtAuthenticator()
+    server_jwtAuthenticator.addSignatureConfiguration(new SecretSignatureConfiguration(configuration.getString("serverSecret").get))
+    val server_parameterClient = new ParameterClient("server_token", server_jwtAuthenticator)
+    server_parameterClient.setSupportGetRequest(true)
+    server_parameterClient.setSupportPostRequest(true)
 
-    val clients = new Clients("http://localhost:9000/callback", parameterClient)
+    val clients = new Clients("http://localhost:9000/callback", server_parameterClient, user_parameterClient)
 
     val config = new Config(clients)
-    config.addAuthorizer("admin", new CustomAuthorizer())
+    config.addAuthorizer("storage_manager", new StorageManagerAuthorizer())
+    config.addAuthorizer("user_token", new UserTokenAuthorizer())
     config.setHttpActionAdapter(new HttpActionAdapter())
     bind(classOf[Config]).toInstance(config)
 

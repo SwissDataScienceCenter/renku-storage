@@ -18,23 +18,19 @@
 
 package controllers
 
-import org.apache.commons.lang3.StringUtils
-import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
-import org.pac4j.core.context.WebContext
-import org.pac4j.core.profile.CommonProfile
+import javax.inject.{Inject, Singleton}
 
-class CustomAuthorizer extends ProfileAuthorizer[CommonProfile] {
+import play.api.mvc.{Action, Controller}
 
-  def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
-    return isAnyAuthorized(context, profiles)
+/**
+  * Created by jeberle on 25.04.17.
+  */
+@Singleton
+class AccessController @Inject() extends Controller {
+
+  def token = Action { implicit request =>
+
+    Ok()
   }
 
-  def isProfileAuthorized(context: WebContext, profile: CommonProfile): Boolean = {
-    if (profile == null) {
-      false
-    } else {
-      println(profile.getEmail)
-      StringUtils.startsWith (profile.getEmail, "ju")
-    }
-  }
 }
