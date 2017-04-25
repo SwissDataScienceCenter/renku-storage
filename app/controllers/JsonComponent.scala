@@ -16,28 +16,19 @@
  * limitations under the License.
  */
 
-package models
-package json
+package controllers
 
-import java.util.UUID
-
-import ch.datascience.typesystem.relationaldb.row.GraphDomain
+import play.api.mvc._
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import play.api.libs.concurrent.Execution.Implicits._
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 25/04/17.
   */
-object GraphDomainMappers {
+trait JsonComponent { this: Controller =>
 
-  def graphDomainWrites: Writes[GraphDomain] = (
-    (JsPath \ "id").write[UUID] and
-      (JsPath \ "namespace").write[String]
-  )(unlift(GraphDomain.unapply))
-
-  def graphDomainReads: Reads[GraphDomain] = (
-    (JsPath \ "id").read[UUID] and
-      (JsPath \ "namespace").read[String]
-  )(GraphDomain)
+  def  bodyParseJson[A](implicit rds: Reads[A]): BodyParser[A] = BodyParsers.parse.json.validate(
+    _.validate[A](rds).asEither.left.map(e => BadRequest(JsError.toJson(e)))
+  )
 
 }

@@ -17,27 +17,21 @@
  */
 
 package models
-package json
 
 import java.util.UUID
 
 import ch.datascience.typesystem.relationaldb.row.GraphDomain
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 25/04/17.
   */
-object GraphDomainMappers {
+package object json {
 
-  def graphDomainWrites: Writes[GraphDomain] = (
-    (JsPath \ "id").write[UUID] and
-      (JsPath \ "namespace").write[String]
-  )(unlift(GraphDomain.unapply))
+  implicit lazy val uuidReads: Reads[UUID] = UUIDMappers.uuidReads
+  implicit lazy val uuidWrites: Writes[UUID] = UUIDMappers.uuidWrites
 
-  def graphDomainReads: Reads[GraphDomain] = (
-    (JsPath \ "id").read[UUID] and
-      (JsPath \ "namespace").read[String]
-  )(GraphDomain)
+  implicit lazy val graphDomainReads: Reads[GraphDomain] = GraphDomainMappers.graphDomainReads
+  implicit lazy val graphDomainWrites: Writes[GraphDomain] = GraphDomainMappers.graphDomainWrites
 
 }
