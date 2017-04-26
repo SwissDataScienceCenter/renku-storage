@@ -8,15 +8,18 @@ import org.pac4j.core.profile.CommonProfile
 class StorageManagerAuthorizer extends ProfileAuthorizer[CommonProfile] {
 
   def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
-    return isAnyAuthorized(context, profiles)
+    return isAllAuthorized(context, profiles)
   }
 
   def isProfileAuthorized(context: WebContext, profile: CommonProfile): Boolean = {
     if (profile == null) {
       false
     } else {
-      println(profile.getEmail)
-      StringUtils.startsWith (profile.getEmail, "ju")
+      if (profile.getClientName.equals("TokenParameterClient")) {
+        profile.getId.equalsIgnoreCase("storageservice")
+      } else {
+        true  // accepts any user
+      }
     }
   }
 }

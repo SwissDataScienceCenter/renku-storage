@@ -41,7 +41,7 @@ class SecurityModule(environment: Environment, configuration: Configuration) ext
 
     val server_jwtAuthenticator = new JwtAuthenticator()
     server_jwtAuthenticator.addSignatureConfiguration(new SecretSignatureConfiguration(configuration.getString("serverSecret").get))
-    val server_parameterClient = new ParameterClient("server_token", server_jwtAuthenticator)
+    val server_parameterClient = new TokenParameterClient("server_token", server_jwtAuthenticator)
     server_parameterClient.setSupportGetRequest(true)
     server_parameterClient.setSupportPostRequest(true)
 
