@@ -16,36 +16,22 @@
  * limitations under the License.
  */
 
-package models.json
+package controllers
 
-import java.util.UUID
+import javax.inject.Inject
 
+import injected.OrchestrationLayer
 import play.api.libs.json._
+import play.api.mvc._
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 26/04/17.
   */
-object UUIDMappers {
+class ValidationController @Inject()(protected val orchestrator: OrchestrationLayer) extends Controller with JsonComponent {
 
-  def uuidWrites: Writes[UUID] = new Writes[UUID] {
-    def writes(uuid: UUID): JsValue = Json.toJson(uuid.toString)
-  }
-
-  def uuidReads: Reads[UUID] = new Reads[UUID] {
-    def reads(json: JsValue): JsResult[UUID] = json.validate[String] flatMap { str =>
-      try {
-        JsSuccess(UUID.fromString(str))
-      } catch {
-        case e: IllegalArgumentException => JsError(e.getMessage)
-      }
-    }
-  }
-
-  def notUUidReads: Reads[String] = new Reads[String] {
-    def reads(json: JsValue): JsResult[String] = json.validate[UUID] match {
-      case JsSuccess(uuid, _) => JsError(s"UUID string forbidden: $uuid")
-      case JsError(_) => json.validate[String]
-    }
+  def validateObject: Action[JsValue] = Action.async(BodyParsers.parse.json) { implicit request =>
+    val obj = request.body
+    ???
   }
 
 }

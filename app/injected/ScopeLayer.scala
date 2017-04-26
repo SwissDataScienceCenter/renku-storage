@@ -16,28 +16,20 @@
  * limitations under the License.
  */
 
-package models
-package json
+package injected
 
-import java.util.UUID
+import javax.inject.Singleton
 
-import ch.datascience.typesystem.model.GraphDomain
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import ch.datascience.typesystem.orchestration.OrchestrationStack
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 26/04/17.
   */
-object GraphDomainMappers {
+@Singleton
+class ScopeLayer extends ScopeLayer.ConcurrentScopeType
 
-  def graphDomainWrites: Writes[GraphDomain] = (
-    (JsPath \ "id").write[UUID] and
-      (JsPath \ "namespace").write[String]
-  )(unlift(GraphDomain.unapply))
+object ScopeLayer {
 
-  def graphDomainReads: Reads[GraphDomain] = (
-    (JsPath \ "id").read[UUID] and
-      (JsPath \ "namespace").read[String]
-  )(GraphDomain)
+  type ConcurrentScopeType = OrchestrationStack#ConcurrentScopeType
 
 }

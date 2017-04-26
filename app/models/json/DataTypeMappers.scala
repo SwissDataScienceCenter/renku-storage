@@ -16,35 +16,28 @@
  * limitations under the License.
  */
 
-package models.json
+package models
+package json
 
-import java.util.UUID
-
+import ch.datascience.typesystem.model.DataType
 import play.api.libs.json._
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 26/04/17.
   */
-object UUIDMappers {
+object DataTypeMappers {
 
-  def uuidWrites: Writes[UUID] = new Writes[UUID] {
-    def writes(uuid: UUID): JsValue = Json.toJson(uuid.toString)
+  def dataTypeWrites: Writes[DataType] = new Writes[DataType] {
+    def writes(dataType: DataType): JsString = JsString(dataType.name)
   }
 
-  def uuidReads: Reads[UUID] = new Reads[UUID] {
-    def reads(json: JsValue): JsResult[UUID] = json.validate[String] flatMap { str =>
+  def dataTypeReads: Reads[DataType] = new Reads[DataType] {
+    def reads(json: JsValue): JsResult[DataType] = json.validate[String] flatMap { str =>
       try {
-        JsSuccess(UUID.fromString(str))
+        JsSuccess(DataType(str))
       } catch {
         case e: IllegalArgumentException => JsError(e.getMessage)
       }
-    }
-  }
-
-  def notUUidReads: Reads[String] = new Reads[String] {
-    def reads(json: JsValue): JsResult[String] = json.validate[UUID] match {
-      case JsSuccess(uuid, _) => JsError(s"UUID string forbidden: $uuid")
-      case JsError(_) => json.validate[String]
     }
   }
 

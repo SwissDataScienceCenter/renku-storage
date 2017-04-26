@@ -16,21 +16,28 @@
  * limitations under the License.
  */
 
-package controllers
+package models.json
 
-import javax.inject._
-
-import play.api.mvc._
+import ch.datascience.typesystem.model.Cardinality
+import play.api.libs.json._
 
 /**
-  * This controller creates an `Action` to handle HTTP requests to the
-  * application's home page.
+  * Created by johann on 26/04/17.
   */
-@Singleton
-class HomeController @Inject() extends Controller {
+object CardinalityMappers {
 
-  def index = Action { implicit request =>
-    Ok
+  def cardinalityWrites: Writes[Cardinality] = new Writes[Cardinality] {
+    def writes(cardinality: Cardinality): JsString = JsString(cardinality.name)
+  }
+
+  def cardinalityReads: Reads[Cardinality] = new Reads[Cardinality] {
+    def reads(json: JsValue): JsResult[Cardinality] = json.validate[String] flatMap { str =>
+      try {
+        JsSuccess(Cardinality(str))
+      } catch {
+        case e: IllegalArgumentException => JsError(e.getMessage)
+      }
+    }
   }
 
 }

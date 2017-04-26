@@ -16,36 +16,26 @@
  * limitations under the License.
  */
 
-package models.json
+package models
+package json
 
 import java.util.UUID
 
+import ch.datascience.typesystem.model.{Cardinality, DataType, GraphDomain, PropertyKey}
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 26/04/17.
   */
-object UUIDMappers {
+object PropertyKeyMappers {
 
-  def uuidWrites: Writes[UUID] = new Writes[UUID] {
-    def writes(uuid: UUID): JsValue = Json.toJson(uuid.toString)
-  }
-
-  def uuidReads: Reads[UUID] = new Reads[UUID] {
-    def reads(json: JsValue): JsResult[UUID] = json.validate[String] flatMap { str =>
-      try {
-        JsSuccess(UUID.fromString(str))
-      } catch {
-        case e: IllegalArgumentException => JsError(e.getMessage)
-      }
-    }
-  }
-
-  def notUUidReads: Reads[String] = new Reads[String] {
-    def reads(json: JsValue): JsResult[String] = json.validate[UUID] match {
-      case JsSuccess(uuid, _) => JsError(s"UUID string forbidden: $uuid")
-      case JsError(_) => json.validate[String]
-    }
-  }
+  def propertyKeyWrites: Writes[PropertyKey] = (
+    (JsPath \ "id").write[UUID] and
+      (JsPath \ "graphDomain").write[GraphDomain] and
+      (JsPath \ "name").write[String] and
+      (JsPath \ "dataType").write[DataType] and
+      (JsPath \ "cardinality").write[Cardinality]
+    )(unlift(PropertyKey.unapply))
 
 }
