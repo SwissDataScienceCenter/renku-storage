@@ -18,8 +18,10 @@
 
 package controllers
 
+
 import collection.JavaConversions._
 import javax.inject._
+import java.util.UUID
 import play.api._
 import play.api.mvc._
 import play.api.libs.json.JsValue
@@ -27,9 +29,6 @@ import play.api.libs.json.JsValue
 import play.api.db.slick.DatabaseConfigProvider
 import play.db.NamedDatabase
 import slick.jdbc.JdbcProfile
-//import slick.jdbc.PostgresProfile
-//import slick.jdbc.PostgresProfile.api._
-//import slick.driver.PostgresDriver
 
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Connection
@@ -38,12 +37,16 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.ShutdownSignalException
 import com.rabbitmq.client.ShutdownListener
 
+import models.EventRepo
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 /**
  * This controller creates an `Action` to handle HTTP requests to the
  * application's home page.
  */
 @Singleton
-class HomeController @Inject()(@NamedDatabase("default") dbConfigProvider: DatabaseConfigProvider) extends Controller {
+class HomeController @Inject()(@NamedDatabase("default") dbConfigProvider: DatabaseConfigProvider, eventRepo : EventRepo) extends Controller {
 
   val exchangeName = "sys"
 
@@ -62,6 +65,8 @@ class HomeController @Inject()(@NamedDatabase("default") dbConfigProvider: Datab
   val connection = conn()
 
   val dbConfig = dbConfigProvider.get[JdbcProfile]
+
+  lazy val db = dbConfig.db
 
   /**
    * Initialize the rabbitmq client
@@ -112,6 +117,12 @@ class HomeController @Inject()(@NamedDatabase("default") dbConfigProvider: Datab
       val evt = (json \ "evt").as[JsValue]
       val chan = this.connection.createChannel()
       println("Received event: " + oid + ", " + evt)
+      
+      //val future = db.run(eventRepo.events.result)
+      //println(Await.result(future, Duration.Inf))
+      val future = eventRepo.insert(UUID.fromString(oid), evt.toString())
+      Await.result(future, Duration.Inf)
+
       val headers = mapAsJavaMap(Map(("id",oid))).asInstanceOf[java.util.Map[String,Object]]
       chan.basicPublish(exchangeName, routingKey, new BasicProperties.Builder()
                .headers(headers)
