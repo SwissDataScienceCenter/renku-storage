@@ -16,23 +16,18 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.orchestration
+package ch.datascience.typesystem.model.relational
 
-import ch.datascience.typesystem.external.DatabaseConfigComponent
-import ch.datascience.typesystem.relationaldb.DatabaseStack
-import slick.jdbc.JdbcBackend.Database
-import slick.jdbc.JdbcProfile
+import java.util.UUID
+
+import ch.datascience.typesystem.model.{Cardinality, DataType, EntityType}
 
 /**
-  * Created by johann on 04/04/17.
+  * Created by johann on 16/03/17.
   */
-trait DatabaseComponent extends DatabaseConfigComponent[JdbcProfile] {
-
-//  protected def dal: DatabaseStack
-  protected val dal: DatabaseStack
-
-  def close(): Unit = {
-    db.close()
-  }
-
-}
+case class PropertyKey(id: UUID,
+                       graphDomainId: UUID,
+                       name: String,
+                       dataType: DataType,
+                       cardinality: Cardinality)
+  extends PropertyKeyBase

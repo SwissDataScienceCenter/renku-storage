@@ -16,23 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.typesystem.orchestration
-
-import ch.datascience.typesystem.external.DatabaseConfigComponent
-import ch.datascience.typesystem.relationaldb.DatabaseStack
-import slick.jdbc.JdbcBackend.Database
-import slick.jdbc.JdbcProfile
+package ch.datascience.typesystem
 
 /**
-  * Created by johann on 04/04/17.
+  * Created by johann on 26/04/17.
   */
-trait DatabaseComponent extends DatabaseConfigComponent[JdbcProfile] {
+package object model {
 
-//  protected def dal: DatabaseStack
-  protected val dal: DatabaseStack
-
-  def close(): Unit = {
-    db.close()
-  }
+  type GraphDomain = ch.datascience.typesystem.model.relational.GraphDomain
+  val GraphDomain = ch.datascience.typesystem.model.relational.GraphDomain
 
 }
