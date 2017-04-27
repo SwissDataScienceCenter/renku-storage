@@ -16,15 +16,18 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.simple
+
+import ch.datascience.graph.elements.{Property, ValidValue}
 
 /**
   * Created by johann on 27/04/17.
   */
-abstract class VertexProperty[Key, Value : ValidValue, MetaKey] extends Property[Key, Value] {
+final case class SimpleProperty[Key, Value : ValidValue](
+    override val key: Key,
+    override val value: Value
+) extends Property[Key, Value] {
 
-  val metaProperties: Map[MetaKey, Property[MetaKey, BoxedValue]]
-
-  def boxed: VertexProperty[Key, BoxedValue, MetaKey]
+  override def validValueEvidence: ValidValue[Value] = implicitly[ValidValue[Value]]
 
 }

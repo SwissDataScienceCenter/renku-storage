@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.simple
+
+import ch.datascience.graph.elements.{BoxedValue, Vertex, VertexPropertyValues}
 
 /**
   * Created by johann on 27/04/17.
   */
-abstract class VertexProperty[Key, Value : ValidValue, MetaKey] extends Property[Key, Value] {
-
-  val metaProperties: Map[MetaKey, Property[MetaKey, BoxedValue]]
-
-  def boxed: VertexProperty[Key, BoxedValue, MetaKey]
-
-}
+final case class SimpleVertex[TypeId, Key, MetaKey](
+    override val types: Set[TypeId],
+    override val properties: Map[Key, VertexPropertyValues[Key, BoxedValue, MetaKey]]
+) extends Vertex[TypeId, Key, MetaKey]
