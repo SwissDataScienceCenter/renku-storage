@@ -21,8 +21,13 @@ package ch.datascience.graph.elements
 /**
   * Created by johann on 27/04/17.
   */
-abstract class VertexProperty[Key, Value : ValidValue, MetaKey] extends Property[Key, Value] {
+trait Vertex[TypeId, Key, MetaKey] extends Element {
 
-  val metaProperties: Map[MetaKey, Property[MetaKey, BoxedValue]]
+  /**
+    * Set of type identifiers
+    */
+  val types: Set[TypeId]
+
+  val properties: Map[Key, VertexPropertyValues[Key, BoxedValue, MetaKey]]
 
 }

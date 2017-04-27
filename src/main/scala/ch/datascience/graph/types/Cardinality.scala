@@ -16,13 +16,27 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.types
 
 /**
-  * Created by johann on 27/04/17.
+  * Created by johann on 09/04/17.
   */
-abstract class VertexProperty[Key, Value : ValidValue, MetaKey] extends Property[Key, Value] {
+sealed abstract class Cardinality(val name: String)
 
-  val metaProperties: Map[MetaKey, Property[MetaKey, BoxedValue]]
+object Cardinality {
+
+  def apply(name: String): Cardinality = name.toLowerCase match {
+    case Single.name => Single
+    case List.name => List
+    case Set.name => Set
+  }
+
+  case object Single extends Cardinality(name = "single")
+
+  case object List extends Cardinality(name = "list")
+
+  case object Set extends Cardinality(name = "set")
+
+  def valueOf(name: String): Cardinality = Cardinality.apply(name)
 
 }
