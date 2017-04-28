@@ -16,15 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements.simple
 
-import ch.datascience.graph.elements.{BoxedValue, HasId, Vertex, VertexPropertyValues}
+import ch.datascience.graph.elements.{BoxedValue, ValidValue}
 
 /**
-  * Created by johann on 27/04/17.
+  * Created by johann on 28/04/17.
   */
-final case class PersistedVertex[Id, TypeId, Key, MetaKey](
-    override val id: Id,
-    override val types: Set[TypeId],
-    override val properties: Map[Key, AbstractVertex.PropertyType[Key, MetaKey]]
-) extends AbstractVertex[Id, TypeId, Key, MetaKey](id, types, properties)
+final case class SimpleVertexProperty[Key, Value : ValidValue, MetaKey](
+    override val key: Key,
+    override val value: Value,
+    override val metaProperties: Map[MetaKey, SimpleProperty[MetaKey, BoxedValue]]
+) extends SimpleVertexPropertyBase[Key, Value, MetaKey, SimpleProperty](key, value, metaProperties)
+
+object SimpleVertexProperty {
+
+  def apply[Key, Value: ValidValue, MetaKey](key: Key, value: Value): SimpleVertexProperty[Key, Value, MetaKey] = {
+    SimpleVertexProperty(key, value, Map.empty)
+  }
+
+}
