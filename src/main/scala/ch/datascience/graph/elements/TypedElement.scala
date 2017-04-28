@@ -16,27 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.simple
+package ch.datascience.graph.elements
 
-import ch.datascience.graph.elements.{BoxedValue, ValidValue}
+import language.higherKinds
 
 /**
-  * Created by johann on 28/04/17.
+  * Base trait for elements that have multi-properties which are constrained by types
+  *
+  * Typed elements can be validated (see package types).
+  *
   */
-final case class SimpleVertexProperty[Key, Value : ValidValue, MetaKey](
-    override val key: Key,
-    override val value: Value,
-    override val properties: Map[MetaKey, SimpleProperty[MetaKey, BoxedValue]]
-) extends SimpleVertexPropertyBase[Key, Value, MetaKey, SimpleProperty](key, value, properties) {
+trait TypedElement[TypeId, Key, Value, Prop[K, V] <: Property[K, V, Prop]]
+  extends HasMultiProperties[Key, Value, Prop] {
 
-  type SimpleVertexPropertyKV[K, V] = SimpleVertexProperty[K, V, MetaKey]
-
-}
-
-object SimpleVertexProperty {
-
-  def apply[Key, Value: ValidValue, MetaKey](key: Key, value: Value): SimpleVertexProperty[Key, Value, MetaKey] = {
-    SimpleVertexProperty(key, value, Map.empty)
-  }
+  /**
+    * Set of type identifiers
+    */
+  val types: Set[TypeId]
 
 }

@@ -16,27 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.simple
+package ch.datascience.graph
 
-import ch.datascience.graph.elements.{BoxedValue, ValidValue}
+import language.higherKinds
 
 /**
   * Created by johann on 28/04/17.
   */
-final case class SimpleVertexProperty[Key, Value : ValidValue, MetaKey](
-    override val key: Key,
-    override val value: Value,
-    override val properties: Map[MetaKey, SimpleProperty[MetaKey, BoxedValue]]
-) extends SimpleVertexPropertyBase[Key, Value, MetaKey, SimpleProperty](key, value, properties) {
+package object elements {
 
-  type SimpleVertexPropertyKV[K, V] = SimpleVertexProperty[K, V, MetaKey]
-
-}
-
-object SimpleVertexProperty {
-
-  def apply[Key, Value: ValidValue, MetaKey](key: Key, value: Value): SimpleVertexProperty[Key, Value, MetaKey] = {
-    SimpleVertexProperty(key, value, Map.empty)
-  }
+  type MultiProperties[Key, Value, Holder[V] <: HasValue[V, Holder]] = Map[Key, MultiPropertyValue[Value, Holder]]
 
 }
