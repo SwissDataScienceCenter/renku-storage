@@ -24,7 +24,8 @@ import language.higherKinds
 /**
   * Created by johann on 27/04/17.
   */
-trait HasValue[Value, This[V] <: HasValue[V, This]] {
+trait HasValue[Value, This[V] <: HasValue[V, This]] { this: This[Value] =>
+
   val value: Value
 
   implicit def validValueEvidence: ValidValue[Value]
@@ -35,7 +36,7 @@ trait HasValue[Value, This[V] <: HasValue[V, This]] {
 
   def unboxed: This[_] = value match {
     case b: BoxedValue => this.map({ _ => b.self })(b.isValidValue)
-    case _ => this map{ x => x }
+    case _ => this
   }
 
   @throws[java.lang.ClassCastException]
