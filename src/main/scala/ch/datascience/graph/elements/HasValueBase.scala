@@ -19,13 +19,16 @@
 package ch.datascience.graph.elements
 
 /**
-  * Trait for elements that have a unique identifier
+  * Basic trait for elements that hold a value.
+  *
+  * @tparam Value value type
   */
-trait HasId[Id] {
+trait HasValueBase[+Value] {
 
   /**
-    * The identifier
+    * The value
+    * @return the value
     */
-  val id: Id
+  def value: Value
 
 }

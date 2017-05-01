@@ -16,21 +16,27 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.simple
+package ch.datascience.graph.elements
 
-import ch.datascience.graph.elements.{BoxedValue, ValidValue, VertexProperty}
-
-import scala.language.implicitConversions
+import language.{higherKinds, implicitConversions}
 
 /**
-  * Created by johann on 28/04/17.
+  *
+  * @tparam Key key type
+  * @tparam Value value type
+  * @tparam MetaKey meta-key type
+  * @tparam MetaValue meta-value-type
+  * @tparam MetaProp meta-property type
+  * @tparam This self type
   */
-final case class SimpleVertexProperty[Key, Value : ValidValue, MetaKey](
-    override val key: Key,
-    override val value: Value,
-    override val properties: Map[MetaKey, SimpleProperty[MetaKey, BoxedValue]]
-) extends VertexProperty[Key, Value, MetaKey, SimpleProperty, SimpleVertexProperty] {
-
-  override def map[U: ValidValue](f: (Value) => U): SimpleVertexProperty[Key, U, MetaKey] = SimpleVertexProperty(key, f(value), properties)
-
+trait RichProperty[
+    +Key,
+    +Value,
+    MetaKey,
+    +MetaValue,
+    +MetaProp <: Property[MetaKey, MetaValue, MetaProp],
+    +This <: RichPropertyBase[Key, Value, MetaKey, MetaValue, MetaProp]
+] extends RichPropertyBase[Key, Value, MetaKey, MetaValue, MetaProp]
+  with Property[Key, Value, This]
+  with Element { this: This =>
 }

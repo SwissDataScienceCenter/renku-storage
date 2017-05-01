@@ -16,18 +16,18 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
-
-import scala.language.higherKinds
+package ch.datascience.graph
 
 /**
-  * Base trait for elements that hold multi-properties (single, set, or list cardinality)
+  * Base trait for things that have a key
   *
-  * Properties can be validated (see package types).
-  *
+  * @tparam Key type of key
   */
-trait HasMultiProperties[Key, +Value, +Prop <: Property[Key, Value, Prop]] extends Element {
+trait HasKey[+Key] {
 
-  def properties: MultiProperties[Key, Value, Prop]
+  /**
+    * @return the key
+    */
+  def key: Key
 
 }

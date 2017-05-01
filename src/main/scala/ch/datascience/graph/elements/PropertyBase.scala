@@ -16,15 +16,11 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements
 
-import ch.datascience.graph.elements.{BoxedValue, HasId, Vertex, MultiPropertyValue}
+import ch.datascience.graph.HasKey
 
 /**
-  * Created by johann on 27/04/17.
+  * Created by johann on 30/04/17.
   */
-final case class NewVertex[Id, TypeId, Key, MetaKey](
-    override val id: Id,
-    override val types: Set[TypeId],
-    override val properties: AbstractVertex[Id, TypeId, Key, MetaKey]#MultiPropertiesType
-) extends AbstractVertex[Id, TypeId, Key, MetaKey](id, types, properties)
+trait PropertyBase[+Key, +Value] extends HasKey[Key] with HasValueBase[Value]

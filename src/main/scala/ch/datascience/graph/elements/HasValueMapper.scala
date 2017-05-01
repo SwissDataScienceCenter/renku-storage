@@ -16,15 +16,20 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
-
-import ch.datascience.graph.elements.{BoxedValue, HasId, Vertex, MultiPropertyValue}
+package ch.datascience.graph.elements
 
 /**
-  * Created by johann on 27/04/17.
+  * Base trait for enabling map operations from [[HasValue]]
+  *
+  * See [[ch.datascience.graph.elements.simple.SimpleProperty.Mapper]] for an example.
+  *
+  * @tparam From
+  * @tparam FromHV
+  * @tparam To
+  * @tparam ToHV
   */
-final case class PersistedVertex[Id, TypeId, Key, MetaKey](
-    override val id: Id,
-    override val types: Set[TypeId],
-    override val properties: AbstractVertex[Id, TypeId, Key, MetaKey]#MultiPropertiesType
-) extends AbstractVertex[Id, TypeId, Key, MetaKey](id, types, properties)
+trait HasValueMapper[+From, -FromHV, -To, +ToHV] {
+
+  def map(hasValue: FromHV)(f: (From) => To): ToHV
+
+}

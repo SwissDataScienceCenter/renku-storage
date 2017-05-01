@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
-
-import ch.datascience.graph.elements.{HasId, Vertex}
-import ch.datascience.graph.elements.simple.{SimpleProperty, SimpleVertexProperty}
+package ch.datascience.graph.elements
 
 /**
-  * Created by johann on 28/04/17.
+  * Basic trait for rich property
+  *
+  * @tparam Key key type
+  * @tparam Value value type
+  * @tparam MetaKey meta-key type
+  * @tparam MetaValue meta-value-type
+  * @tparam MetaProp meta-property type
   */
-abstract class AbstractVertex[Id, TypeId, Key, MetaKey](
-    override val id: Id,
-    override val types: Set[TypeId],
-    override val properties: Vertex[TypeId, Key, MetaKey, SimpleProperty, SimpleVertexProperty]#MultiPropertiesType
-) extends Vertex[TypeId, Key, MetaKey, SimpleProperty, SimpleVertexProperty]
-  with HasId[Id]
+trait RichPropertyBase[+Key, +Value, MetaKey, +MetaValue, +MetaProp <: Property[MetaKey, MetaValue, MetaProp]]
+  extends PropertyBase[Key, Value]
+    with HasProperties[MetaKey, MetaValue, MetaProp]
