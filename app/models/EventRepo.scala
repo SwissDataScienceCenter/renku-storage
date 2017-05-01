@@ -18,7 +18,7 @@
 
 package models
 
-import javax.inject.Inject
+import javax.inject.{Inject,Singleton}
 import java.sql.Timestamp
 import java.util.UUID
 import slick.jdbc.JdbcProfile
@@ -32,6 +32,7 @@ import play.api.libs.json.JsValue
 
 case class Event(uuid : UUID, event : String, created : Timestamp)
 
+@Singleton
 class EventRepo @Inject()(@NamedDatabase("default") protected val dbConfigProvider: DatabaseConfigProvider) {
 
     val dbConfig = dbConfigProvider.get[JdbcProfile]
