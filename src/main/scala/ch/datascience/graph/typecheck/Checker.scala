@@ -16,23 +16,13 @@
  * limitations under the License.
  */
 
-package ch.datascience
-package graph
-package elements
+package ch.datascience.graph.typecheck
 
-import language.higherKinds
+import ch.datascience.graph.elements.Property
 
 /**
-  * Base trait for elements that hold properties
-  *
-  * Properties can be validated (see package types).
-  *
-  * @tparam Key key type
-  * @tparam Value value type
-  * @tparam Prop property type
+  * Created by johann on 04/05/17.
   */
-trait HasProperties[Key, +Value, +Prop <: Property[Key, Value, Prop]] extends Element {
-
-  def properties: Properties[Key, Value, Prop]
-
-}
+class Checker[Key, Value, Prop <: Property[Key, Value, Prop]]
+  extends PropertyChecker[Key, Value, Prop]
+    with RecordChecker[Key, Value, Prop]

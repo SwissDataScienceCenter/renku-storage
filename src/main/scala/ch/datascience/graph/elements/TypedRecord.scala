@@ -16,30 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.typecheck
+package ch.datascience.graph.elements
 
-import ch.datascience.graph.types.PropertyKey
+import scala.language.higherKinds
 
-sealed trait Checked
-
-trait PropertyChecked[+Key] extends Checked {
-
-  /**
-    * The definition of the validated property
-    *
-    * @return property key
-    */
-  def propertyKey: PropertyKey[Key]
-
-}
-
-trait RecordChecked[Key] extends Checked {
+/**
+  * Base trait for records that have properties which are constrained by types
+  *
+  * Typed records can be validated (see package types).
+  *
+  */
+trait TypedRecord[TypeId, Key, +Value, +Prop <: Property[Key, Value, Prop]]
+  extends Record[Key, Value, Prop] {
 
   /**
-    * The definitions of the validated properties
-    *
-    * @return property key map
+    * Set of type identifiers
     */
-  def propertyKeys: Map[Key, PropertyKey[Key]]
+  def types: Set[TypeId]
 
 }

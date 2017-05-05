@@ -18,20 +18,16 @@
 
 package ch.datascience.graph.elements
 
-import language.higherKinds
+import scala.language.higherKinds
 
 /**
-  * Base trait for elements that have multi-properties which are constrained by types
+  * Base trait for multi-records, i.e. elements that hold multi-properties (single, set, or list cardinality)
   *
-  * Typed elements can be validated (see package types).
+  * Properties can be validated (see package types).
   *
   */
-trait TypedElement[TypeId, Key, +Value, +Prop <: Property[Key, Value, Prop]]
-  extends HasMultiProperties[Key, Value, Prop] {
+trait MultiRecord[Key, +Value, +Prop <: Property[Key, Value, Prop]] extends Element {
 
-  /**
-    * Set of type identifiers
-    */
-  def types: Set[TypeId]
+  def properties: MultiProperties[Key, Value, Prop]
 
 }

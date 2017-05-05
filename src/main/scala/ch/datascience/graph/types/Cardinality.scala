@@ -25,10 +25,12 @@ sealed abstract class Cardinality(val name: String)
 
 object Cardinality {
 
+  def valueOf(name: String): Cardinality = Cardinality.apply(name)
+
   def apply(name: String): Cardinality = name.toLowerCase match {
     case Single.name => Single
-    case List.name => List
-    case Set.name => Set
+    case List.name   => List
+    case Set.name    => Set
   }
 
   case object Single extends Cardinality(name = "single")
@@ -36,7 +38,5 @@ object Cardinality {
   case object List extends Cardinality(name = "list")
 
   case object Set extends Cardinality(name = "set")
-
-  def valueOf(name: String): Cardinality = Cardinality.apply(name)
 
 }
