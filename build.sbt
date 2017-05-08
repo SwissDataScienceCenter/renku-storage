@@ -17,7 +17,7 @@
  */
 
 organization := "ch.datascience"
-name := "graph-type-manager"
+name := "graph-typesystem-persistence"
 version := "0.0.1-SNAPSHOT"
 scalaVersion := "2.11.8"
 
@@ -31,7 +31,7 @@ lazy val janusgraph_version = "0.1.0"
 lazy val h2_version = "1.4.193"
 lazy val slf4j_version = "1.7.24"
 
-libraryDependencies += "ch.datascience" %% "graph-type-utils" % version.value
+//libraryDependencies += "ch.datascience" %% "graph-type-utils" % version.value
 libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
 libraryDependencies += "org.janusgraph" % "janusgraph-core" % janusgraph_version
 libraryDependencies += "org.janusgraph" % "janusgraph-berkeleyje" % janusgraph_version
