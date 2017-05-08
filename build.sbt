@@ -24,6 +24,11 @@ scalaVersion := "2.11.8"
 // This project contains nothing to package, like pure POM maven project
 packagedArtifacts := Map.empty
 
+lazy val root = Project(
+  id   = "graph-all",
+  base = file(".")
+).aggregate(core, typesystem)
+
 lazy val core = Project(
   id   = "graph-core",
   base = file("graph-core")
@@ -35,6 +40,14 @@ lazy val core = Project(
 lazy val typesystem = Project(
   id   = "graph-typesystem",
   base = file("graph-typesystem")
+).settings(
+  commonSettings,
+  scriptsSettings
+)//.aggregate(typesystemPersistence) // Do not include for now, as it's not compiling
+
+lazy val typesystemPersistence = Project(
+  id   = "graph-typesystem-persistence",
+  base = file("graph-typesystem") / "graph-typesystem-persistence"
 ).settings(
   commonSettings,
   scriptsSettings
