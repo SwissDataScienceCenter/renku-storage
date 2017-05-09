@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph
+package ch.datascience.graph.types.validation
 
 /**
-  * Created by johann on 01/05/17.
+  * Created by johann on 09/05/17.
   */
-package object typevalidation {
+sealed trait Validated
 
-  type ValidationResult[C] = Either[ValidationError, C]
+trait ValidatedPropertyKey[+Key] extends Validated {
+
+
 
 }

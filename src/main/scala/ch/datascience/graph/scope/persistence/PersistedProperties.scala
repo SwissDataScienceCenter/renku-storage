@@ -16,30 +16,31 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.typevalidation
+package ch.datascience.graph.scope.persistence
 
 import ch.datascience.graph.types.PropertyKey
 
-sealed trait Validated
+import scala.concurrent.{ExecutionContext, Future}
 
-trait ValidatedProperty[+Key] extends Validated {
-
-  /**
-    * The definition of the validated property
-    *
-    * @return property key
-    */
-  def propertyKey: PropertyKey[Key]
-
-}
-
-trait ValidatedRecord[Key] extends Validated {
+/**
+  * Base trait for accessing persisted property keys
+  */
+trait PersistedProperties[Key] {
 
   /**
-    * The definitions of the validated properties
-    *
-    * @return property key map
+    * Fetches property key with specified key
+    * @param key
+    * @return a future containing some property key if a corresponding one is found, None otherwise
     */
-  def propertyKeys: Map[Key, PropertyKey[Key]]
+  def fetchPropertyFor(key: Key)(implicit ec: ExecutionContext): Future[Option[PropertyKey[Key]]]
+
+  /**
+    * Grouped version of getPropertyFor
+    *
+    * If some keys are not found, they will not be part of the result map
+    * @param keys set of keys to retrieve
+    * @return map key -> property key, will not contain unknown keys
+    */
+  def fetchPropertiesFor(keys: Set[Key])(implicit ec: ExecutionContext): Future[Map[Key, PropertyKey[Key]]]
 
 }
