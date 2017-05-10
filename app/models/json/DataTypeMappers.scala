@@ -19,7 +19,7 @@
 package models
 package json
 
-import ch.datascience.typesystem.model.DataType
+import ch.datascience.graph.types.DataType
 import play.api.libs.json._
 
 /**

@@ -18,7 +18,7 @@
 
 package models.json
 
-import ch.datascience.typesystem.model.Cardinality
+import ch.datascience.graph.types.Cardinality
 import play.api.libs.json._
 
 /**
