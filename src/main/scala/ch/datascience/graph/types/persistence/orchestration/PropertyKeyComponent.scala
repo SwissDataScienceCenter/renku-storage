@@ -20,6 +20,7 @@ package ch.datascience.graph.types.persistence.orchestration
 
 import java.util.UUID
 
+import ch.datascience.graph.NamespaceAndName
 import ch.datascience.graph.types.{Cardinality, DataType}
 import ch.datascience.graph.types.persistence.model.{GraphDomain, PropertyKey}
 
@@ -42,6 +43,10 @@ trait PropertyKeyComponent {
 
     def findById(id: UUID): Future[Option[PropertyKey]] = {
       db.run( dal.propertyKeys.findById(id).result.headOption )
+    }
+
+    def findByNamespaceAndName(key: NamespaceAndName): Future[Option[PropertyKey]] = {
+      findByNamespaceAndName(key.namespace, key.name)
     }
 
     def findByNamespaceAndName(namespace: String, name: String): Future[Option[PropertyKey]] = {
