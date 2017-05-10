@@ -18,6 +18,8 @@
 
 package ch.datascience.graph.elements
 
+import ch.datascience.graph.types.{GraphType, NamedType, RecordType}
+
 import scala.language.higherKinds
 
 /**
@@ -33,5 +35,10 @@ trait TypedRecord[TypeId, Key, +Value, +Prop <: Property[Key, Value, Prop]]
     * Set of type identifiers
     */
   def types: Set[TypeId]
+
+  protected[elements] override def <|(graphType: GraphType): Boolean = graphType match {
+    case nrt: NamedType[TypeId, Key] => types contains nrt.key
+    case _ => super.<|(graphType)
+  }
 
 }

@@ -19,7 +19,7 @@
 package ch.datascience.graph.elements.validation
 
 import ch.datascience.graph.elements.{BoxedOrValidValue, Property, Record}
-import ch.datascience.graph.types.PropertyKey
+import ch.datascience.graph.types.{PropertyKey, RecordType}
 
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,8 +58,9 @@ trait RecordValidator[Key, Value, Prop <: Property[Key, Value, Prop]] { this: Pr
       (key, property) <- record.properties
       definition = definitions.get(key)
     } yield key -> this.validatePropertySync(property, definition)(e)
-
     val invalidPropertyErrors = validatedProperties.values.flatMap(_.left.toOption)
+
+    // Collect errors
     val allErrors = consistencyErrors ++ invalidPropertyErrors
 
     if (allErrors.isEmpty) {
@@ -67,7 +68,7 @@ trait RecordValidator[Key, Value, Prop <: Property[Key, Value, Prop]] { this: Pr
         (key, validated) <- validatedProperties
         v <- validated.right.toOption
       } yield key -> v.propertyKey
-      Right(Result(record, validProperties))
+      Right(Result(record, RecordType(record.properties.keySet), validProperties))
     }
     else
       Left(MultipleErrors.make(allErrors.toSeq))
@@ -75,6 +76,7 @@ trait RecordValidator[Key, Value, Prop <: Property[Key, Value, Prop]] { this: Pr
 
   private[this] case class Result(
     record: Record[Key, Value, Prop],
+    recordType: RecordType[Key],
     propertyKeys: Map[Key, PropertyKey[Key]]
   ) extends ValidatedRecord[Key, Value, Prop]
 

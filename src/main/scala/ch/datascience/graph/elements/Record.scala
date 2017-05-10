@@ -20,6 +20,8 @@ package ch.datascience
 package graph
 package elements
 
+import ch.datascience.graph.types.{Bottom, GraphType, RecordType}
+
 import scala.language.higherKinds
 
 /**
@@ -34,5 +36,10 @@ import scala.language.higherKinds
 trait Record[Key, +Value, +Prop <: Property[Key, Value, Prop]] extends Element {
 
   def properties: Properties[Key, Value, Prop]
+
+  protected[elements] def <|(graphType: GraphType): Boolean = graphType match {
+    case rt: RecordType[Key] => rt.properties subsetOf properties.keySet
+    case _ => false
+  }
 
 }
