@@ -16,20 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.persistence.impl
+
+import ch.datascience.graph.elements.BoxedOrValidValue
+import ch.datascience.graph.elements.persistence.{PersistedRecordProperty, RecordPath}
 
 /**
-  * Basic trait for elements that have an id.
-  *
-  * @tparam Id id type for the Element
+  * Created by johann on 11/05/17.
   */
-trait HasId[+Id] {
-
-  /**
-    * The id
-    *
-    * @return the id
-    */
-  def id: Id
-
-}
+case class ImplPersistedRecordProperty[+Key, +Value: BoxedOrValidValue](
+  parent: RecordPath[Key],
+  key: Key,
+  value: Value
+) extends PersistedRecordProperty[Key, Value, ImplPersistedRecordProperty[Key, Value]]
