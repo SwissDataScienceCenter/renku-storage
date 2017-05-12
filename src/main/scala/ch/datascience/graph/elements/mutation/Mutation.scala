@@ -23,6 +23,6 @@ package ch.datascience.graph.elements.mutation
   */
 trait Mutation {
 
-  def operations: List[Operation]
+  def operations: Seq[Operation]
 
 }
