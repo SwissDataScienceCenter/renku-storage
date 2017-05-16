@@ -16,35 +16,19 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types
+package ch.datascience.graph.types.impl
 
-import ch.datascience.graph.HasKey
-import ch.datascience.graph.types.impl.ImplPropertyKey
+import ch.datascience.graph.types.{Cardinality, DataType, PropertyKey}
 
 /**
-  * Base trait for property key definitions
-  *
-  * @tparam Key type of key
+  * Created by johann on 12/05/17.
   */
-trait PropertyKey[+Key] extends HasKey[Key] {
+private[types] final case class ImplPropertyKey[+Key](
+  key: Key,
+  cardinality: Cardinality,
+  dataType: DataType
+) extends PropertyKey[Key] {
 
-  def cardinality: Cardinality
-
-  def dataType: DataType
-
-  def simpleCopy: PropertyKey[Key] = PropertyKey(key, cardinality, dataType)
-
-}
-
-object PropertyKey {
-
-  def apply[Key](key: Key, cardinality: Cardinality, dataType: DataType): PropertyKey[Key] = ImplPropertyKey(key, cardinality, dataType)
-
-  def unapply[Key](propertyKey: PropertyKey[Key]): Option[(Key, Cardinality, DataType)] = {
-    if (propertyKey eq null)
-      None
-    else
-      Some(propertyKey.key, propertyKey.cardinality, propertyKey.dataType)
-  }
+  override def toString: String = s"PropertyKey($key, $cardinality, $dataType)"
 
 }
