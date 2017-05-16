@@ -16,30 +16,21 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types.persistence.model
+package ch.datascience.graph.types.persistence.model.relational
+
+import java.util.UUID
+
+import ch.datascience.graph.types.persistence.model.EntityType
 
 /**
-  * Created by johann on 14/04/17.
+  * Created by johann on 12/05/17.
   */
-sealed abstract class EntityType(val name: String)
+case class RowNamedType(
+  id: UUID,
+  graphDomainId: UUID,
+  name: String
+) extends RowAbstractEntity {
 
-object EntityType {
-
-  def apply(name: String): EntityType = name.toLowerCase match {
-    case GraphDomain.name => GraphDomain
-    case PropertyKey.name => PropertyKey
-    case NamedType.name => NamedType
-    case EdgeLabel.name => EdgeLabel
-  }
-
-  case object GraphDomain extends EntityType(name = "graph_domain")
-
-  case object PropertyKey extends EntityType(name = "property_key")
-
-  case object NamedType extends EntityType(name = "named_type")
-
-  case object EdgeLabel extends EntityType(name = "edge_label")
-
-  def valueOf(name: String): EntityType = EntityType.apply(name)
+  final override val entityType: EntityType = EntityType.NamedType
 
 }

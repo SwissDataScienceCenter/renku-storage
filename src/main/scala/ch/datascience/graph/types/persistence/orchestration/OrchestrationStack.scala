@@ -40,3 +40,4 @@ class OrchestrationStack(
     with GraphComponent
     with GraphDomainComponent
     with PropertyKeyComponent
+    with NamedTypeComponent
