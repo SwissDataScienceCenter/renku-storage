@@ -16,18 +16,22 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.types.json
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.types.Cardinality
+import play.api.libs.json._
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by johann on 17/05/17.
+  */
+object CardinalityReads extends Reads[Cardinality] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  def reads(json: JsValue): JsResult[Cardinality] = json.validate[String] flatMap { str =>
+    try {
+      JsSuccess(Cardinality(str))
+    } catch {
+      case e: IllegalArgumentException => JsError(e.getMessage)
+    }
+  }
 
-lazy val scalatest_version = "3.0.1"
-
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
+}

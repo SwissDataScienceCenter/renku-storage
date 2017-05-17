@@ -24,11 +24,9 @@ import scala.util.matching.Regex
   * Created by johann on 30/04/17.
   */
 case class NamespaceAndName(namespace: String, name: String) {
-  require(
-    NamespaceAndName.namespaceIsValid(namespace),
-    s"Invalid namespace: '$namespace' (Pattern: ${NamespaceAndName.namespacePattern})"
-  )
-  require(NamespaceAndName.nameIsValid(name), s"Invalid name: '$name' (Pattern: ${NamespaceAndName.namePattern})")
+  // Apply namespace and name requirements
+  Namespace(namespace)
+  Name(name)
 
   def asString: String = s"$namespace:$name"
 
@@ -36,8 +34,8 @@ case class NamespaceAndName(namespace: String, name: String) {
 
 object NamespaceAndName {
 
-  lazy val namespacePattern: Regex = raw"([-A-Za-z0-9_/]*)".r
-  lazy val namePattern     : Regex = raw"([-A-Za-z0-9_/]+)".r
+//  lazy val namespacePattern: Regex = raw"([-A-Za-z0-9_/]*)".r
+//  lazy val namePattern     : Regex = raw"([-A-Za-z0-9_/]+)".r
   lazy val separatePattern : Regex = s"([^:]*):(.*)".r
 
   def apply(namespaceAndName: String): NamespaceAndName = namespaceAndName match {
@@ -45,14 +43,14 @@ object NamespaceAndName {
     case _                                => throw new IllegalArgumentException(s"Cannot find separator ':'")
   }
 
-  def namespaceIsValid(namespace: String): Boolean = namespace match {
-    case namespacePattern(_) => true
-    case _                   => false
-  }
-
-  def nameIsValid(name: String): Boolean = name match {
-    case namePattern(_) => true
-    case _              => false
-  }
+//  def namespaceIsValid(namespace: String): Boolean = namespace match {
+//    case namespacePattern(_) => true
+//    case _                   => false
+//  }
+//
+//  def nameIsValid(name: String): Boolean = name match {
+//    case namePattern(_) => true
+//    case _              => false
+//  }
 
 }

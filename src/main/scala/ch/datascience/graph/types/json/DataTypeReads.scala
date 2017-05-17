@@ -16,18 +16,22 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.types.json
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.types.DataType
+import play.api.libs.json._
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by johann on 26/04/17.
+  */
+object DataTypeReads extends Reads[DataType] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  def reads(json: JsValue): JsResult[DataType] = json.validate[String] flatMap { str =>
+    try {
+      JsSuccess(DataType(str))
+    } catch {
+      case e: IllegalArgumentException => JsError(e.getMessage)
+    }
+  }
 
-lazy val scalatest_version = "3.0.1"
-
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
+}

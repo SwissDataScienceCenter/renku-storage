@@ -16,18 +16,31 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph
 
-resolvers += DefaultMavenRepository
+import scala.util.{Success, Try}
+import scala.util.matching.Regex
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by jmt on 15/05/17.
+  */
+object Namespace {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  lazy val namespacePattern: Regex = raw"([-A-Za-z0-9_/]*)".r
 
-lazy val scalatest_version = "3.0.1"
+  def apply(namespace: String): String = {
+    require(namespaceIsValid(namespace), s"Invalid namespace: '$namespace' (Pattern: $namespacePattern)")
+    namespace
+  }
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  def unapply(namespace: String): Option[String] = Try( apply(namespace) ) match {
+    case Success(ns) => Some(ns)
+    case _           => None
+  }
 
+  def namespaceIsValid(namespace: String): Boolean = namespace match {
+    case namespacePattern(_) => true
+    case _                   => false
+  }
+
+}

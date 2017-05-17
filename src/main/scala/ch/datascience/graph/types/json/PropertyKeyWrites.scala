@@ -16,18 +16,25 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.types.json
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.types.{Cardinality, DataType, PropertyKey}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, JsValue, Writes}
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by johann on 17/05/17.
+  */
+class PropertyKeyWrites[-Key : Writes] extends Writes[PropertyKey[Key]] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  def writes(propertyKey: PropertyKey[Key]): JsValue = self.writes(propertyKey)
 
-lazy val scalatest_version = "3.0.1"
+  private[this] lazy val self: Writes[PropertyKey[Key]] = makeSelf
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  private[this] def makeSelf: Writes[PropertyKey[Key]] = (
+    (JsPath \ "key").write[Key] and
+      (JsPath \ "dataType").write[DataType](DataTypeWrites) and
+      (JsPath \ "cardinality").write[Cardinality](CardinalityWrites)
+    )(unlift(PropertyKey.unapply[Key]))
 
+}

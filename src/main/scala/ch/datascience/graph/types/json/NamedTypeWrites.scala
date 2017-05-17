@@ -16,35 +16,25 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types
+package ch.datascience.graph.types.json
 
-import ch.datascience.graph.HasKey
-import ch.datascience.graph.types.impl.ImplPropertyKey
+import ch.datascience.graph.types.NamedType
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, JsValue, Writes}
 
 /**
-  * Base trait for property key definitions
-  *
-  * @tparam Key type of key
+  * Created by johann on 17/05/17.
   */
-trait PropertyKey[+Key] extends HasKey[Key] {
+class NamedTypeWrites[TypeKey : Writes, PropKey : Writes] extends Writes[NamedType[TypeKey, PropKey]] {
 
-  def dataType: DataType
+  def writes(namedType: NamedType[TypeKey, PropKey]): JsValue = self.writes(namedType)
 
-  def cardinality: Cardinality
+  private[this] lazy val self: Writes[NamedType[TypeKey, PropKey]] = makeSelf
 
-  def simpleCopy: PropertyKey[Key] = PropertyKey(key, dataType, cardinality)
-
-}
-
-object PropertyKey {
-
-  def apply[Key](key: Key, dataType: DataType, cardinality: Cardinality): PropertyKey[Key] = ImplPropertyKey(key, dataType, cardinality)
-
-  def unapply[Key](propertyKey: PropertyKey[Key]): Option[(Key, DataType, Cardinality)] = {
-    if (propertyKey eq null)
-      None
-    else
-      Some(propertyKey.key, propertyKey.dataType, propertyKey.cardinality)
-  }
+  private[this] def makeSelf: Writes[NamedType[TypeKey, PropKey]] = (
+    (JsPath \ "key").write[TypeKey] and
+      (JsPath \ "super_types").write[Traversable[TypeKey]] and
+      (JsPath \ "properties").write[Traversable[PropKey]]
+    ).apply(unlift(NamedType.unapply[TypeKey, PropKey]))
 
 }

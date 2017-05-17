@@ -16,18 +16,32 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph
 
-resolvers += DefaultMavenRepository
+import scala.util.{Success, Try}
+import scala.util.matching.Regex
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by jmt on 15/05/17.
+  */
+object Name {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  lazy val namePattern: Regex = raw"([-A-Za-z0-9_/]+)".r
 
-lazy val scalatest_version = "3.0.1"
+  def apply(name: String): String = {
+    require(nameIsValid(name), s"Invalid name: '$name' (Pattern: $namePattern)")
+    name
+  }
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  def unapply(name: String): Option[String] = Try( apply(name) ) match {
+    case Success(ns) => Some(ns)
+    case _           => None
+  }
+
+  def nameIsValid(name: String): Boolean = name match {
+    case namePattern(_) => true
+    case _              => false
+  }
+
+}
 

@@ -16,18 +16,25 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.types.json
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.types.{Cardinality, DataType, PropertyKey}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, JsResult, JsValue, Reads}
 
-lazy val play_version = "2.5.14"
+/**
+  * Created by johann on 17/05/17.
+  */
+class PropertyKeyReads[Key : Reads] extends Reads[PropertyKey[Key]] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
+  override def reads(json: JsValue): JsResult[PropertyKey[Key]] = self.reads(json)
 
-lazy val scalatest_version = "3.0.1"
+  private[this] lazy val self: Reads[PropertyKey[Key]] = makeSelf
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  private[this] def makeSelf: Reads[PropertyKey[Key]] = (
+    (JsPath \ "key").read[Key] and
+      (JsPath \ "dataType").read[DataType](DataTypeReads) and
+      (JsPath \ "cardinality").read[Cardinality](CardinalityReads)
+    )(PropertyKey.apply[Key] _)
 
+}
