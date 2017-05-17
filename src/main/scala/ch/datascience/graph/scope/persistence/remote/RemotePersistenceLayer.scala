@@ -16,19 +16,21 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.scope.persistence.remote
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.scope.persistence.PersistenceLayer
+import play.api.libs.json.Reads
 
-lazy val play_version = "2.5.14"
+import scala.concurrent.ExecutionContext
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
-libraryDependencies += "com.typesafe.play" %% "play-ws" % play_version
+/**
+  * Created by johann on 17/05/17.
+  */
+class RemotePersistenceLayer[TypeKey : Reads, PropKey : Reads](val client: ConfiguredClient[TypeKey, PropKey])(implicit val executionContext: ExecutionContext)
+  extends PersistenceLayer[TypeKey, PropKey]
+    with RemotePersistedProperties[PropKey]
+    with RemotePersistedNamedTypes[TypeKey, PropKey] {
 
-lazy val scalatest_version = "3.0.1"
+  protected def keyReads: Reads[PropKey] = implicitly[Reads[PropKey]]
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
+}

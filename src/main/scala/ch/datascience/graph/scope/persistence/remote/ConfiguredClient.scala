@@ -16,19 +16,21 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.scope.persistence.remote
 
-resolvers += DefaultMavenRepository
+import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 
-lazy val play_version = "2.5.14"
+import scala.concurrent.Future
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
-libraryDependencies += "com.typesafe.play" %% "play-ws" % play_version
+/**
+  * Created by johann on 17/05/17.
+  */
+trait ConfiguredClient[TypeKey, PropKey] {
 
-lazy val scalatest_version = "3.0.1"
+  protected def wsClient: WSClient
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  def fetchPropertyForRemoteCall(key: PropKey): Future[WSResponse]
 
+  def fetchPropertiesForRemoteCall(keys: Set[PropKey]): Future[WSResponse]
+
+}
