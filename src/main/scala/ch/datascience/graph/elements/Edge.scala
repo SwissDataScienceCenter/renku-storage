@@ -16,24 +16,25 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by jeberle on 15.05.17.
   */
-sealed abstract class Path
+trait Edge[Key, +Value, +EdgeProp <: Property[Key, Value, EdgeProp], +VRef] extends MultiRecord[Key, Value, EdgeProp]{
 
-final case class VertexPath[+VertexId](vertexId: VertexId) extends Path
+  /**
+    * The origin Vertex
+    *
+    * @return the vertex
+    */
+  def from: VRef
 
-final case class EdgePath[+VertexId, +EdgeId](fromVertex: VertexId, edgeId: EdgeId) extends Path
+  /**
+    * The destination Vertex
+    *
+    * @return the vertex
+    */
+  def to: VRef
 
-sealed abstract class PropertyPath extends Path {
-  def parent: Path
 }
-
-case class PropertyPathFromRecord[+Key](parent: Path, key: Key) extends PropertyPath
-
-case class PropertyPathFromMultiRecord[+PropertyId](
-  parent: Path,
-  propertyId: PropertyId
-) extends PropertyPath

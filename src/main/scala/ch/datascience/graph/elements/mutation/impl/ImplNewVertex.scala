@@ -16,24 +16,30 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements.mutation.impl
+
+import ch.datascience.graph.elements.{BoxedValue, MultiProperties}
+import ch.datascience.graph.elements.persistence.NewVertex
+import ch.datascience.graph.elements.persistence.impl.ImplPersistedMultiRecordRichProperty
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by jeberle on 15.05.17.
   */
-sealed abstract class Path
-
-final case class VertexPath[+VertexId](vertexId: VertexId) extends Path
-
-final case class EdgePath[+VertexId, +EdgeId](fromVertex: VertexId, edgeId: EdgeId) extends Path
-
-sealed abstract class PropertyPath extends Path {
-  def parent: Path
-}
-
-case class PropertyPathFromRecord[+Key](parent: Path, key: Key) extends PropertyPath
-
-case class PropertyPathFromMultiRecord[+PropertyId](
-  parent: Path,
-  propertyId: PropertyId
-) extends PropertyPath
+case class ImplNewVertex[
+TypeId,
+Key,
++Value,
+MetaKey
+](
+   tempId: Int,
+   types: Set[TypeId],
+   properties: MultiProperties[Key, Value, ImplNewMultiRecordRichProperty[Key, Value, MetaKey, BoxedValue]]
+ ) extends NewVertex[
+  TypeId,
+  Key,
+  Value,
+  MetaKey,
+  BoxedValue,
+  ImplNewRecordProperty[MetaKey, BoxedValue],
+  ImplNewMultiRecordRichProperty[Key, Value, MetaKey, BoxedValue]
+  ]
