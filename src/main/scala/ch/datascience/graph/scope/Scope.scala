@@ -17,6 +17,7 @@
  */
 
 package ch.datascience.graph.scope
+
 import ch.datascience.graph.scope.persistence.{PersistedProperties, PersistenceLayer}
 import ch.datascience.graph.types.PropertyKey
 

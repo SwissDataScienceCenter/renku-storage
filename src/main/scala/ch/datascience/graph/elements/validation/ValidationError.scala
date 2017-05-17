@@ -19,7 +19,7 @@
 package ch.datascience.graph.elements.validation
 
 import ch.datascience.graph.elements.{Property, Record}
-import ch.datascience.graph.types.{DataType, RecordType}
+import ch.datascience.graph.types.{Cardinality, DataType, RecordType}
 
 /**
   * Created by johann on 01/05/17.
@@ -30,10 +30,22 @@ final case class MultipleErrors(errors: Seq[ValidationError]) extends Validation
 
 final case class UnknownProperty[+Key](key: Key) extends ValidationError
 
-final case class BadDataType[+Value](
-  value   : Value,
+final case class UnknownType[+TypeId](key: TypeId) extends ValidationError
+
+final case class WrongDefinition[+Key](
+  required: Key,
+  found: Key
+) extends ValidationError
+
+final case class BadDataType[+Key](
+  key     : Key,
   required: DataType,
   found   : DataType
+) extends ValidationError
+
+final case class BadCardinality(
+  required: Cardinality,
+  found: Cardinality
 ) extends ValidationError
 
 final case class BadRecord[+Key](
@@ -41,7 +53,7 @@ final case class BadRecord[+Key](
   found: Key
 ) extends ValidationError
 
-final case class InvalidRecordType[Key, +Value, +Prop <: Property[Key, Value, Prop]](
+final case class RecordTypeError[Key, +Value, +Prop <: Property[Key, Value, Prop]](
   record: Record[Key, Value, Prop],
   required: RecordType[Key],
   missing: Set[Key] // keys missing from record type check
