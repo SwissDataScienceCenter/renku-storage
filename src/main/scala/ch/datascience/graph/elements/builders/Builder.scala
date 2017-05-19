@@ -16,21 +16,17 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.builders
 
-resolvers += DefaultMavenRepository
+/**
+  * Created by johann on 19/05/17.
+  */
+trait Builder[+To] {
 
-lazy val play_version = "2.5.14"
-lazy val tinkerpop_version = "3.2.3"
+  def isReady: Boolean
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
-libraryDependencies += "com.typesafe.play" %% "play-ws" % play_version
-libraryDependencies += "org.apache.tinkerpop" % "gremlin-core" % tinkerpop_version
+  def result(): To
 
-lazy val scalatest_version = "3.0.1"
+  def notReady(): Nothing = throw new IllegalArgumentException("Builder is not ready")
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
+}

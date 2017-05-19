@@ -16,21 +16,28 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.builders
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.elements.{Properties, Property, Record}
 
-lazy val play_version = "2.5.14"
-lazy val tinkerpop_version = "3.2.3"
+/**
+  * Created by johann on 19/05/17.
+  */
+trait RecordBuilder[Key, Value, +Prop <: Property[Key, Value, Prop], +PB <: PropertyBuilder[Key, Value, Prop], +To <: Record[Key, Value, Prop]]
+  extends Builder[To] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
-libraryDependencies += "com.typesafe.play" %% "play-ws" % play_version
-libraryDependencies += "org.apache.tinkerpop" % "gremlin-core" % tinkerpop_version
+  private[this] var myProperties: Map[Key, PB] = Map.empty
 
-lazy val scalatest_version = "3.0.1"
+  def properties: Map[Key, PB] = myProperties
 
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  def newProperty: Builder[PB]
 
+  def +=(keyValue: (Key, Value)): this.type = {
+    val propertyBuilder = newProperty.result()
+    propertyBuilder.key = keyValue._1
+    propertyBuilder.value = keyValue._2
+    myProperties += keyValue._1 -> propertyBuilder
+    this
+  }
+
+}

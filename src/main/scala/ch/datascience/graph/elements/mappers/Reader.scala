@@ -16,21 +16,15 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-core"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mappers
 
-resolvers += DefaultMavenRepository
+import scala.concurrent.{ExecutionContext, Future}
 
-lazy val play_version = "2.5.14"
-lazy val tinkerpop_version = "3.2.3"
+/**
+  * Created by johann on 19/05/17.
+  */
+trait Reader[-From, +To] {
 
-libraryDependencies += "com.typesafe.play" %% "play-json" % play_version
-libraryDependencies += "com.typesafe.play" %% "play-ws" % play_version
-libraryDependencies += "org.apache.tinkerpop" % "gremlin-core" % tinkerpop_version
+  def read(x: From)(implicit ec: ExecutionContext): Future[To]
 
-lazy val scalatest_version = "3.0.1"
-
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
+}

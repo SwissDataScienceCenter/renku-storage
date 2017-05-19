@@ -16,16 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements.mappers
 
-import ch.datascience.graph.elements.{BoxedOrValidValue, Property}
-import ch.datascience.graph.elements.persistence.impl.ImplPersistedRecordProperty
+import ch.datascience.graph.NamespaceAndName
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Created by johann on 18/05/17.
+  * Created by johann on 19/05/17.
   */
-class PersistedRecordPropertyBuilder[+Key, +Value : BoxedOrValidValue](val key: Key, val value: Value) {
+case object NamespaceAndNameReader extends StringReader[NamespaceAndName] {
 
-  def result(parent: Path): ImplPersistedRecordProperty[Key, Value] = ImplPersistedRecordProperty(parent, key, value)
+  def read(x: String)(implicit ec: ExecutionContext): Future[NamespaceAndName] = Future.successful( NamespaceAndName(x) )
 
 }
