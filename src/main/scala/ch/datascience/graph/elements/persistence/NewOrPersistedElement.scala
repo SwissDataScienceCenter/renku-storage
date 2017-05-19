@@ -19,6 +19,7 @@
 package ch.datascience.graph.elements.persistence
 
 import ch.datascience.graph.elements._
+import ch.datascience.graph.elements.persistence.impl.ImplPersistedRecordProperty
 
 /**
   * Created by johann on 11/05/17.

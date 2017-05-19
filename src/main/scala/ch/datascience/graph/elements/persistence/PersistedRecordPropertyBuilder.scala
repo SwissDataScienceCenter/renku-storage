@@ -16,24 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.persistence
 
-import ch.datascience.graph.elements.persistence._
-import ch.datascience.graph.elements.MultiProperties
+import ch.datascience.graph.elements.{BoxedOrValidValue, Property}
+import ch.datascience.graph.elements.persistence.impl.ImplPersistedRecordProperty
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 18/05/17.
   */
-case class ImplPersistedVertex[
-+Id,
-TypeId,
-Key,
-+Value,
-MetaKey,
-+MetaValue,
-+PropId
-](
-  id: Id,
-  types: Set[TypeId],
-  properties: MultiProperties[Key, Value, ImplPersistedMultiRecordRichProperty[PropId, Key, Value, MetaKey, MetaValue]]
-) extends PersistedVertex[Id, TypeId, Key, Value, MetaKey, MetaValue, ImplPersistedRecordProperty[MetaKey, MetaValue], PropId, ImplPersistedMultiRecordRichProperty[PropId, Key, Value, MetaKey, MetaValue]]
+class PersistedRecordPropertyBuilder[+Key, +Value : BoxedOrValidValue](val key: Key, val value: Value) {
+
+  def result(parent: Path): ImplPersistedRecordProperty[Key, Value] = ImplPersistedRecordProperty(parent, key, value)
+
+}
