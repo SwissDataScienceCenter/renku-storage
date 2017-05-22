@@ -18,8 +18,6 @@
 
 package ch.datascience.graph
 
-import scala.language.higherKinds
-
 /**
   * Created by johann on 28/04/17.
   */
@@ -32,7 +30,7 @@ package object elements {
     * @tparam Value value type
     * @tparam Prop  property type
     */
-  type Properties[Key, +Value, +Prop <: Property[Key, Value, Prop]] = Map[Key, Property[Key, Value, Prop]]
+  type Properties[Key, +Value, +Prop <: Property[Key, Value]] = Map[Key, Prop]
 
   /**
     * Type used for multi-properties
@@ -41,7 +39,6 @@ package object elements {
     * @tparam Value value type
     * @tparam Prop  property type
     */
-  type MultiProperties[Key, +Value, +Prop <: Property[Key, Value, Prop]] = Map[Key, MultiPropertyValue[Key, Value,
-    Property[Key, Value, Prop]]]
+  type MultiProperties[Key, +Value, +Prop <: Property[Key, Value]] = Map[Key, MultiPropertyValue[Key, Value, Prop]]
 
 }

@@ -20,9 +20,7 @@ package ch.datascience
 package graph
 package elements
 
-import ch.datascience.graph.types.{Bottom, GraphType, RecordType}
-
-import scala.language.higherKinds
+import ch.datascience.graph.types.{GraphType, RecordType}
 
 /**
   * Base trait for records, i.e. elements that hold properties
@@ -33,7 +31,7 @@ import scala.language.higherKinds
   * @tparam Value value type
   * @tparam Prop  property type
   */
-trait Record[Key, +Value, +Prop <: Property[Key, Value, Prop]] extends Element {
+trait Record[Key, +Value, +Prop <: Property[Key, Value]] extends Element {
 
   def properties: Properties[Key, Value, Prop]
 

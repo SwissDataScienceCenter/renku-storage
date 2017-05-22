@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.values
 
 import ch.datascience.graph.types.DataType
 

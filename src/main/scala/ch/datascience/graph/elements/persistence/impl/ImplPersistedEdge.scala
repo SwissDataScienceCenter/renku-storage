@@ -18,7 +18,7 @@
 
 package ch.datascience.graph.elements.persistence.impl
 
-import ch.datascience.graph.elements.{BoxedValue, MultiProperties}
+import ch.datascience.graph.elements.Properties
 import ch.datascience.graph.elements.persistence.PersistedEdge
 
 /**
@@ -32,5 +32,5 @@ case class ImplPersistedEdge[
   id: Id,
   from: Id,
   to: Id,
-  properties: MultiProperties[Key, Value, ImplPersistedRecordProperty[Key, Value]]
+  properties: Properties[Key, Value, ImplPersistedRecordProperty[Key, Value]]
 ) extends PersistedEdge[Id, Key, Value, ImplPersistedRecordProperty[Key, Value], Id]

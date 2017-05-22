@@ -16,17 +16,32 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.naming
+
+import scala.util.matching.Regex
+import scala.util.{Success, Try}
 
 /**
-  * Basic trait for rich property
-  *
-  * @tparam Key       key type
-  * @tparam Value     value type
-  * @tparam MetaKey   meta-key type
-  * @tparam MetaValue meta-value-type
-  * @tparam MetaProp  meta-property type
+  * Created by jmt on 15/05/17.
   */
-trait RichPropertyBase[+Key, +Value, MetaKey, +MetaValue, +MetaProp <: Property[MetaKey, MetaValue, MetaProp]]
-  extends PropertyBase[Key, Value]
-    with Record[MetaKey, MetaValue, MetaProp]
+object Name {
+
+  lazy val namePattern: Regex = raw"([-A-Za-z0-9_/]+)".r
+
+  def apply(name: String): String = {
+    require(nameIsValid(name), s"Invalid name: '$name' (Pattern: $namePattern)")
+    name
+  }
+
+  def unapply(name: String): Option[String] = Try( apply(name) ) match {
+    case Success(ns) => Some(ns)
+    case _           => None
+  }
+
+  def nameIsValid(name: String): Boolean = name match {
+    case namePattern(_) => true
+    case _              => false
+  }
+
+}
+

@@ -16,11 +16,25 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.bases
 
-import ch.datascience.graph.HasKey
+import ch.datascience.graph.types.DataType
+import ch.datascience.graph.values.BoxedOrValidValue
 
 /**
-  * Created by johann on 30/04/17.
+  * Base trait for elements that hold a value.
+  *
+  * @tparam Value value type
   */
-trait PropertyBase[+Key, +Value] extends HasKey[Key] with HasValueBase[Value]
+trait HasValue[+Value] {
+
+  /**
+    * The value
+    *
+    * @return the value
+    */
+  def value: Value
+
+  def dataType(implicit e: BoxedOrValidValue[Value]): DataType = e.dataType(value)
+
+}

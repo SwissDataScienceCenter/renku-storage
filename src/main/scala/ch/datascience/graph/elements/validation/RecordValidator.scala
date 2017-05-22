@@ -18,8 +18,9 @@
 
 package ch.datascience.graph.elements.validation
 
-import ch.datascience.graph.elements.{BoxedOrValidValue, Property, Record}
+import ch.datascience.graph.elements.{Property, Record}
 import ch.datascience.graph.types.{PropertyKey, RecordType}
+import ch.datascience.graph.values.BoxedOrValidValue
 
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Created by johann on 08/05/17.
   */
-trait RecordValidator[Key, Value, Prop <: Property[Key, Value, Prop]] { this: PropertyValidator[Key, Value, Prop] =>
+trait RecordValidator[Key, Value, Prop <: Property[Key, Value]] { this: PropertyValidator[Key, Value, Prop] =>
 
   def validateRecord(
     record: Record[Key, Value, Prop]

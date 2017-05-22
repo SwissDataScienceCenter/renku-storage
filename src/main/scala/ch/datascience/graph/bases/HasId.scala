@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.bases
 
 /**
-  * Basic trait for elements that hold a value.
+  * Basic trait for elements that have an id.
   *
-  * @tparam Value value type
+  * @tparam Id id type for the Element
   */
-trait HasValueBase[+Value] {
+trait HasId[+Id] {
 
   /**
-    * The value
+    * The id
     *
-    * @return the value
+    * @return the id
     */
-  def value: Value
+  def id: Id
 
 }
