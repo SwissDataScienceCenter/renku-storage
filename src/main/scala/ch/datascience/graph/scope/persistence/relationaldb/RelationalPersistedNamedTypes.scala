@@ -18,7 +18,7 @@
 
 package ch.datascience.graph.scope.persistence.relationaldb
 
-import ch.datascience.graph.NamespaceAndName
+import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.scope.persistence.PersistedNamedTypes
 import ch.datascience.graph.types.NamedType
 
