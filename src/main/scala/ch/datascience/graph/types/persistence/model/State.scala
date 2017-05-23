@@ -16,19 +16,12 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types.persistence.model.relational
+package ch.datascience.graph.types.persistence.model
 
+import java.time.Instant
 import java.util.UUID
 
-import ch.datascience.graph.types.persistence.model.EntityType
-
 /**
-  * Created by johann on 09/05/17.
+  * Created by johann on 17/03/17.
   */
-abstract class RowAbstractEntity extends RowType {
-
-  val id: UUID
-
-  val entityType: EntityType
-
-}
+case class State(id: Option[Long], entityId: UUID, state: EntityState, timestamp: Instant) extends Row

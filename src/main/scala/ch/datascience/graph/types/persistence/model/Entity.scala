@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types.persistence.model.relational
+package ch.datascience.graph.types.persistence.model
 
 import java.util.UUID
 
 /**
-  * Created by johann on 12/05/17.
+  * Created by johann on 17/03/17.
   */
-case class RowNamedTypeProperty(namedTypeId: UUID, propertyKeyId: UUID)
+case class Entity(id: UUID, entityType: EntityType) extends Row

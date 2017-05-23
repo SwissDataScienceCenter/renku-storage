@@ -16,9 +16,14 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types.persistence.model.relational
+package ch.datascience.graph.types.persistence.model
 
 /**
-  * Base trait for classes that are stored in relational tables
+  * Created by johann on 23/05/17.
   */
-trait RowType
+trait RichAbstractEntity[+A <: AbstractEntity] extends AbstractEntity {
+  this: A =>
+
+  def unlifted: A = this
+
+}
