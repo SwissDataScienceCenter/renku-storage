@@ -18,6 +18,8 @@
 
 package ch.datascience.graph.values
 
+import java.util.UUID
+
 import ch.datascience.graph.types.DataType
 
 /**
@@ -86,6 +88,12 @@ object ValidValue {
     def dataType = DataType.Double
 
     def boxed[U <: Double](value: U): BoxedValue = BoxedValue(value)
+  }
+
+  implicit object UuidIsValid extends ValidValue[UUID] {
+    def dataType = DataType.UUID
+
+    def boxed[U <: UUID](value: U): BoxedValue = BoxedValue(value)
   }
 
   implicit object NothingIsValid extends ValidValue[Nothing] {

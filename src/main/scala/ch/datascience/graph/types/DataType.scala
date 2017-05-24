@@ -18,6 +18,8 @@
 
 package ch.datascience.graph.types
 
+import java.util.UUID
+
 /**
   * Created by johann on 09/04/17.
   */
@@ -31,7 +33,7 @@ sealed abstract class DataType(val name: String) {
 
 object DataType {
 
-  val dataTypes: Seq[DataType] = Seq(String, Character, Boolean, Byte, Short, Integer, Long, Float, Double)
+  val dataTypes: Seq[DataType] = Seq(String, Character, Boolean, Byte, Short, Integer, Long, Float, Double, UUID)
 
   def valueOf(name: String): DataType = DataType.apply(name)
 
@@ -45,6 +47,7 @@ object DataType {
     case Long.name      => Long
     case Float.name     => Float
     case Double.name    => Double
+    case UUID.name      => UUID
   }
 
   def getDataType(x: Any): DataType = x match {
@@ -57,6 +60,7 @@ object DataType {
     case _: Long    => DataType.Long
     case _: Float   => DataType.Float
     case _: Double  => DataType.Double
+    case _: UUID    => DataType.UUID
     case _          => throw new IllegalArgumentException(s"Data type unknown for: $x")
   }
 
@@ -110,6 +114,12 @@ object DataType {
 
   case object Double extends DataType(name = "double") {
     override type ScalaType = java.lang.Double
+
+    override def javaClass(): Class[ScalaType] = classOf[ScalaType]
+  }
+
+  case object UUID extends DataType(name = "uuid") {
+    override type ScalaType = java.util.UUID
 
     override def javaClass(): Class[ScalaType] = classOf[ScalaType]
   }
