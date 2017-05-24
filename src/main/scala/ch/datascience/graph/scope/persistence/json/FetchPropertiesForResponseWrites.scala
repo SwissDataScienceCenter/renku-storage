@@ -16,16 +16,21 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.json
+package ch.datascience.graph.scope.persistence.json
 
-import ch.datascience.graph.naming.NamespaceAndName
-import play.api.libs.json.{JsString, Writes}
+import ch.datascience.graph.types.PropertyKey
+import ch.datascience.graph.types.json.PropertyKeyWrites
+import play.api.libs.json.{JsString, JsValue, Writes}
 
 /**
-  * Created by johann on 17/05/17.
+  * Created by johann on 23/05/17.
   */
-object NamespaceAndNameWrites extends Writes[NamespaceAndName] {
+class FetchPropertiesForResponseWrites[Key : Writes] extends Writes[Map[Key, PropertyKey[Key]]] {
 
-  def writes(namespaceAndName: NamespaceAndName): JsString = JsString(namespaceAndName.asString)
+  def writes(definitions: Map[Key, PropertyKey[Key]]): JsValue = seqWrites.writes(definitions.values)
+
+  private[this] lazy val seqWrites = implicitly[Writes[Iterable[PropertyKey[Key]]]]
+
+  private[this] implicit lazy val propertyKeyWrites: Writes[PropertyKey[Key]] = new PropertyKeyWrites[Key]
 
 }

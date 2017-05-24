@@ -16,26 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.scope.persistence.remote
+package ch.datascience.graph.naming.json
 
-import ch.datascience.graph.naming.json.NamespaceAndNameReads
 import ch.datascience.graph.naming.NamespaceAndName
-
-import scala.concurrent.ExecutionContext
+import play.api.libs.json.{JsString, Writes}
 
 /**
   * Created by johann on 17/05/17.
   */
-class StandardRemotePersistenceLayer(override val client: StandardClient)(implicit override val executionContext: ExecutionContext)
-  extends RemotePersistenceLayer[NamespaceAndName, NamespaceAndName](client)(NamespaceAndNameReads, NamespaceAndNameReads, executionContext)
+object NamespaceAndNameWrites extends Writes[NamespaceAndName] {
 
-object StandardRemotePersistenceLayer {
-
-  def makeStandaloneRemotePersistenceLayer(baseUrl: String): StandardRemotePersistenceLayer = {
-    import scala.concurrent.ExecutionContext.Implicits._
-
-    val client = StandardClient.makeStandaloneClient(baseUrl)
-    new StandardRemotePersistenceLayer(client)
-  }
+  def writes(namespaceAndName: NamespaceAndName): JsString = JsString(namespaceAndName.asString)
 
 }
