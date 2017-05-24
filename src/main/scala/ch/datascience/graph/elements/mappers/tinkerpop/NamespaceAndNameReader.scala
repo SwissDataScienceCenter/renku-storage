@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mappers
+package ch.datascience.graph.elements.mappers.tinkerpop
 
 import ch.datascience.graph.naming.NamespaceAndName
 

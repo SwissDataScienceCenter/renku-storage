@@ -16,17 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.naming.json
+package ch.datascience.graph.elements.mappers.tinkerpop
 
-import ch.datascience.graph.elements.json.StringWrites
-import ch.datascience.graph.naming.NamespaceAndName
-import play.api.libs.json.{JsString, Writes}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Created by johann on 17/05/17.
+  * Created by johann on 19/05/17.
   */
-object NamespaceAndNameWrites extends StringWrites[NamespaceAndName] {
+trait Reader[-From, +To] {
 
-  def writes(namespaceAndName: NamespaceAndName): JsString = JsString(namespaceAndName.asString)
+  def read(x: From)(implicit ec: ExecutionContext): Future[To]
 
 }

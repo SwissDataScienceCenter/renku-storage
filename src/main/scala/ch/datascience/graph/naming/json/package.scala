@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mappers
+package ch.datascience.graph.naming
 
-import scala.concurrent.{ExecutionContext, Future}
+import play.api.libs.json.Format
 
 /**
-  * Created by johann on 19/05/17.
+  * Created by johann on 24/05/17.
   */
-trait Reader[-From, +To] {
+package object json {
 
-  def read(x: From)(implicit ec: ExecutionContext): Future[To]
+  implicit lazy val NamespaceAndNameFormat: Format[NamespaceAndName] = Format(NamespaceAndNameReads, NamespaceAndNameWrites)
 
 }

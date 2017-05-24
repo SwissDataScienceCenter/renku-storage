@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.naming.json
+package ch.datascience.graph.elements.json
 
-import ch.datascience.graph.elements.json.StringWrites
-import ch.datascience.graph.naming.NamespaceAndName
-import play.api.libs.json.{JsString, Writes}
+import ch.datascience.graph.elements.Property
+import play.api.libs.json.{JsValue, Writes}
 
 /**
-  * Created by johann on 17/05/17.
+  * Created by johann on 24/05/17.
   */
-object NamespaceAndNameWrites extends StringWrites[NamespaceAndName] {
+class LeafPropertyWrites[Key, Value : Writes, Prop <: Property[Key, Value]] extends Writes[Prop] {
 
-  def writes(namespaceAndName: NamespaceAndName): JsString = JsString(namespaceAndName.asString)
+  // Just write the value
+  def writes(property: Prop): JsValue = implicitly[Writes[Value]].writes(property.value)
 
 }

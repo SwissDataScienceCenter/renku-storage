@@ -16,17 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.naming.json
+package ch.datascience.graph.values
 
-import ch.datascience.graph.elements.json.StringWrites
-import ch.datascience.graph.naming.NamespaceAndName
-import play.api.libs.json.{JsString, Writes}
+import play.api.libs.json.Format
 
 /**
-  * Created by johann on 17/05/17.
+  * Created by johann on 24/05/17.
   */
-object NamespaceAndNameWrites extends StringWrites[NamespaceAndName] {
+package object json {
 
-  def writes(namespaceAndName: NamespaceAndName): JsString = JsString(namespaceAndName.asString)
+  implicit val boxedValueFormat: Format[BoxedValue] = Format(BoxedValueReads, BoxedValueWrites)
 
 }
