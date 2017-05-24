@@ -61,7 +61,7 @@ trait RelationalPersistedProperties extends PersistedProperties[NamespaceAndName
       iterable = for {
         (key, opt) <- propertyKeys
         propertyKey <- opt
-      } yield key -> ??? //propertyKey.simpleCopy
+      } yield key -> propertyKey.toStandardPropertyKey
     } yield iterable.toMap
   }
 
