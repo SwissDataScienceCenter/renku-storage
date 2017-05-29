@@ -16,21 +16,22 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements.persisted.impl
+
+import ch.datascience.graph.elements.persisted.{Path, PersistedMultiRecordRichProperty, PersistedRecordProperty}
+import ch.datascience.graph.values.BoxedOrValidValue
 
 /**
-  * Basic trait for elements that have a path.
-  * Usually children elements of the ones with an id.
-  *
-  * @tparam P path type for the Element
+  * Created by johann on 11/05/17.
   */
-trait HasPath[+P <: Path] {
+case class ImplPersistedMultiRecordRichProperty[I](
+  parent: Path,
+  id: I,
+  key: PersistedMultiRecordRichProperty#Key,
+  value: PersistedMultiRecordRichProperty#Value,
+  properties: Map[PersistedMultiRecordRichProperty#Prop#Key, PersistedMultiRecordRichProperty#Prop]
+) extends PersistedMultiRecordRichProperty {
 
-  /**
-    * The path
-    *
-    * @return the path
-    */
-  def path: P
+  type Id = I
 
 }

@@ -16,21 +16,20 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.persisted.impl
 
-import ch.datascience.graph.elements.Properties
-import ch.datascience.graph.elements.persistence.PersistedEdge
+import ch.datascience.graph.elements.persisted.{Path, PersistedRecordProperty, PersistedRecordRichProperty}
+import ch.datascience.graph.values.BoxedOrValidValue
 
 /**
-  * Created by jeberle on 15.05.17.
+  * Created by johann on 11/05/17.
   */
-case class ImplPersistedEdge[
-  +Id,
-  Key,
-  +Value
-](
-  id: Id,
-  from: Id,
-  to: Id,
-  properties: Properties[Key, Value, ImplPersistedRecordProperty[Key, Value]]
-) extends PersistedEdge[Id, Key, Value, ImplPersistedRecordProperty[Key, Value], Id]
+//MetaProp <: PersistedRecordProperty[Key, MetaValue]
+case class ImplPersistedRecordRichProperty(
+  parent: Path,
+  key: PersistedRecordRichProperty#Key,
+  value: PersistedRecordRichProperty#Value,
+  properties: Map[PersistedRecordRichProperty#Prop#Key, PersistedRecordRichProperty#Prop]
+) extends PersistedRecordRichProperty {
+
+}

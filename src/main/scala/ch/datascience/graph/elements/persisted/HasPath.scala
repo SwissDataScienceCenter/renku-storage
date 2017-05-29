@@ -16,24 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence
+package ch.datascience.graph.elements.persisted
 
-/**
-  * Created by johann on 11/05/17.
-  */
-sealed abstract class Path
+///**
+//  * Basic trait for elements that have a path.
+//  * Usually children elements of the ones with an id.
+//  *
+//  * @tparam P path type for the Element
+//  */
+trait HasPath {
 
-final case class VertexPath[+VertexId](vertexId: VertexId) extends Path
+  type PathType <: Path
 
-final case class EdgePath[+VertexId, +EdgeId](fromVertex: VertexId, edgeId: EdgeId) extends Path
+  /**
+    * The path
+    *
+    * @return the path
+    */
+  def path: PathType
 
-sealed abstract class PropertyPath extends Path {
-  def parent: Path
 }
-
-case class PropertyPathFromRecord[+Key](parent: Path, key: Key) extends PropertyPath
-
-case class PropertyPathFromMultiRecord[+PropertyId](
-  parent: Path,
-  propertyId: PropertyId
-) extends PropertyPath

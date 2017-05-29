@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.persisted
 
-import ch.datascience.graph.elements.persistence.{NewMultiRecordProperty, Path}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.RichProperty
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 29/05/17.
   */
-case class ImplNewMultiRecordProperty[+Key, +Value: BoxedOrValidValue](
-  parent: Path,
-  tempId: Int,
-  key: Key,
-  value: Value
-) extends NewMultiRecordProperty[Key, Value]
+trait PersistedRecordRichProperty
+  extends PersistedRecordProperty
+    with RichProperty {
+
+  final type Prop = PersistedRecordProperty
+
+}

@@ -16,16 +16,11 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.new_
 
-import ch.datascience.graph.elements.persistence.{NewRecordProperty, Path}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.Element
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 29/05/17.
   */
-case class ImplNewRecordProperty[+Key, +Value: BoxedOrValidValue](
-  parent: Path,
-  key: Key,
-  value: Value
-) extends NewRecordProperty[Key, Value]
+trait NewElement extends Element

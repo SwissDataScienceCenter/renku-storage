@@ -16,16 +16,24 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.simple
-
-import ch.datascience.graph.elements.{MultiProperties, Vertex}
-import ch.datascience.graph.values.BoxedValue
-
-/**
-  * Created by johann on 27/04/17.
-  */
-final case class SimpleVertex[TypeId, Key](
-  types     : Set[TypeId],
-  properties: MultiProperties[Key, BoxedValue, SimpleRichProperty[Key, BoxedValue, BoxedValue]]
-) extends Vertex[TypeId, Key, BoxedValue, BoxedValue, SimpleProperty[Key, BoxedValue],
-  SimpleRichProperty[Key, BoxedValue, BoxedValue]]
+//package ch.datascience.graph.elements.new_.impl
+//
+//import ch.datascience.graph.elements.detached.DetachedRichProperty
+//import ch.datascience.graph.elements.new_.NewVertex
+//import ch.datascience.graph.elements.{MultiPropertyValue, Property, RichProperty}
+//import ch.datascience.graph.values.BoxedOrValidValue
+//
+///**
+//  * Created by jeberle on 15.05.17.
+//  */
+//case class ImplNewVertex[T, K, V: BoxedOrValidValue](
+//   tempId: NewVertex#TempId,
+//   types: Set[T],
+//   properties: Map[K, MultiPropertyValue[DetachedRichProperty[K, V]]]
+// ) extends NewVertex {
+//
+// type TypeId = T
+//
+// type Prop = DetachedRichProperty[K, V]
+//
+//}

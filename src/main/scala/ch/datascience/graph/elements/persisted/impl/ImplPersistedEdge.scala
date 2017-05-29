@@ -16,21 +16,19 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.persisted.impl
 
-import ch.datascience.graph.elements.Properties
-import ch.datascience.graph.elements.persistence.{NewEdge, NewVertex}
+import ch.datascience.graph.Constants.{EdgeId, VertexId}
+import ch.datascience.graph.elements.persisted.{PersistedEdge, PersistedRecordProperty, PersistedVertex}
+import ch.datascience.graph.values.BoxedOrValidValue
 
 /**
   * Created by jeberle on 15.05.17.
   */
-case class ImplNewEdge[
-  +Id,
-  Key,
-  +Value
-](
-   tempId: NewEdge[Nothing, Nothing, Nothing, Nothing]#TempId,
-   from: Either[Id, NewVertex[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing]#TempId],
-   to: Either[Id, NewVertex[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing]#TempId],
-   properties: Properties[Key, Value, ImplNewRecordProperty[Key, Value]]
- ) extends NewEdge[Id, Key, Value, ImplNewRecordProperty[Key, Value]]
+case class ImplPersistedEdge[I, VI, K](
+  id: EdgeId,
+  from: VertexId,
+  to: VertexId,
+  types: Set[PersistedEdge#TypeId],
+  properties: Map[PersistedEdge#Prop#Key, PersistedEdge#Prop]
+) extends PersistedEdge

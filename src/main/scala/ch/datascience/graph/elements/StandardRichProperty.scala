@@ -16,19 +16,13 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph
-
-import ch.datascience.graph.naming.NamespaceAndName
-
-/**
-  * Created by johann on 23/05/17.
-  */
-package object types {
-
-  type StandardTypeKey = NamespaceAndName
-
-  type StandardPropKey = NamespaceAndName
-
-  type StandardPropertyKey = PropertyKey[StandardPropKey]
-
-}
+//package ch.datascience.graph.elements
+//
+///**
+//  * Created by johann on 29/05/17.
+//  */
+//trait StandardRichProperty extends RichProperty with StandardProperty {
+//
+//  type Prop <: StandardProperty
+//
+//}

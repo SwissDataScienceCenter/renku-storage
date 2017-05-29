@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.new_
 
-import ch.datascience.graph.elements.persistence.{Path, PersistedMultiRecordProperty}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.Vertex
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 29/05/17.
   */
-case class ImplPersistedMultiRecordProperty[+Id, +Key, +Value: BoxedOrValidValue](
-  parent: Path,
-  id: Id,
-  key: Key,
-  value: Value
-) extends PersistedMultiRecordProperty[Id, Key, Value]
+trait NewVertex extends Vertex with NewElement {
+
+  type TempId = Int
+
+  def tempId: TempId
+
+}

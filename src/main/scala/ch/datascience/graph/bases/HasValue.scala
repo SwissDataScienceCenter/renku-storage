@@ -23,10 +23,13 @@ import ch.datascience.graph.values.BoxedOrValidValue
 
 /**
   * Base trait for elements that hold a value.
-  *
-  * @tparam Value value type
   */
-trait HasValue[+Value] {
+trait HasValue {
+
+  /**
+    * type of the value
+    */
+  type Value
 
   /**
     * The value

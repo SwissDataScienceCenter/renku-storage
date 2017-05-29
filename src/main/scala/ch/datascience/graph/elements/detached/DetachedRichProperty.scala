@@ -16,16 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.detached
 
-import ch.datascience.graph.elements.persistence.{Path, PersistedRecordProperty}
+import ch.datascience.graph.elements.RichProperty
 import ch.datascience.graph.values.BoxedOrValidValue
 
+
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 28/04/17.
   */
-case class ImplPersistedRecordProperty[+Key, +Value: BoxedOrValidValue](
-  parent: Path,
-  key: Key,
-  value: Value
-) extends PersistedRecordProperty[Key, Value]
+trait DetachedRichProperty extends RichProperty {
+
+  final type Prop = DetachedProperty
+
+//  val key: Key
+//
+//  val value: Value
+//
+//  val properties: Properties
+
+}

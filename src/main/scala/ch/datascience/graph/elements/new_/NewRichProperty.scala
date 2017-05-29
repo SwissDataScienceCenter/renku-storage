@@ -16,18 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.new_
 
-import ch.datascience.graph.elements.Properties
-import ch.datascience.graph.elements.persistence.{Path, PersistedRecordProperty, PersistedRecordRichProperty}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.RichProperty
+import ch.datascience.graph.elements.detached.DetachedProperty
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 29/05/17.
   */
-case class ImplPersistedRecordRichProperty[Key, +Value: BoxedOrValidValue, +MetaValue: BoxedOrValidValue, +MetaProp <: PersistedRecordProperty[Key, MetaValue]](
-  parent: Path,
-  key: Key,
-  value: Value,
-  properties: Properties[Key, MetaValue, MetaProp]
-) extends PersistedRecordRichProperty[Key, Value, MetaValue, MetaProp]
+trait NewRichProperty extends NewProperty with RichProperty {
+
+  type Prop <: DetachedProperty
+
+}

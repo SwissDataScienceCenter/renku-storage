@@ -16,20 +16,11 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.detached.impl
 
-import ch.datascience.graph.elements.persistence.{NewMultiRecordProperty, Path}
-import ch.datascience.graph.elements.{Properties, RichProperty}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.detached.DetachedProperty
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 29/05/17.
   */
-case class ImplNewMultiRecordRichProperty[Key, +Value: BoxedOrValidValue, +MetaValue: BoxedOrValidValue](
-  parent: Path,
-  tempId: Int,
-  key: Key,
-  value: Value,
-  properties: Properties[Key, MetaValue, ImplNewRecordProperty[Key, MetaValue]]
-) extends NewMultiRecordProperty[Key, Value]
-  with RichProperty[Key, Value, MetaValue, ImplNewRecordProperty[Key, MetaValue]]
+case class ImplDetachedLeafProperty(key: DetachedProperty#Key, value: DetachedProperty#Value) extends DetachedProperty

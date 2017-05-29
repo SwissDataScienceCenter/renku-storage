@@ -16,19 +16,16 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types
-
-/**
-  * Created by johann on 23/05/17.
-  */
-object StandardPropertyKey {
-
-  def apply(key: StandardPropKey, dataType: DataType, cardinality: Cardinality): StandardPropertyKey = {
-    PropertyKey.apply[StandardPropKey](key, dataType, cardinality)
-  }
-
-  def unapply(propertyKey: StandardPropertyKey): Option[(StandardPropKey, DataType, Cardinality)] = {
-    PropertyKey.unapply[StandardPropKey](propertyKey)
-  }
-
-}
+//package ch.datascience.graph.elements
+//
+//import ch.datascience.graph.Constants.{StandardKey, StandardValue}
+//
+///**
+//  * Created by johann on 29/05/17.
+//  */
+//trait StandardProperty extends Property {
+//
+//  final type Key = StandardKey
+//
+//  final type Value = StandardValue
+//}

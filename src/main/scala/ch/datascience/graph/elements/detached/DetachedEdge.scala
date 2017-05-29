@@ -16,13 +16,25 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.simple
+package ch.datascience.graph.elements.detached
 
-import ch.datascience.graph.elements.Property
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.{Edge, Vertex}
 
 /**
-  * Created by johann on 27/04/17.
+  * Created by johann on 29/05/17.
   */
-final case class SimpleProperty[+Key, +Value: BoxedOrValidValue](key: Key, value: Value)
-  extends Property[Key, Value]
+trait DetachedEdge extends Edge {
+
+  final type VertexReference = Vertex
+
+  final type Prop = DetachedProperty
+
+//  val from: VertexReference
+//
+//  val to: VertexReference
+//
+//  val types: Set[TypeId]
+//
+//  val properties: Properties
+
+}

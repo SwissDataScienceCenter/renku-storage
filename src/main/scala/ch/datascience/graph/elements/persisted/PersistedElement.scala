@@ -16,19 +16,11 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persistence.impl
+package ch.datascience.graph.elements.persisted
 
-import ch.datascience.graph.elements.Properties
-import ch.datascience.graph.elements.persistence.{Path, PersistedMultiRecordRichProperty, PersistedRecordProperty}
-import ch.datascience.graph.values.BoxedOrValidValue
+import ch.datascience.graph.elements.Element
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 26/05/17.
   */
-case class ImplPersistedMultiRecordRichProperty[+Id, Key, +Value: BoxedOrValidValue, +MetaValue: BoxedOrValidValue](
-  parent: Path,
-  id: Id,
-  key: Key,
-  value: Value,
-  properties: Properties[Key, MetaValue, PersistedRecordProperty[Key, MetaValue]]
-) extends PersistedMultiRecordRichProperty[Id, Key, Value, MetaValue, PersistedRecordProperty[Key, MetaValue]]
+trait PersistedElement extends Element with HasPath
