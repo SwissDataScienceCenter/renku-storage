@@ -18,9 +18,10 @@
 
 package ch.datascience.graph.elements.persisted
 
+import ch.datascience.graph.Constants
 import ch.datascience.graph.bases.HasId
 import ch.datascience.graph.elements.Vertex
-import ch.datascience.graph.Constants
+import ch.datascience.graph.elements.persisted.impl.ImplPersistedVertex
 
 /**
   * Created by johann on 29/05/17.
@@ -34,6 +35,23 @@ trait PersistedVertex extends Vertex with PersistedElement with HasId {
   final type Prop = PersistedMultiRecordRichProperty
 
   final def path: VertexPath[Id] = VertexPath(id)
+
+}
+
+object PersistedVertex {
+
+  def apply(
+    id: PersistedVertex#Id,
+    types: Set[PersistedVertex#TypeId],
+    properties: PersistedVertex#Properties
+  ): PersistedVertex = ImplPersistedVertex(id, types, properties)
+
+  def unapply(vertex: PersistedVertex): Option[(PersistedVertex#Id, Set[PersistedVertex#TypeId], PersistedVertex#Properties)] = {
+    if (vertex eq null)
+      None
+    else
+      Some(vertex.id, vertex.types, vertex.properties)
+  }
 
 }
 
