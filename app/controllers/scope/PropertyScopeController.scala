@@ -28,7 +28,7 @@ import injected.ScopeBean
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import ch.datascience.graph.scope.persistence.json._
-import ch.datascience.graph.types.StandardPropKey
+import ch.datascience.graph.Constants
 import play.api.mvc._
 
 import scala.concurrent.Future
@@ -39,7 +39,7 @@ import scala.util.Try
   */
 class PropertyScopeController @Inject()(protected val scopeLayer: ScopeBean) extends Controller with JsonComponent {
 
-  protected val scope: PropertyScope[NamespaceAndName] = scopeLayer
+  protected val scope: PropertyScope = scopeLayer
 
 //  implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.defaultContext
 
@@ -65,7 +65,7 @@ class PropertyScopeController @Inject()(protected val scopeLayer: ScopeBean) ext
     }
   }
 
-  def getPropertiesFor: Action[Set[StandardPropKey]] = Action.async(bodyParseJson[Set[StandardPropKey]]) { implicit request =>
+  def getPropertiesFor: Action[Set[Constants.Key]] = Action.async(bodyParseJson[Set[Constants.Key]]) { implicit request =>
     val keys = request.body
     for {
       propertyKeys <- scope.getPropertiesFor(keys)
