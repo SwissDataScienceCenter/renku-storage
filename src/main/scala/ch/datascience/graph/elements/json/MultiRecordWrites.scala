@@ -16,37 +16,20 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.json
 
-import ch.datascience.graph.Constants
-import ch.datascience.graph.bases.{HasKey, HasValue}
+import ch.datascience.graph.elements.{MultiPropertyValue, MultiRecord, Property}
+import play.api.libs.json.{JsPath, JsValue, Writes}
 
-trait Property extends HasKey with HasValue with Element {
+/**
+  * Created by johann on 31/05/17.
+  */
+class MultiRecordWrites[P <: Property : Writes] extends Writes[MultiRecord { type Prop <: P }] {
 
-  final type Key = Constants.Key
+  def writes(record: MultiRecord { type Prop <: P }): JsValue = (JsPath \ "properties").write[record.Properties].writes(record.properties)
 
-  final type Value = Constants.Value
+  private[this] implicit lazy val mapWrites: Writes[Map[P#Key, MultiPropertyValue[P]]] = KeyFormat.mapWrites[MultiPropertyValue[P]](multiPropertyValueWrites)
 
-}
-
-object Property {
-
-  def unapply(prop: Property): Option[(Property#Key, Property#Value)] = {
-    if (prop eq null)
-      None
-    else
-      Some(prop.key, prop.value)
-  }
+  private[this] lazy val multiPropertyValueWrites: MultiPropertyValueWrites[P] = new MultiPropertyValueWrites[P]
 
 }
-
-///**
-//  * Base trait for property
-//  *
-//  * @tparam Key   key type
-//  * @tparam Value value type
-//  */
-//trait Property[+Key, +Value]
-// extends HasKey[Key]
-//   with HasValue[Value]
-//   with Element

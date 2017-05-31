@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.json
+package ch.datascience.graph.naming.json
 
 import play.api.libs.json._
 

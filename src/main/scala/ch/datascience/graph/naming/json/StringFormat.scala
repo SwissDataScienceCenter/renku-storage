@@ -16,17 +16,20 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.json
+package ch.datascience.graph.naming.json
 
-import ch.datascience.graph.elements.Property
-import play.api.libs.json.{JsValue, Writes}
+import play.api.libs.json.{Format, JsResult, JsString}
 
 /**
   * Created by johann on 24/05/17.
   */
-class LeafPropertyWrites(implicit w: Writes[Property#Value]) extends Writes[Property] {
+trait StringFormat[Key] extends Format[Key] with StringReads[Key] with StringWrites[Key]
 
-  // Just write the value
-  def writes(property: Property): JsValue = w.writes(property.value)
+object StringFormat {
 
+  def apply[Key](r: StringReads[Key], w: StringWrites[Key]): StringFormat[Key] = new StringFormat[Key] {
+    def reads(jsString: JsString): JsResult[Key] = r.reads(jsString)
+    def writes(key: Key): JsString = w.writes(key)
+  }
+  
 }

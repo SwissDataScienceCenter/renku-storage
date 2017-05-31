@@ -19,21 +19,28 @@
 package ch.datascience.graph.elements.json
 
 import ch.datascience.graph.elements.{Property, Record, RichProperty}
-import play.api.libs.json.{JsPath, JsValue, Writes}
 import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, JsResult, JsValue, Reads}
 
 /**
-  * Created by johann on 24/05/17.
+  * Created by johann on 30/05/17.
   */
-class RichPropertyWrites[P <: Property : Writes] extends Writes[RichProperty { type Prop <: P }] {
+class RichPropertyReads[P <: Property : Reads] extends Reads[RichProperty { type Prop = P }] {
 
-  def writes(prop: RichProperty {type Prop <: P}): JsValue = self.writes(prop)
+  def reads(json: JsValue): JsResult[RichProperty {type Prop = P}] = self.reads(json)
 
-  private[this] lazy val self: Writes[RichProperty { type Prop <: P }] = (
-    JsPath.write[Property](PropertyFormat) and
-    JsPath.write[Record { type Prop <: P }](recordWrites)
-  ) { prop => (prop, prop) }
+  private[this] lazy val self: Reads[RichProperty { type Prop = P }] = (
+    JsPath.read[Property](PropertyFormat) and
+      JsPath.read[Record { type Prop = P }](recordReads)
+    ) { (prop, record) =>
+    new RichProperty {
+      type Prop = P
+      def key: Key = prop.key
+      def value: Value = prop.value
+      def properties: Properties = record.properties
+    }
+  }
 
-  private[this] lazy val recordWrites = new RecordWrites[P]
+  private[this] lazy val recordReads = new RecordReads[P]
 
 }

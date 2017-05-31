@@ -16,37 +16,24 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.json
 
-import ch.datascience.graph.Constants
-import ch.datascience.graph.bases.{HasKey, HasValue}
+import ch.datascience.graph.elements.{RichProperty, Vertex}
+import play.api.libs.json.{JsResult, JsValue, Reads}
 
-trait Property extends HasKey with HasValue with Element {
+/**
+  * Created by johann on 31/05/17.
+  */
+class VertexReads[P <: RichProperty : Reads] extends Reads[Vertex { type Prop = P }] {
 
-  final type Key = Constants.Key
-
-  final type Value = Constants.Value
-
-}
-
-object Property {
-
-  def unapply(prop: Property): Option[(Property#Key, Property#Value)] = {
-    if (prop eq null)
-      None
-    else
-      Some(prop.key, prop.value)
+  def reads(json: JsValue): JsResult[Vertex {type Prop = P}] = for {
+    record <- recordReads.reads(json)
+  } yield new Vertex {
+    type Prop = P
+    def types: Set[TypeId] = record.types
+    def properties: Properties = record.properties
   }
 
-}
+  private[this] lazy val recordReads: TypedMultiRecordReads[P] = new TypedMultiRecordReads[P]
 
-///**
-//  * Base trait for property
-//  *
-//  * @tparam Key   key type
-//  * @tparam Value value type
-//  */
-//trait Property[+Key, +Value]
-// extends HasKey[Key]
-//   with HasValue[Value]
-//   with Element
+}

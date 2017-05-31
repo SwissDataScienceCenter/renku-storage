@@ -18,20 +18,36 @@
 
 package ch.datascience.graph.elements.json
 
-import play.api.libs.json.{JsString, JsValue, Writes}
+import ch.datascience.graph.elements.{Property, Record}
+import play.api.data.validation.ValidationError
+import play.api.libs.json._
 
 /**
-  * Created by johann on 24/05/17.
+  * Created by johann on 30/05/17.
   */
-trait StringWrites[Key] extends Writes[Key] { self =>
+class RecordReads[P <: Property : Reads] extends Reads[Record { type Prop = P }] {
 
-  def writes(key: Key): JsString
+  def reads(json: JsValue): JsResult[Record {type Prop = P}] = {
+    val result = for {
+      opt <- (JsPath \ "properties").readNullable[Map[P#Key, P]].reads(json)
+      map = opt match {
+        case Some(m) => m
+        case _ => Map.empty[P#Key, P]
+      }
+    } yield {
+      new Record {
+        type Prop = P
+        def properties: Properties = map
+      }
+    }
 
-  def mapWrites[Value : Writes]: Writes[Map[Key, Value]] = Writes[Map[Key, Value]] { map =>
-    val stringMap = for {
-      (key, value) <- map
-    } yield self.writes(key).value -> value
-    implicitly[Writes[Map[String, Value]]].writes(stringMap)
+    // Repath
+    result match {
+      case JsSuccess(x, _) => JsSuccess(x)
+      case _ => result
+    }
   }
+
+  private[this] implicit lazy val mapReads: Reads[Map[P#Key, P]] = KeyFormat.mapReads[P]
 
 }

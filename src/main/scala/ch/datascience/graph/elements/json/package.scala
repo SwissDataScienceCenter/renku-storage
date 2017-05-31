@@ -19,34 +19,30 @@
 package ch.datascience.graph.elements
 
 import ch.datascience.graph.Constants
-import ch.datascience.graph.bases.{HasKey, HasValue}
+import ch.datascience.graph.naming.json.{NamespaceAndNameFormat, StringFormat}
+import ch.datascience.graph.values.json.BoxedValueFormat
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Format, JsPath}
 
-trait Property extends HasKey with HasValue with Element {
+/**
+  * Created by johann on 30/05/17.
+  */
+package object json {
 
-  final type Key = Constants.Key
+  lazy val KeyFormat: StringFormat[Constants.Key] = NamespaceAndNameFormat
+  lazy val TypeIdFormat: StringFormat[Constants.TypeId] = NamespaceAndNameFormat
 
-  final type Value = Constants.Value
+  lazy val PropertyFormat: Format[Property] = (
+    (JsPath \ "key").format[Property#Key](KeyFormat) and
+      (JsPath \ "value").format[Property#Value](BoxedValueFormat)
+  )(
+    { (k, v) =>
+      new Property {
+        def key: Key = k
+        def value: Value = v
+      }
+    },
+    unlift(Property.unapply)
+  )
 
 }
-
-object Property {
-
-  def unapply(prop: Property): Option[(Property#Key, Property#Value)] = {
-    if (prop eq null)
-      None
-    else
-      Some(prop.key, prop.value)
-  }
-
-}
-
-///**
-//  * Base trait for property
-//  *
-//  * @tparam Key   key type
-//  * @tparam Value value type
-//  */
-//trait Property[+Key, +Value]
-// extends HasKey[Key]
-//   with HasValue[Value]
-//   with Element

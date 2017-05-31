@@ -16,37 +16,18 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements
+package ch.datascience.graph.elements.json
 
-import ch.datascience.graph.Constants
-import ch.datascience.graph.bases.{HasKey, HasValue}
+import ch.datascience.graph.elements.{RichProperty, Vertex}
+import play.api.libs.json.{JsValue, Writes}
 
-trait Property extends HasKey with HasValue with Element {
+/**
+  * Created by johann on 31/05/17.
+  */
+class VertexWrites[P <: RichProperty : Writes] extends Writes[Vertex { type Prop <: P }] {
 
-  final type Key = Constants.Key
+  def writes(vertex: Vertex {type Prop <: P}): JsValue = self.writes(vertex)
 
-  final type Value = Constants.Value
-
-}
-
-object Property {
-
-  def unapply(prop: Property): Option[(Property#Key, Property#Value)] = {
-    if (prop eq null)
-      None
-    else
-      Some(prop.key, prop.value)
-  }
+  private[this] lazy val self: TypedMultiRecordWrites[P] = new TypedMultiRecordWrites[P]
 
 }
-
-///**
-//  * Base trait for property
-//  *
-//  * @tparam Key   key type
-//  * @tparam Value value type
-//  */
-//trait Property[+Key, +Value]
-// extends HasKey[Key]
-//   with HasValue[Value]
-//   with Element
