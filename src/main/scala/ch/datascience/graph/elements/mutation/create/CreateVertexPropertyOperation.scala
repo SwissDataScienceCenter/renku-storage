@@ -16,25 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.mutation.create
 
-import ch.datascience.graph.elements.mutation.delete.DeleteOperation
-import ch.datascience.graph.elements.persisted.{EdgePath, PropertyPathFromRecord, VertexPath}
+import ch.datascience.graph.elements.new_.NewRichProperty
 
 /**
-  * Created by jeberle on 10.05.17.
+  * Created by johann on 30/05/17.
   */
+case class CreateVertexPropertyOperation(vertexProperty: NewRichProperty) extends CreateOperation {
 
-case class ImplDeleteVertexOperation[+Id](
-  vertex: VertexPath[Id]
-) extends DeleteOperation[VertexPath[Id]]
+  final type ElementType = NewRichProperty
 
-case class ImplDeleteEdgeOperation[+Id, +VertexId](
-  edge: EdgePath[VertexId, Id]
-) extends DeleteOperation[EdgePath[VertexId, Id]]
-
-
-case class ImplDeleteVertexPropertyOperation[+Key](
-  property: PropertyPathFromRecord[Key]
-) extends DeleteOperation[PropertyPathFromRecord[Key]]
-
+}

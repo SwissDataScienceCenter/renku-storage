@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation
+package ch.datascience.graph.elements.mutation.delete
 
-import ch.datascience.graph.bases.HasValue
-import ch.datascience.graph.elements.persisted.{Path, PersistedElement}
+import ch.datascience.graph.elements.persisted.PersistedVertexProperty
 
 /**
-  * Created by jeberle on 10.05.17.
+  * Created by johann on 30/05/17.
   */
-trait UpdateOperation[+P <: Path, +Value, +T <: PersistedElement with HasValue] {
+case class DeleteVertexPropertyOperation(vertexProperty: PersistedVertexProperty) extends DeleteOperation {
+
+  final type ElementType = PersistedVertexProperty
 
 }

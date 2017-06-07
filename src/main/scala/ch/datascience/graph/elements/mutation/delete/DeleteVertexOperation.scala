@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation
+package ch.datascience.graph.elements.mutation.delete
 
-import ch.datascience.graph.elements.persisted.Path
+import ch.datascience.graph.elements.persisted.PersistedVertex
 
 /**
-  * Created by jeberle on 10.05.17.
+  * Created by johann on 30/05/17.
   */
+case class DeleteVertexOperation(vertex: PersistedVertex) extends DeleteOperation {
 
-trait DeleteOperation[+P <: Path] extends Operation{
+  final type ElementType = PersistedVertex
 
 }

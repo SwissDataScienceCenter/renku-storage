@@ -16,25 +16,17 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation.impl
+package ch.datascience.graph.elements.mutation.delete
 
-import ch.datascience.graph.elements.mutation.delete.DeleteOperation
-import ch.datascience.graph.elements.persisted.{EdgePath, PropertyPathFromRecord, VertexPath}
+import ch.datascience.graph.elements.mutation.Operation
+import ch.datascience.graph.elements.persisted.PersistedElement
 
 /**
   * Created by jeberle on 10.05.17.
   */
 
-case class ImplDeleteVertexOperation[+Id](
-  vertex: VertexPath[Id]
-) extends DeleteOperation[VertexPath[Id]]
+trait DeleteOperation extends Operation{
 
-case class ImplDeleteEdgeOperation[+Id, +VertexId](
-  edge: EdgePath[VertexId, Id]
-) extends DeleteOperation[EdgePath[VertexId, Id]]
+  type ElementType <: PersistedElement
 
-
-case class ImplDeleteVertexPropertyOperation[+Key](
-  property: PropertyPathFromRecord[Key]
-) extends DeleteOperation[PropertyPathFromRecord[Key]]
-
+}
