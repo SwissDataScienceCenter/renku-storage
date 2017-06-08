@@ -18,21 +18,20 @@
 
 package models
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 
-import ch.datascience.graph.elements.mutation.worker.{ResponseWorker => Base}
-import play.api.Configuration
+import play.api.libs.concurrent.ActorSystemProvider
+import play.api.{Configuration, Environment}
+
+import scala.concurrent.ExecutionContext
 
 /**
-  * Created by johann on 07/06/17.
+  * Created by johann on 12/04/17.
   */
-@Singleton
-class ResponseWorker @Inject()(
-  override protected val queue: WorkerQueue,
-  protected val graphProvider: GraphProvider,
-  protected val config: ResponseWorkerConfiguration
-) extends Base(
-  queue = queue,
-  graph = graphProvider.graph,
-  ec = config.getExecutionContext
-)
+class JanusGraphConfig @Inject()(protected val actorSystemProvider: ActorSystemProvider, protected val env: Environment, protected val configuration: Configuration) {
+
+  protected lazy val config: Configuration = configuration.getConfig("janusgraph").get
+
+  def get: String = env.getFile(config.getString("file").get).getPath
+
+}

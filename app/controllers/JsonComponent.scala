@@ -16,23 +16,19 @@
  * limitations under the License.
  */
 
-package models
+package controllers
 
-import javax.inject.{Inject, Singleton}
-
-import ch.datascience.graph.elements.mutation.worker.{ResponseWorker => Base}
-import play.api.Configuration
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.json._
+import play.api.mvc._
 
 /**
-  * Created by johann on 07/06/17.
+  * Created by johann on 25/04/17.
   */
-@Singleton
-class ResponseWorker @Inject()(
-  override protected val queue: WorkerQueue,
-  protected val graphProvider: GraphProvider,
-  protected val config: ResponseWorkerConfiguration
-) extends Base(
-  queue = queue,
-  graph = graphProvider.graph,
-  ec = config.getExecutionContext
-)
+trait JsonComponent { this: Controller =>
+
+  def  bodyParseJson[A](implicit rds: Reads[A]): BodyParser[A] = BodyParsers.parse.json.validate(
+    _.validate[A](rds).asEither.left.map(e => BadRequest(JsError.toJson(e)))
+  )
+
+}
