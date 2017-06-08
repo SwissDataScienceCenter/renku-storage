@@ -31,6 +31,7 @@ package object json {
 
   lazy val KeyFormat: StringFormat[Constants.Key] = NamespaceAndNameFormat
   lazy val TypeIdFormat: StringFormat[Constants.TypeId] = NamespaceAndNameFormat
+  lazy val EdgeLabelFormat: StringFormat[Constants.TypeId] = NamespaceAndNameFormat
 
   lazy val PropertyFormat: Format[Property] = (
       (JsPath \ "key").format[Property#Key](KeyFormat) and
