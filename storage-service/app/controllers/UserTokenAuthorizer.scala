@@ -15,8 +15,9 @@ class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
     if (profile == null) {
       false
     } else {
-      println(profile.getEmail)
-      StringUtils.startsWith (profile.getEmail, "ju")
+      true // TODO check the two tokens
+      //println(profile.getEmail)
+      //StringUtils.startsWith (profile.getEmail, "ju")
     }
   }
 }
