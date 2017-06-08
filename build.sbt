@@ -81,7 +81,11 @@ lazy val mutationService = Project(
 ).settings(
   commonSettings
 ).dependsOn(
-  core
+  core,
+  mutationWorker
+).settings(
+  projectDependencies +=
+    (projectID in mutationWorker).value.exclude("org.slf4j", "slf4j-log4j12").exclude("org.slf4j", "slf4j-nop")
 ).enablePlugins(
   PlayScala
 )
