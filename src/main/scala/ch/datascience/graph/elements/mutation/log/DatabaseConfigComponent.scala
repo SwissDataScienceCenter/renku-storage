@@ -16,22 +16,22 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-mutation-worker"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mutation.log
 
-resolvers += DefaultMavenRepository
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
-lazy val slick_version = "3.2.0"
+/**
+  * Created by johann on 07/06/17.
+  */
+trait DatabaseConfigComponent[Profile <: JdbcProfile] {
 
-libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
+  protected val dbConfig: DatabaseConfig[Profile]
 
-lazy val h2_version = "1.4.193"
-lazy val scalatest_version = "3.0.1"
+  protected final lazy val profile: Profile = dbConfig.profile
 
-libraryDependencies += "com.h2database" % "h2" % h2_version % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  // Would be nice but is broken :/
+    protected final def db: Profile#Backend#Database = dbConfig.db
+//  protected final def db: Profile#Backend#Database = profile.api.Database.forConfig("", config = dbConfig.config)
 
-logBuffered in Test := false
-parallelExecution in Test := false
+}

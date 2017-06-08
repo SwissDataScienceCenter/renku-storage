@@ -16,22 +16,23 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-mutation-worker"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mutation.log.db
 
-resolvers += DefaultMavenRepository
+import java.time.Instant
+import java.sql.Timestamp
+import play.api.libs.json.{JsValue, Json}
 
-lazy val slick_version = "3.2.0"
+/**
+  * Created by johann on 07/06/17.
+  */
+trait ImplicitsComponent { this: JdbcProfileComponent =>
 
-libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
+  import profile.api._
 
-lazy val h2_version = "1.4.193"
-lazy val scalatest_version = "3.0.1"
+  implicit val jsonColumnType: BaseColumnType[JsValue] =
+    MappedColumnType.base[JsValue, String](_.toString(), Json.parse)
 
-libraryDependencies += "com.h2database" % "h2" % h2_version % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  implicit val customTimestampColumnType: BaseColumnType[Instant] =
+    MappedColumnType.base[Instant, Long](_.toEpochMilli, Instant.ofEpochMilli)
 
-logBuffered in Test := false
-parallelExecution in Test := false
+}

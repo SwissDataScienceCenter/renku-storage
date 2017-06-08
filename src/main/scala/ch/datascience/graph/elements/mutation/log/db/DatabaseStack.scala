@@ -16,22 +16,16 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-mutation-worker"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mutation.log.db
 
-resolvers += DefaultMavenRepository
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
-lazy val slick_version = "3.2.0"
-
-libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
-
-lazy val h2_version = "1.4.193"
-lazy val scalatest_version = "3.0.1"
-
-libraryDependencies += "com.h2database" % "h2" % h2_version % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
-logBuffered in Test := false
-parallelExecution in Test := false
+/**
+  * Created by johann on 07/06/17.
+  */
+class DatabaseStack(protected val dbConfig: DatabaseConfig[JdbcProfile])
+  extends RequestLogComponent
+    with ResponseLogComponent
+    with JdbcProfileComponent
+    with ImplicitsComponent

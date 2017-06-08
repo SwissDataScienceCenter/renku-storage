@@ -16,22 +16,28 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-mutation-worker"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mutation.worker
 
-resolvers += DefaultMavenRepository
+import ch.datascience.graph.elements.mutation.log.dao.RequestDAO
+import ch.datascience.graph.elements.mutation.log.model.Event
+import play.api.libs.json.JsValue
 
-lazy val slick_version = "3.2.0"
+import scala.concurrent.{ExecutionContext, Future}
 
-libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
+/**
+  * Created by johann on 07/06/17.
+  */
+class RequestWorker(
+  protected val queue: Queue[JsValue],
+  protected val dao: RequestDAO,
+  protected val ec: ExecutionContext
+) {
 
-lazy val h2_version = "1.4.193"
-lazy val scalatest_version = "3.0.1"
+  def add(event: JsValue): Future[Event] = dao.add(event).map { event =>
+    queue.enqueue(event.event)
+    event
+  }
 
-libraryDependencies += "com.h2database" % "h2" % h2_version % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
+  private[this] implicit lazy val e: ExecutionContext = ec
 
-logBuffered in Test := false
-parallelExecution in Test := false
+}

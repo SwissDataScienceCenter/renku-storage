@@ -16,22 +16,14 @@
  * limitations under the License.
  */
 
-organization := "ch.datascience"
-name := "graph-mutation-worker"
-version := "0.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+package ch.datascience.graph.elements.mutation.log.model
 
-resolvers += DefaultMavenRepository
+import java.time.Instant
+import java.util.UUID
 
-lazy val slick_version = "3.2.0"
+import play.api.libs.json.JsValue
 
-libraryDependencies += "com.typesafe.slick" %% "slick" % slick_version
-
-lazy val h2_version = "1.4.193"
-lazy val scalatest_version = "3.0.1"
-
-libraryDependencies += "com.h2database" % "h2" % h2_version % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % scalatest_version % Test
-
-logBuffered in Test := false
-parallelExecution in Test := false
+/**
+  * Created by johann on 07/06/17.
+  */
+case class Event(uuid : UUID, event : JsValue, created : Instant)
