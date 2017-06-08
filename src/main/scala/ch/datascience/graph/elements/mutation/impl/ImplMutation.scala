@@ -16,21 +16,21 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.mutation
+package ch.datascience.graph.elements.mutation.impl
 
-import ch.datascience.graph.elements.mutation.impl.ImplMutation
+import ch.datascience.graph.elements.mutation.{Mutation, Operation}
 
 /**
-  * Created by jeberle on 10.05.17.
+  * Created by johann on 08/06/17.
   */
-trait Mutation {
+private[mutation] class ImplMutation private (val operations: Seq[Operation]) extends Mutation {
 
-  def operations: Seq[Operation]
+  override def toString: String = s"Mutation($operations)"
 
 }
 
-object Mutation {
+private[mutation] object ImplMutation {
 
-  def apply(operations: Seq[Operation]): Mutation = ImplMutation(operations)
-  
+  def apply(operations: Seq[Operation]): ImplMutation = new ImplMutation(operations)
+
 }
