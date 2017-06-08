@@ -18,43 +18,36 @@
 
 package ch.datascience.graph.elements.mutation.worker
 
-import scala.concurrent.Promise
+import org.janusgraph.core.JanusGraph
 
 /**
-  * Created by johann on 07/06/17.
+  * Created by johann on 08/06/17.
   */
-class Queue[A] {
+trait GraphComponent {
 
-  def nonEmpty: Boolean = synchronized {
-    self.nonEmpty
-  }
+  protected def graph: JanusGraph
 
-  def enqueue(elems: A*): Unit = synchronized {
-    self.enqueue(elems: _*)
-    currentPromise match {
-      case Some(p) =>
-        p.success(())
-        currentPromise = None
-      case None => ()
+  def execute[A](body: => A): A = {
+    println("start")
+
+    // Get a clean transaction
+    val tx = graph.tx()
+    tx.rollback()
+
+    println("exec")
+
+    // Execute f
+    try {
+      val res = body
+      println("commit")
+      tx.commit()
+      res
+    } catch {
+      case e: Throwable =>
+        println("Rolling back...")
+        tx.rollback()
+        throw e
     }
   }
-
-  def dequeue: A = synchronized {
-    self.dequeue()
-  }
-
-  def register(): Promise[Unit] = synchronized {
-    currentPromise match {
-      case Some(p) => p
-      case None =>
-        val p = Promise[Unit]()
-        currentPromise = Some(p)
-        p
-    }
-  }
-
-  private[this] val self: scala.collection.mutable.Queue[A] = new scala.collection.mutable.Queue[A]
-
-  private[this] var currentPromise: Option[Promise[Unit]] = None
 
 }
