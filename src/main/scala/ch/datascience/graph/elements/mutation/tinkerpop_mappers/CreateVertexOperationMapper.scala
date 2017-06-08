@@ -52,7 +52,8 @@ case object CreateVertexOperationMapper extends Mapper {
         }
       }
 
-      t3
+      // Iterate to apply the operation
+      t3.iterate()
     }
   }
 
