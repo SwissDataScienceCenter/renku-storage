@@ -16,32 +16,10 @@
  * limitations under the License.
  */
 
-name := """deployer-service"""
-organization := "ch.datascience"
+package models
 
-version := "1.0-SNAPSHOT"
+/**
+  * Created by jeberle on 09.06.17.
+  */
+case class DeployResult(deployId: String, success: Boolean, externalUrl: Option[String])
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
-
-lazy val play_slick_version = "2.1.0"
-
-scalaVersion := "2.11.8"
-
-libraryDependencies += filters
-libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-slick" % play_slick_version,
-  //"ch.datascience" %% "graph-core" % version.value,
-  cache,
-  ws,
-  filters,
-  "org.pac4j" % "play-pac4j" % "3.0.0-RC2",
-  "org.pac4j" % "pac4j-jwt" % "2.0.0-RC2",
-  "org.pac4j" % "pac4j-http" % "2.0.0-RC2",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test,
-  "io.fabric8" % "kubernetes-client" % "2.3.1"
-)
-
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  Resolver.mavenLocal
-)

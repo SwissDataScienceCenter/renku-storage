@@ -22,6 +22,7 @@ import org.pac4j.play.filters.SecurityFilter
 import play.api.http.DefaultHttpFilters
 import play.filters.headers.SecurityHeadersFilter
 import play.filters.hosts.AllowedHostsFilter
+import play.filters.cors.CORSFilter
 
 /**
  * Add the following filters by default to all projects
@@ -32,10 +33,13 @@ import play.filters.hosts.AllowedHostsFilter
  */
 class Filters @Inject() (
   allowedHostsFilter: AllowedHostsFilter,
+  corsFilter: CORSFilter,
   securityHeadersFilter: SecurityHeadersFilter,
   securityFilter: SecurityFilter
+
 ) extends DefaultHttpFilters(
-  allowedHostsFilter, 
+  allowedHostsFilter,
+  corsFilter,
   securityHeadersFilter,
   securityFilter
 )

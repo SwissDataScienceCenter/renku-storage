@@ -29,7 +29,7 @@ class ItemClient @Inject() (implicit context: ExecutionContext, ws: WSClient, ho
 
   def list = {
     val request: WSRequest = ws.url(host + "/item")
-      .withHeaders("Accept" -> "application/json")
+      .withHeaders("Accept" -> "application/models.json")
       .withRequestTimeout(10000.millis)
     val futureResult: Future[String] = request.get().map {
       response =>
@@ -44,7 +44,7 @@ class ItemClient @Inject() (implicit context: ExecutionContext, ws: WSClient, ho
       "key2" -> "value2"
     )
     val request: WSRequest = ws.url(host + "/item")
-      .withHeaders("Accept" -> "application/json")
+      .withHeaders("Accept" -> "application/models.json")
       .withRequestTimeout(10000.millis)
     val futureResult: Future[String] = request.post(item).map {
       response =>
@@ -58,7 +58,7 @@ class ItemClient @Inject() (implicit context: ExecutionContext, ws: WSClient, ho
       "key2" -> "value2"
     )
     val request: WSRequest = ws.url(host + "/item")
-      .withHeaders("Accept" -> "application/json")
+      .withHeaders("Accept" -> "application/models.json")
       .withRequestTimeout(10000.millis)
       .withQueryString("id" -> id.toString)
     val futureResult: Future[String] = request.post(item).map {
@@ -69,7 +69,7 @@ class ItemClient @Inject() (implicit context: ExecutionContext, ws: WSClient, ho
 
   def details(id: Long) = {
     val request: WSRequest = ws.url(host + "/item")
-      .withHeaders("Accept" -> "application/json")
+      .withHeaders("Accept" -> "application/models.json")
       .withRequestTimeout(10000.millis)
       .withQueryString("id" -> id.toString)
     val futureResult: Future[String] = request.get().map {

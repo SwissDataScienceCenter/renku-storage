@@ -16,32 +16,18 @@
  * limitations under the License.
  */
 
-name := """deployer-service"""
-organization := "ch.datascience"
+package models.json
 
-version := "1.0-SNAPSHOT"
+import models.DeployRequest
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-lazy val play_slick_version = "2.1.0"
+object DeployRequestMappers {
 
-scalaVersion := "2.11.8"
-
-libraryDependencies += filters
-libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-slick" % play_slick_version,
-  //"ch.datascience" %% "graph-core" % version.value,
-  cache,
-  ws,
-  filters,
-  "org.pac4j" % "play-pac4j" % "3.0.0-RC2",
-  "org.pac4j" % "pac4j-jwt" % "2.0.0-RC2",
-  "org.pac4j" % "pac4j-http" % "2.0.0-RC2",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test,
-  "io.fabric8" % "kubernetes-client" % "2.3.1"
-)
-
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  Resolver.mavenLocal
-)
+  def deployRequestReads: Reads[DeployRequest] = (
+      (JsPath \ "id").read[String] and
+      (JsPath \ "docker_image").read[String] and
+      (JsPath \ "network_port").readNullable[Int]
+    )(DeployRequest.apply _)
+}
