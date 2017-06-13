@@ -16,19 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.naming
+package ch.datascience.graph.naming.json
 
-import play.api.libs.json.{Format, Reads, Writes}
+import ch.datascience.graph.naming.Namespace
+import play.api.libs.json._
 
 /**
-  * Created by johann on 24/05/17.
+  * Created by johann on 13/06/17.
   */
-package object json {
+object NamespaceReads extends Reads[String] {
 
-  implicit lazy val NamespaceAndNameFormat: StringFormat[NamespaceAndName] = StringFormat(NamespaceAndNameReads, NamespaceAndNameWrites)
+  def reads(json: JsValue): JsResult[String] = implicitly[Reads[String]].reads(json).flatMap { str =>
+    try {
+      JsSuccess(Namespace(str))
+    } catch {
+      case e: IllegalArgumentException => JsError(e.getMessage)
+    }
 
-  lazy val NamespaceFormat: Format[String] = Format(NamespaceReads, implicitly[Writes[String]])
-
-  lazy val NameFormat: Format[String] = Format(NameReads, implicitly[Writes[String]])
+  }
 
 }
