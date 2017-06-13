@@ -16,24 +16,32 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.values.json
+package ch.datascience.graph.execution
 
-import ch.datascience.graph.types.DataType
-import ch.datascience.graph.types.json.DataTypeReads
-import ch.datascience.graph.values.BoxedValue
-import play.api.libs.json._
+import org.apache.tinkerpop.gremlin.structure.Graph
 
 /**
-  * Created by johann on 24/05/17.
+  * Created by johann on 13/06/17.
   */
-object BoxedValueReads extends Reads[BoxedValue] {
+trait GraphExecutionContext {
 
-  def reads(json: JsValue): JsResult[BoxedValue] = self.reads(json)
+  protected def graph: Graph
 
-  private[this] lazy val self: Reads[BoxedValue] = dataTypeReads.flatMap(valueReads)
+  def execute[A](body: => A): A = {
+    // Get a clean transaction
+    val tx = graph.tx()
+    tx.rollback()
 
-  private[this] lazy val dataTypeReads: Reads[DataType] = (JsPath \ "data_type").read[DataType](DataTypeReads)
-
-  private[this] def valueReads(dataType: DataType): Reads[BoxedValue] = (JsPath \ "value").read[BoxedValue](ValueReads(dataType))
+    // Execute body and commit
+    try {
+      val res = body
+      tx.commit()
+      res
+    } catch {
+      case e: Throwable =>
+        tx.rollback()
+        throw e
+    }
+  }
 
 }
