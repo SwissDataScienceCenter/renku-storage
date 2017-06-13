@@ -22,9 +22,9 @@ import java.sql.SQLException
 import java.util.UUID
 import javax.inject.Inject
 
+import ch.datascience.graph.types.persistence.model.json._
 import controllers.JsonComponent
 import injected.OrchestrationLayer
-import models.json._
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import play.api.mvc._
@@ -48,7 +48,7 @@ class GraphDomainController @Inject()(protected val orchestrator: OrchestrationL
     }
   }
 
-  def create: Action[String] = Action.async(bodyParseJson[String](createReads)) { implicit request =>
+  def create: Action[String] = Action.async(bodyParseJson[String](GraphDomainRequestFormat)) { implicit request =>
     val namespace = request.body
     val future = orchestrator.graphDomains.createGraphDomain(namespace)
     future map { graphDomain => Ok(Json.toJson(graphDomain)) } recover {
@@ -57,7 +57,5 @@ class GraphDomainController @Inject()(protected val orchestrator: OrchestrationL
         Conflict // Avoids send of 500 INTERNAL ERROR if duplicate creation
     }
   }
-
-  private[this] lazy val createReads: Reads[String] = (JsPath \ "namespace").read[String]
 
 }
