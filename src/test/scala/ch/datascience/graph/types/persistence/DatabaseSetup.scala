@@ -20,6 +20,7 @@ package ch.datascience.graph.types.persistence
 
 import ch.datascience.graph.types.persistence.relationaldb.DatabaseStack
 import org.scalatest.{BeforeAndAfterAll, Suite}
+import play.api.db.slick.HasDatabaseConfig
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -29,7 +30,8 @@ import scala.concurrent.duration.Duration
 /**
   * Created by johann on 13/04/17.
   */
-trait DatabaseSetup extends BeforeAndAfterAll with DatabaseConfigComponent[JdbcProfile] { this : Suite =>
+//trait DatabaseSetup extends BeforeAndAfterAll with DatabaseConfigComponent[JdbcProfile] { this : Suite =>
+trait DatabaseSetup extends BeforeAndAfterAll with HasDatabaseConfig[JdbcProfile] { this : Suite =>
 
   import profile.api._
 
