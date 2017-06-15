@@ -20,17 +20,19 @@ package models
 
 import javax.inject.{Inject, Singleton}
 
-import ch.datascience.graph.elements.mutation.worker.{RequestWorker => Base}
+import ch.datascience.graph.elements.mutation.log.dao.{ResponseDAO => Base}
+import play.api.db.slick.DatabaseConfigProvider
+import play.db.NamedDatabase
 
 /**
   * Created by johann on 07/06/17.
   */
 @Singleton
-class RequestWorker @Inject()(
-  override protected val queue: WorkerQueue,
-  override protected val dao: RequestDAO
+class ResponseDAO @Inject()(
+  @NamedDatabase("default") protected val dbConfigProvider : DatabaseConfigProvider,
+  override protected val dal: DatabaseLayer
 ) extends Base(
-  queue = queue,
-  dao = dao,
-  ec = play.api.libs.concurrent.Execution.defaultContext
+  ec = play.api.libs.concurrent.Execution.defaultContext,
+  dbConfig = dbConfigProvider.get,
+  dal = dal
 )
