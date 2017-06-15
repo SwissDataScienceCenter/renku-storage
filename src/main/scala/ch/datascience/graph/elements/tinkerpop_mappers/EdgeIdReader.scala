@@ -16,24 +16,13 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.elements.persisted
+package ch.datascience.graph.elements.tinkerpop_mappers
 
 /**
-  * Created by johann on 11/05/17.
+  * Created by johann on 30/05/17.
   */
-sealed abstract class Path
+case object EdgeIdReader extends SyncReader[Any, String] {
 
-final case class VertexPath[+VertexId](vertexId: VertexId) extends Path
+  def readSync(x: Any): String = x.toString
 
-final case class EdgePath[+EdgeId](edgeId: EdgeId) extends Path
-
-sealed abstract class PropertyPath extends Path {
-  def parent: Path
 }
-
-case class PropertyPathFromRecord[+Key](parent: Path, key: Key) extends PropertyPath
-
-case class PropertyPathFromMultiRecord[+PropertyId](
-  parent: Path,
-  propertyId: PropertyId
-) extends PropertyPath
