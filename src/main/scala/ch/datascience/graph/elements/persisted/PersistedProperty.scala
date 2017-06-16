@@ -39,9 +39,9 @@ trait PersistedRecordProperty
   extends PersistedProperty
     with PersistedElement {
 
-  final type PathType = PropertyPathFromRecord[Key]
+  final type PathType = PropertyPathFromRecord
 
-  final def path: PropertyPathFromRecord[Key] = PropertyPathFromRecord(parent, key)
+  final def path: PropertyPathFromRecord = PropertyPathFromRecord(parent, key)
 
 }
 
@@ -50,9 +50,10 @@ trait PersistedMultiRecordProperty
     with PersistedElement
     with HasId {
 
-  final type PathType = PropertyPathFromMultiRecord[Id]
+//  final type PathType = PropertyPathFromMultiRecord[Id]
+  type PathType <: PropertyPathFromMultiRecord[Id]
 
-  final def path: PropertyPathFromMultiRecord[Id] = PropertyPathFromMultiRecord(parent, id)
+//  final def path: PropertyPathFromMultiRecord[Id] = PropertyPathFromMultiRecord(parent, id)
 
 }
 

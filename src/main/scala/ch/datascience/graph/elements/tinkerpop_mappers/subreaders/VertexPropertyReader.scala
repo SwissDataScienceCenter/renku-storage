@@ -18,7 +18,7 @@
 
 package ch.datascience.graph.elements.tinkerpop_mappers.subreaders
 
-import ch.datascience.graph.elements.persisted.{Path, PersistedVertexProperty, PropertyPathFromMultiRecord}
+import ch.datascience.graph.elements.persisted.{Path, PersistedVertexProperty, VertexPropertyPath}
 import ch.datascience.graph.elements.tinkerpop_mappers.extracted.ExtractedVertexProperty
 import ch.datascience.graph.elements.tinkerpop_mappers.{KeyReader, Reader, ValueReader, VertexPropertyIdReader}
 
@@ -38,7 +38,7 @@ case class VertexPropertyReader(valueReader: ValueReader)
       id <- VertexPropertyIdReader.read(prop.id)
       key <- KeyReader.read(prop.key)
       value <-valueReader.read((key, prop.value))
-      path = PropertyPathFromMultiRecord(parent, id)
+      path = VertexPropertyPath(parent, id)
       properties = userPropertiesFilter(prop.properties)
       extractedProperties <- Future.traverse(properties){ prop => LeafPropertyReader(valueReader).read((path, prop)) }
       extractedPropertiesAsMap = (for (prop <- extractedProperties) yield prop.key -> prop).toMap
