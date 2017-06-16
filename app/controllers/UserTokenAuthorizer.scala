@@ -16,26 +16,24 @@
  * limitations under the License.
  */
 
-import javax.inject.Inject
+package controllers
 
-import org.pac4j.play.filters.SecurityFilter
-import play.api.http.DefaultHttpFilters
-import play.filters.headers.SecurityHeadersFilter
-import play.filters.hosts.AllowedHostsFilter
+import org.apache.commons.lang3.StringUtils
+import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
+import org.pac4j.core.context.WebContext
+import org.pac4j.core.profile.CommonProfile
 
-/**
- * Add the following filters by default to all projects
- * 
- * https://www.playframework.com/documentation/latest/ScalaCsrf 
- * https://www.playframework.com/documentation/latest/AllowedHostsFilter
- * https://www.playframework.com/documentation/latest/SecurityHeaders
- */
-class Filters @Inject() (
-  allowedHostsFilter: AllowedHostsFilter,
-  securityHeadersFilter: SecurityHeadersFilter,
-  securityFilter: SecurityFilter
-) extends DefaultHttpFilters(
-  allowedHostsFilter, 
-  securityHeadersFilter,
-  securityFilter
-)
+class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
+
+  def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
+    return isAnyAuthorized(context, profiles)
+  }
+
+  def isProfileAuthorized(context: WebContext, profile: CommonProfile): Boolean = {
+    if (profile == null) {
+      false
+    } else {
+      true // TODO do we need to restrict here?
+    }
+  }
+}
