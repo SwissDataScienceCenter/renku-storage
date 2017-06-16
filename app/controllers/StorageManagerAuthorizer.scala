@@ -15,7 +15,7 @@ class StorageManagerAuthorizer extends ProfileAuthorizer[CommonProfile] {
     if (profile == null) {
       false
     } else {
-      if (profile.getClientName.equals("TokenParameterClient")) {
+      if (profile.getClientName.equals("ParameterClient")) {
         profile.getId.equalsIgnoreCase("storageservice")
       } else {
         true  // accepts any user
