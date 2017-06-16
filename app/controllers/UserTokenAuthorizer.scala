@@ -15,9 +15,7 @@ class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
     if (profile == null) {
       false
     } else {
-      true // TODO check the two tokens
-      //println(profile.getEmail)
-      //StringUtils.startsWith (profile.getEmail, "ju")
+      true // TODO do we need to restrict here?
     }
   }
 }
