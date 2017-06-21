@@ -18,23 +18,22 @@
 
 package ch.datascience.graph.types.json
 
-import ch.datascience.graph.types.{Cardinality, DataType, PropertyKey}
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, JsValue, Writes}
+import ch.datascience.graph.types.DataType
+import play.api.libs.json._
 
 /**
-  * Created by johann on 17/05/17.
+  * Created by johann on 19/06/17.
   */
-class PropertyKeyWrites extends Writes[PropertyKey] {
+object DataTypeFormat extends Format[DataType] {
 
-  def writes(propertyKey: PropertyKey): JsValue = self.writes(propertyKey)
+  def writes(dataType: DataType): JsString = JsString(dataType.name)
 
-  private[this] lazy val self: Writes[PropertyKey] = makeSelf
-
-  private[this] def makeSelf: Writes[PropertyKey] = (
-    (JsPath \ "key").write[PropertyKey#Key] and
-      (JsPath \ "dataType").write[DataType](DataTypeWrites) and
-      (JsPath \ "cardinality").write[Cardinality](CardinalityWrites)
-    )(unlift(PropertyKey.unapply))
+  def reads(json: JsValue): JsResult[DataType] = json.validate[String] flatMap { str =>
+    try {
+      JsSuccess(DataType(str))
+    } catch {
+      case e: IllegalArgumentException => JsError(e.getMessage)
+    }
+  }
 
 }
