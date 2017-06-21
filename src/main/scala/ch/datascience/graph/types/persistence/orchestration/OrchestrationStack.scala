@@ -42,3 +42,4 @@ class OrchestrationStack(
     with PropertyKeyComponent
     with NamedTypeComponent
     with EdgeLabelComponent
+    with SystemPropertyKeyComponent

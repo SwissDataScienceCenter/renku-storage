@@ -16,24 +16,23 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph.types.persistence.relationaldb
+package ch.datascience.graph.types.persistence.model
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import java.util.UUID
+
+import ch.datascience.graph.types.{Cardinality, DataType}
 
 /**
-  * Created by johann on 13/04/17.
+  * Created by johann on 16/03/17.
   */
-class DatabaseStack(protected val dbConfig: DatabaseConfig[JdbcProfile])
-  extends JdbcProfileComponent
-    with SchemasComponent
-    with ImplicitsComponent
-    with EntityComponent
-    with StateComponent
-    with TransitionComponent
-    with AbstractEntityComponent
-    with GraphDomainComponent
-    with PropertyKeyComponent
-    with NamedTypeComponent
-    with EdgeLabelComponent
-    with SystemPropertyKeyComponent
+case class SystemPropertyKey(
+  id: UUID,
+  name: String,
+  dataType: DataType,
+  cardinality: Cardinality
+) extends AbstractEntity
+  with RichAbstractEntity[SystemPropertyKey] {
+
+  final override val entityType: EntityType = EntityType.SystemPropertyKey
+
+}
