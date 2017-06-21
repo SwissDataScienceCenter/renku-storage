@@ -16,11 +16,15 @@
  * limitations under the License.
  */
 
-package ch.datascience.graph
+package ch.datascience.graph.elements.mutation.update
+
+import ch.datascience.graph.elements.persisted.PersistedVertexProperty
 
 /**
-  * Created by johann on 28/04/17.
+  * Created by johann on 20/06/17.
   */
-package object elements {
+case class UpdateVertexPropertyOperation(vertexProperty: PersistedVertexProperty, newValue: PersistedVertexProperty#Value) extends UpdateOperation {
+
+  final type ElementType = PersistedVertexProperty
 
 }
