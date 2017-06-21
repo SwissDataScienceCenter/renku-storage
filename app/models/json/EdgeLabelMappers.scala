@@ -35,7 +35,7 @@ object EdgeLabelMappers {
     (JsPath \ "id").write[UUID] and
       (JsPath \ "graphDomain").write[GraphDomain] and
       (JsPath \ "name").write[String] and
-      (JsPath \ "multiplicity").write[Multiplicity]
+      (JsPath \ "multiplicity").write[Multiplicity](MultiplicityFormat)
     )(unlift(RichEdgeLabel.unapply))
 
 }
