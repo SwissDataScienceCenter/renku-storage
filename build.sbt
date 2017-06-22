@@ -27,7 +27,7 @@ packagedArtifacts := Map.empty
 lazy val root = Project(
   id   = "graph-all",
   base = file(".")
-).aggregate(core, typesystem, mutation, init)
+).aggregate(core, typesystem, mutation, navigationService, init)
 
 lazy val core = Project(
   id   = "graph-core",
@@ -43,7 +43,7 @@ lazy val typesystem = Project(
 ).settings(
   commonSettings,
   scriptsSettings
-).aggregate(typesystemPersistence)
+).aggregate(typesystemPersistence, typesystemService)
 
 lazy val typesystemPersistence = Project(
   id   = "graph-typesystem-persistence",
@@ -73,7 +73,7 @@ lazy val mutation = Project(
 ).settings(
   commonSettings,
   scriptsSettings
-).aggregate(mutationWorker)
+).aggregate(mutationWorker, mutationService)
 
 lazy val mutationService = Project(
   id   = "graph-mutation-service",
