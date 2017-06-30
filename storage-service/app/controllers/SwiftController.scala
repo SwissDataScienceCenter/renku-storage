@@ -14,6 +14,7 @@ import org.javaswift.joss.model.Account
 import org.pac4j.core.profile.{CommonProfile, ProfileManager}
 import org.pac4j.play.PlayWebContext
 import org.pac4j.play.store.PlaySessionStore
+import play.api.PlayException
 import play.api.libs.streams._
 import play.api.mvc._
 
@@ -21,6 +22,7 @@ import scala.collection.JavaConversions.asScalaBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Try}
 import scala.util.matching.Regex
 
 
@@ -43,27 +45,72 @@ class SwiftController @Inject()(config: play.api.Configuration, val playSessionS
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
-  def read_object(name: String) = Action.async { implicit request => Future {
+  def read_object(name: String) = Action.async { implicit request =>
     val profile = getProfiles(request).head
-    val CHUNK_SIZE = 100
-    val container = swiftAccount.getContainer(profile.getId)
-    if (container.exists() && container.getObject(name).exists()) {
-      val instructions = new DownloadInstructions()
-      request.headers.get("Range").map {
-        case RangePattern(null, to) => instructions.setRange(new FirstPartRange(to.toInt))
-        case RangePattern(from, null) => instructions.setRange(new LastPartRange(from.toInt))
-        case RangePattern(from, to) => instructions.setRange(new MidPartRange(from.toInt, to.toInt))
-        case _ =>
-      }
-      val data = container.getObject(name).downloadObjectAsInputStream(instructions)
-      val dataContent: Source[ByteString, _] = StreamConverters.fromInputStream(() => data, CHUNK_SIZE)
+    val bucket = request.headers.get("container").getOrElse(profile.getId)
+    read(implicitly, bucket, name)
+  }
 
-      Ok.chunked(dataContent)
-    } else {
-      NotFound("File not found")
+  def read_object = Action.async { implicit request =>
+    val profile = getProfiles(request).head
+    val bucket = Try(profile.getAttribute("bucket").toString)
+    val name = Try(profile.getAttribute("name").toString)
+    val scope = Try(profile.getAttribute("scope").toString)
+    val m = scope.flatMap(s => if (s.equalsIgnoreCase("storage:read")) name.flatMap(n => bucket.map(b =>
+      read(implicitly, b, n))) else Failure(new PlayException("Forbidden", "Wrong scope")))
+    m.getOrElse(Future(Forbidden("The token is missing the required permissions")))
+  }
+
+  def read(implicit request: RequestHeader, bucket: String, name: String): Future[Result] =
+    Future {
+      val CHUNK_SIZE = 100
+      val container = swiftAccount.getContainer(bucket)
+      if (container.exists() && container.getObject(name).exists()) {
+        val instructions = new DownloadInstructions()
+        request.headers.get("Range").map {
+          case RangePattern(null, to) => instructions.setRange(new FirstPartRange(to.toInt))
+          case RangePattern(from, null) => instructions.setRange(new LastPartRange(from.toInt))
+          case RangePattern(from, to) => instructions.setRange(new MidPartRange(from.toInt, to.toInt))
+          case _ =>
+        }
+        val data = container.getObject(name).downloadObjectAsInputStream(instructions)
+        val dataContent: Source[ByteString, _] = StreamConverters.fromInputStream(() => data, CHUNK_SIZE)
+
+        Ok.chunked(dataContent)
+      } else {
+        NotFound("File not found")
+      }
+  }
+
+  def write_object = Action(forward()) { request =>
+    request.body
+  }
+
+  def forward(): BodyParser[Result] = BodyParser { req =>
+    Accumulator.source[ByteString].mapFuture { source =>
+      Future {
+        val profile = getProfiles(req).head
+        val bucket = Try(profile.getAttribute("bucket").toString)
+        val name = Try(profile.getAttribute("name").toString)
+        val scope = Try(profile.getAttribute("scope").toString)
+        val m = scope.flatMap(s => if (s.equalsIgnoreCase("storage:write")) name.flatMap(n => bucket.map(b => {
+          implicit val system = ActorSystem("Sys")
+          implicit val materializer = ActorMaterializer()
+          val container = swiftAccount.getContainer(b)
+          if (!container.exists()) container.create()
+          val obj = container.getObject(n)
+          val inputStream = source.runWith(
+            StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
+          )
+          obj.uploadObject(inputStream)
+          Right(Created(""))
+        }))
+        else Failure(new PlayException("Forbidden", "Wrong scope")))
+        m.getOrElse(Right(Forbidden("The token is missing the required permissions")))
+      }
     }
   }
-  }
+
 
   def write_object(name: String) = Action(forward(name)) { request =>
     request.body
@@ -73,9 +120,10 @@ class SwiftController @Inject()(config: play.api.Configuration, val playSessionS
     Accumulator.source[ByteString].mapFuture { source =>
       Future {
         val profile = getProfiles(req).head
+        val bucket = req.headers.get("container").getOrElse(profile.getId)
         implicit val system = ActorSystem("Sys")
         implicit val materializer = ActorMaterializer()
-        val container = swiftAccount.getContainer(profile.getId)
+        val container = swiftAccount.getContainer(bucket)
         if (!container.exists()) container.create()
         val obj = container.getObject(name)
         val inputStream = source.runWith(
