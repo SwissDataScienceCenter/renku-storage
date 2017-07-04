@@ -16,17 +16,10 @@
  * limitations under the License.
  */
 
-package models.json
+package models
 
-import ch.datascience.graph.elements.persisted.PersistedVertex
-import models.DeployResult
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+/**
+  * Created by jeberle on 09.06.17.
+  */
+case class CreateBucketRequest(name: String, backend: String)
 
-object ResultMappers {
-
-  def VertexListWrite: Writes[Seq[PersistedVertex]] = ???
-
-
-
-}
