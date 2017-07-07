@@ -3,7 +3,7 @@ package controllers
 import javax.inject._
 
 import akka.util.ByteString
-import controllers.storageBackends.BackendModule
+import controllers.storageBackends.Backends
 import org.pac4j.core.profile.{CommonProfile, ProfileManager}
 import org.pac4j.play.PlayWebContext
 import org.pac4j.play.store.PlaySessionStore
@@ -19,7 +19,7 @@ import scala.util.{Failure, Try}
 
 
 @Singleton
-class IOController @Inject()(config: play.api.Configuration, val playSessionStore: PlaySessionStore, backends: BackendModule) extends Controller {
+class IOController @Inject()(config: play.api.Configuration, val playSessionStore: PlaySessionStore, backends: Backends) extends Controller {
 
   private def getProfiles(implicit request: RequestHeader): List[CommonProfile] = {
     val webContext = new PlayWebContext(request, playSessionStore)
@@ -38,7 +38,7 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
     val scope = Try(profile.getAttribute("scope").toString)
     val backend = Try(profile.getAttribute("backend").toString)
 
-    backends.get_backend(backend.getOrElse("")) match {
+    backends.getBackend(backend.getOrElse("")) match {
       case Some(back) => {
       val res = scope.flatMap(s => if (s.equalsIgnoreCase("storage:read")) name.flatMap(n => bucket.map(b =>
           back.read(request, b, n))) else Failure(new PlayException("Forbidden", "Wrong scope")))
@@ -61,7 +61,7 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
         val scope = Try(profile.getAttribute("scope").toString)
         val backend = Try(profile.getAttribute("backend").toString)
 
-        backends.get_backend(backend.getOrElse("")) match {
+        backends.getBackend(backend.getOrElse("")) match {
           case Some(back) => {
                        val res = scope.flatMap(s =>
               if (s.equalsIgnoreCase("storage:write"))

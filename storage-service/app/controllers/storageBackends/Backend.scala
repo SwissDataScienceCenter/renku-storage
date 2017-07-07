@@ -12,5 +12,6 @@ trait Backend { this: Controller =>
 
   def read(request: RequestHeader, bucket: String, name: String): Future[Result]
   def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Result
+  //TODO: create bucket
 
 }
