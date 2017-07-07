@@ -45,7 +45,7 @@ class SwiftController @Inject()(config: play.api.Configuration, val playSessionS
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
-  def read_object(name: String) = Action.async { implicit request =>
+  def read_object2(name: String) = Action.async { implicit request =>
     val profile = getProfiles(request).head
     val bucket = request.headers.get("container").getOrElse(profile.getId)
     read(implicitly, bucket, name)
@@ -112,7 +112,7 @@ class SwiftController @Inject()(config: play.api.Configuration, val playSessionS
   }
 
 
-  def write_object(name: String) = Action(forward(name)) { request =>
+  def write_object2(name: String) = Action(forward(name)) { request =>
     request.body
   }
 
