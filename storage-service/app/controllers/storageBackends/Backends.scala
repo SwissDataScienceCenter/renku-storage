@@ -20,23 +20,30 @@ package controllers.storageBackends
 
 import javax.inject._
 
-import scala.collection.JavaConverters._
+import play.api.Configuration
+import play.api.inject.{BindingKey, Injector}
 
+/**
+  * Created by johann on 07/07/17.
+  */
 @Singleton
-class BackendModule @Inject()(config: play.api.Configuration){
+class Backends @Inject()(injector: Injector, configuration: Configuration) {
 
-  private lazy val swiftBackend = new SwiftBackend(config)
+  val map: Map[String, Backend] = loadBackends
 
-  private val availableBackends: Map[String, Unit => Backend] =
-    Map(
-      "swift" -> {_ => swiftBackend}
-    )
+  def getBackend(name: String): Option[Backend] = map.get(name)
 
-  def get_backend(name: String): Option[Backend] =
-
-    if (config.getStringList("storage.backends").map(_.asScala).getOrElse(List.empty).contains(name)) {
-      Some(availableBackends(name)())
-    } else {
-      None
+  private[this] def loadBackends: Map[String, Backend] = {
+    val it = for {
+      names <- configuration.getStringSeq("backends")
+    } yield for {
+      name <- names
+    } yield {
+      val key = BindingKey(classOf[Backend]).qualifiedWith(name)
+      name -> injector.instanceOf(key)
     }
+
+    it.getOrElse(Seq.empty).toMap
+  }
+
 }

@@ -16,4 +16,4 @@ GET      /explore/:id                             controllers.ExplorerController
 GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
 GET      /explore/list                            controllers.ExplorerController.bucketList
 GET      /explore/backends                        controllers.ExplorerController.bucketBackends
-GET      /explore/:id/*path                       controllers.ExplorerController.fileMetadata(id: Long, path: String)
+# GET      /explore/:id/*path                     controllers.ExplorerController.fileMetadata(id: Long, path: String)

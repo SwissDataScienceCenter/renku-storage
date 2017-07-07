@@ -16,20 +16,21 @@
  * limitations under the License.
  */
 
-package controllers.storageBackends
+package modules
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import play.api.mvc.{Controller, RequestHeader, Result}
-import scala.concurrent.Future
+import controllers.storageBackends.{Backend, SwiftBackend}
+import play.api.{Configuration, Environment}
+import play.api.inject.{Binding, Module}
 
 /**
-  * Created by jeberle on 07.07.17.
+  * Created by johann on 07/07/17.
   */
-trait Backend { this: Controller =>
+class BackendModule extends Module {
 
-  def read(request: RequestHeader, bucket: String, name: String): Future[Result]
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Result
-  //TODO: create bucket
+  def bindings(environment: Environment, configuration: Configuration): Seq[Binding[Backend]] = {
+    Seq(
+      bind(classOf[Backend]).qualifiedWith("swift").to(classOf[SwiftBackend])
+    )
+  }
 
 }
