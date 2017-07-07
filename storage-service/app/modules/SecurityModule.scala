@@ -3,17 +3,14 @@ package modules
 import com.google.inject.AbstractModule
 import controllers.{HttpActionAdapter, StorageManagerAuthorizer, UserTokenAuthorizer}
 import org.pac4j.core.client.Clients
-import org.pac4j.oidc.client.OidcClient
 import play.api.{Configuration, Environment}
 import org.pac4j.play.store.{PlayCacheSessionStore, PlaySessionStore}
-import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer
-import org.pac4j.core.client.direct.AnonymousClient
 import org.pac4j.core.config.Config
 import org.pac4j.http.client.direct.{HeaderClient, ParameterClient}
-import org.pac4j.jwt.config.signature.{RSASignatureConfiguration, SecretSignatureConfiguration}
+import org.pac4j.jwt.config.signature.RSASignatureConfiguration
 import org.pac4j.jwt.credentials.authenticator.JwtAuthenticator
 import java.security.{KeyFactory, KeyPair}
-import java.security.spec.{PKCS8EncodedKeySpec, RSAPublicKeySpec, X509EncodedKeySpec}
+import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 
 

@@ -4,20 +4,16 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 
 import ch.datascience.graph.Constants
-import ch.datascience.graph.elements.SingleValue
-import ch.datascience.graph.elements.detached.DetachedRichProperty
-import ch.datascience.graph.elements.mutation.{GraphMutationClient, ImplGraphMutationClient, Mutation}
 import ch.datascience.graph.elements.mutation.create.CreateVertexOperation
+import ch.datascience.graph.elements.mutation.{GraphMutationClient, Mutation}
 import ch.datascience.graph.elements.new_.build.NewVertexBuilder
-import ch.datascience.graph.elements.new_.json.NewVertexFormat
-import ch.datascience.graph.elements.new_.NewVertex
 import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.elements.persisted.json.PersistedVertexFormat
 import ch.datascience.graph.naming.NamespaceAndName
-import ch.datascience.graph.values.{UuidValue, StringValue}
+import ch.datascience.graph.values.{StringValue, UuidValue}
 import models.CreateBucketRequest
-import org.pac4j.core.profile.{CommonProfile, ProfileManager}
-import org.pac4j.play.PlayWebContext
+
+import scala.collection.JavaConversions._
 import org.pac4j.play.store.PlaySessionStore
 import persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
 import persistence.reader.VertexReader
@@ -26,10 +22,8 @@ import play.api.libs.json._
 import models.json._
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import play.api.libs.ws.WSClient
-import play.api.mvc.{Action, Controller, RequestHeader}
+import play.api.mvc.{Action, Controller}
 
-import scala.collection.JavaConversions._
-import scala.concurrent.duration._
 import scala.concurrent.Future
 
 /**
@@ -84,8 +78,8 @@ class ExplorerController @Inject()(config: play.api.Configuration,
     val t = g.V(Long.box(id)).as("data").out("resource:stored_in").as("bucket").select[Vertex]("data", "bucket")
 
     Future.sequence(graphExecutionContext.execute {
-      import collection.JavaConverters._
       if (t.hasNext) {
+        import scala.collection.JavaConverters._
         val jmap: Map[String, Vertex] = t.next().asScala.toMap
         for {
           (key, value) <- jmap
