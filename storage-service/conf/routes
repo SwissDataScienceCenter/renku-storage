@@ -6,10 +6,10 @@
 
 GET     /io/read                                  controllers.IOController.read_object
 POST    /io/write                                 controllers.IOController.write_object
-POST    /io/bucket                                controllers.IOController.bucketCreate
+# POST    /io/bucket                                controllers.IOController.bucketCreate
 
-POST    /authorize/read                           controllers.AuthorizeController.read_object
-POST    /authorize/write                          controllers.AuthorizeController.write_object
+# POST    /authorize/read                           controllers.AuthorizeController.read_object
+# POST    /authorize/write                          controllers.AuthorizeController.write_object
 
 GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
 GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
