@@ -3,7 +3,17 @@
 # https://www.playframework.com/documentation/latest/ScalaRouting
 # ~~~~
 
-GET     /read/:name                           controllers.SwiftController.read_object2(name: String)
-POST    /write/:name                          controllers.SwiftController.write_object2(name: String)
-GET     /read                                 controllers.SwiftController.read_object
-POST    /write                                controllers.SwiftController.write_object
+
+GET     /io/read                                  controllers.IOController.read_object
+POST    /io/write                                 controllers.IOController.write_object
+POST    /io/bucket                                controllers.IOController.bucketCreate
+
+POST    /authorize/read                           controllers.AuthorizeController.read_object
+POST    /authorize/write                          controllers.AuthorizeController.write_object
+
+GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
+GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
+GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
+GET      /explore/list                            controllers.ExplorerController.bucketList
+GET      /explore/backends                        controllers.ExplorerController.bucketBackends
+GET      /explore/:id/*path                       controllers.ExplorerController.fileMetadata(id: Long, path: String)
