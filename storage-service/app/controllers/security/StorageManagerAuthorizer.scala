@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package controllers
+package controllers.security
 
-import org.apache.commons.lang3.StringUtils
 import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
 import org.pac4j.core.context.WebContext
 import org.pac4j.core.profile.CommonProfile
@@ -33,11 +32,12 @@ class StorageManagerAuthorizer extends ProfileAuthorizer[CommonProfile] {
     if (profile == null) {
       false
     } else {
-      if (profile.getClientName.equals("ParameterClient")) {
-        profile.getId.equalsIgnoreCase("storageservice")
-      } else {
-        true  // accepts any user
-      }
+        if (context.getPath.endsWith("read"))
+            profile.getAttribute("scope").toString.equalsIgnoreCase("storage:read")
+        else if (context.getPath.endsWith("write"))
+            profile.getAttribute("scope").toString.equalsIgnoreCase("storage:write")
+        else
+          false
     }
   }
 }

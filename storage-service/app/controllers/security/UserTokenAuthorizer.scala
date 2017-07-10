@@ -16,23 +16,23 @@
  * limitations under the License.
  */
 
-package controllers
+package controllers.security
 
-import org.pac4j.core.context.HttpConstants
-import org.pac4j.play.PlayWebContext
-import org.pac4j.play.http.DefaultHttpActionAdapter
-import play.mvc.Results
-import play.mvc.Result
+import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
+import org.pac4j.core.context.WebContext
+import org.pac4j.core.profile.CommonProfile
 
-class HttpActionAdapter extends DefaultHttpActionAdapter {
+class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
 
-  override def adapt(code: Int, context: PlayWebContext): Result = {
-    if (code == HttpConstants.UNAUTHORIZED) {
-      Results.unauthorized("401").as(HttpConstants.HTML_CONTENT_TYPE)
-    } else if (code == HttpConstants.FORBIDDEN) {
-      Results.forbidden("403").as(HttpConstants.HTML_CONTENT_TYPE)
+  def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
+    return isAnyAuthorized(context, profiles)
+  }
+
+  def isProfileAuthorized(context: WebContext, profile: CommonProfile): Boolean = {
+    if (profile == null) {
+      false
     } else {
-      super.adapt(code, context)
+      true // TODO do we need to restrict here?
     }
   }
 }
