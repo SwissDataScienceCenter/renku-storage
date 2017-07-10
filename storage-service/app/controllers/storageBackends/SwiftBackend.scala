@@ -31,7 +31,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
 
-  override def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
+  def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     val CHUNK_SIZE = 100
     val container = swiftAccount.getContainer(bucket)
     if (container.exists() && container.getObject(name).exists()) {
@@ -49,7 +49,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
     }
   }
 
-  override def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
+  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
     implicit val system = ActorSystem("Sys")
     implicit val materializer = ActorMaterializer()
     val container = swiftAccount.getContainer(bucket)
@@ -63,7 +63,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
     }
   }
 
-  override def createBucket(request: RequestHeader, bucket: String): Boolean = {
+  def createBucket(request: RequestHeader, bucket: String): Boolean = {
     val container = swiftAccount.getContainer(bucket)
     !container.exists() && {
       container.create()
