@@ -49,8 +49,8 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
         is.skip(n)
       }
 
-      val dataContent: Source[ByteString, _] = StreamConverters.fromInputStream(() => is)
-      val dataContent2: Source[ByteString, _] = (from, to) match {
+      val dataContent: Source[Byte, _] = StreamConverters.fromInputStream(() => is).mapConcat(identity)
+      val dataContent2: Source[Byte, _] = (from, to) match {
         case (Some(n), Some(m)) => dataContent.take(m - n)
         case (None, Some(m)) => dataContent.take(m)
         case _ => dataContent
