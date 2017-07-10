@@ -31,10 +31,14 @@ import play.api.libs.json._
   */
 package object json {
 
-  implicit lazy val readResourceRequestReads: Reads[ReadResourceRequest] = ReadResourceRequestMappers.readResourceRequestReads
-  implicit lazy val writeResourceRequestReads: Reads[WriteResourceRequest] = WriteResourceRequestMappers.writeResourceRequestReads
+
   implicit lazy val mutationFormat: Format[Mutation] = MutationFormat
   implicit lazy val vertexFormat: Format[PersistedVertex] = PersistedVertexFormat
   implicit lazy val eventStatusFormat: Format[EventStatus] = EventStatusFormat
-  implicit lazy val createBucketRequestReads: Reads[CreateBucketRequest] = WriteResourceRequestMappers.createBucketRequestReads
+  implicit lazy val createBucketRequestReads: Reads[CreateBucketRequest] = ResourceRequestMappers.createBucketRequestReads
+  implicit lazy val readResourceRequestReads: Reads[ReadResourceRequest] = ResourceRequestMappers.readResourceRequestReads
+  implicit lazy val writeResourceRequestWrites: Writes[WriteResourceRequest] = ResourceRequestMappers.writeResourceRequestWrites
+  implicit lazy val createBucketRequestWrites: Writes[CreateBucketRequest] = ResourceRequestMappers.createBucketRequestWrites
+  implicit lazy val readResourceRequestWrites: Writes[ReadResourceRequest] = ResourceRequestMappers.readResourceRequestWrites
+  implicit lazy val writeResourceRequestReads: Reads[WriteResourceRequest] = ResourceRequestMappers.writeResourceRequestReads
 }
