@@ -50,19 +50,30 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
 
 
   def read_object = Action.async { implicit request =>
-    val profile = getProfiles(request).head
-    val bucket = Try(profile.getAttribute("bucket").toString)
-    val name = Try(profile.getAttribute("name").toString)
-    val scope = Try(profile.getAttribute("scope").toString)
-    val backend = Try(profile.getAttribute("backend").toString)
+    Future {
+      val profile = getProfiles(request).head
+      val bucket = Try(profile.getAttribute("bucket").toString)
+      val name = Try(profile.getAttribute("name").toString)
+      val scope = Try(profile.getAttribute("scope").toString)
+      val backend = Try(profile.getAttribute("backend").toString)
 
-    backends.getBackend(backend.getOrElse("")) match {
-      case Some(back) => {
-      val res = scope.flatMap(s => if (s.equalsIgnoreCase("storage:read")) name.flatMap(n => bucket.map(b =>
-          back.read(request, b, n))) else Failure(new PlayException("Forbidden", "Wrong scope")))
-        res.getOrElse(Future(Forbidden("The token is missing the required permissions")))
+      backends.getBackend(backend.getOrElse("")) match {
+        case Some(back) => {
+          val res = scope.flatMap(s =>
+            if (s.equalsIgnoreCase("storage:read")) {
+              for { n <- name; b <- bucket } yield
+                back.read(request, b, n) match {
+                case Some(dataContent) => Ok.chunked(dataContent)
+                case None => NotFound
+              }
+            }
+            else
+              Failure(new PlayException("Forbidden", "Wrong scope"))
+          )
+          res.getOrElse(Forbidden("The token is missing the required permissions"))
+        }
+        case None => BadRequest(s"The backend $backend is not enabled.")
       }
-      case None => Future(BadRequest(s"The backend $backend is not enabled."))
     }
   }
 
@@ -84,7 +95,7 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
                        val res = scope.flatMap(s =>
               if (s.equalsIgnoreCase("storage:write"))
                 for {n <- name; b <- bucket} yield
-                  Right(back.write(req, b, n, source))
+                  Right(if (back.write(req, b, n, source)) Created else NotFound)
               else
                 Failure(new PlayException("Forbidden", "Wrong scope")))
             res.getOrElse(Right(Forbidden("The token is missing the required permissions")))

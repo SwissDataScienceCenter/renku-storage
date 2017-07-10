@@ -27,19 +27,20 @@ import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
-import play.api.mvc.{Controller, RequestHeader, Result}
+import play.api.mvc.RequestHeader
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.util.Try
 import scala.util.matching.Regex
 
 /**
   * Created by johann on 07/07/17.
   */
 @Singleton
-class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Controller with Backend {
+class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
 
-  def read(request: RequestHeader, bucket: String, name: String): Future[Result] = {
-    Future {
+  def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
+    Try {
       val fullPath = s"$bucket/$name"
       val (from, to) = getRange(request)
 
@@ -55,13 +56,14 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
         case _ => dataContent
       }
 
-      Ok.chunked(dataContent2)
-    }.recover{
-      case _: FileNotFoundException | _: SecurityException => NotFound
-    }
+      Some(dataContent2)
+    }.recover {
+      case _: FileNotFoundException | _: SecurityException => None
+    }.get
   }
 
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Result = {
+
+  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
     implicit val actorSystem: ActorSystem  = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
 
@@ -69,7 +71,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
     val os = new FileOutputStream(fullPath)
     val sink = StreamConverters.fromOutputStream(() => os)
     source.runWith(sink)
-    Created
+    true
   }
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
