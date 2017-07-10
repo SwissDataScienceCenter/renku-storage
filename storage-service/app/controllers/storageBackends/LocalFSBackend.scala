@@ -39,7 +39,7 @@ import scala.util.matching.Regex
 @Singleton
 class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
 
-  override def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
+  def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
       val fullPath = s"$bucket/$name"
       val (from, to) = getRange(request)
@@ -49,10 +49,12 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
         is.skip(n)
       }
 
-      val dataContent: Source[Byte, _] = StreamConverters.fromInputStream(() => is).mapConcat(identity)
-      val dataContent2: Source[Byte, _] = (from, to) match {
-        case (Some(n), Some(m)) => dataContent.take(m - n)
-        case (None, Some(m)) => dataContent.take(m)
+      val dataContent: Source[ByteString, _] = StreamConverters.fromInputStream(() => is)
+      val dataContent2: Source[ByteString, _] = (from, to) match {
+        case (Some(n), Some(m)) =>
+          takeFromByteStringSource(dataContent, m - n)
+        case (None, Some(m)) =>
+          takeFromByteStringSource(dataContent, m)
         case _ => dataContent
       }
 
@@ -63,7 +65,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
   }
 
 
-  override def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
+  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
     implicit val actorSystem: ActorSystem  = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
 
@@ -88,7 +90,12 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
 
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
-  override def createBucket(request: RequestHeader, bucket: String): Boolean = {
+  def createBucket(request: RequestHeader, bucket: String): Boolean = {
     new File(bucket).mkdir()
   }
+
+  private[this] def takeFromByteStringSource(source: Source[ByteString, _], n: Int, chunkSize: Int = 8192): Source[ByteString, _] = {
+    source.mapConcat(identity).take(n).grouped(chunkSize).map{ bytes => ByteString(bytes: _*) }
+  }
+
 }
