@@ -21,6 +21,7 @@ import scala.util.matching.Regex
 @Singleton
 class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
 
+
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
       val fullPath = s"$bucket/$name"
