@@ -1,10 +1,9 @@
-package controllers
+package controllers.security
 
 import org.pac4j.core.context.HttpConstants
 import org.pac4j.play.PlayWebContext
 import org.pac4j.play.http.DefaultHttpActionAdapter
-import play.mvc.Results
-import play.mvc.Result
+import play.mvc.{Result, Results}
 
 class HttpActionAdapter extends DefaultHttpActionAdapter {
 
