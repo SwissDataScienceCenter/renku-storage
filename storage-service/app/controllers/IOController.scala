@@ -7,7 +7,6 @@ import controllers.storageBackends.Backends
 import org.pac4j.core.profile.{CommonProfile, ProfileManager}
 import org.pac4j.play.PlayWebContext
 import org.pac4j.play.store.PlaySessionStore
-import play.api.PlayException
 import play.api.libs.streams._
 import play.api.mvc._
 
@@ -15,7 +14,7 @@ import scala.collection.JavaConversions.asScalaBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.matching.Regex
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 
 @Singleton
@@ -31,35 +30,26 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
 
-  def read_object = Action.async { implicit request =>
+  def objectRead = Action.async { implicit request =>
     Future {
       val profile = getProfiles(request).head
       val bucket = Try(profile.getAttribute("bucket").toString)
       val name = Try(profile.getAttribute("name").toString)
-      val scope = Try(profile.getAttribute("scope").toString)
       val backend = Try(profile.getAttribute("backend").toString)
 
       backends.getBackend(backend.getOrElse("")) match {
-        case Some(back) => {
-          val res = scope.flatMap(s =>
-            if (s.equalsIgnoreCase("storage:read")) {
-              for { n <- name; b <- bucket } yield
-                back.read(request, b, n) match {
+        case Some(back) =>
+          (for { n <- name; b <- bucket } yield
+              back.read(request, b, n) match {
                 case Some(dataContent) => Ok.chunked(dataContent)
                 case None => NotFound
-              }
-            }
-            else
-              Failure(new PlayException("Forbidden", "Wrong scope"))
-          )
-          res.getOrElse(Forbidden("The token is missing the required permissions"))
-        }
+              }).getOrElse(BadRequest)
         case None => BadRequest(s"The backend $backend is not enabled.")
       }
     }
   }
 
-  def write_object = Action(forward()) { request =>
+  def objectWrite = Action(forward()) { request =>
     request.body
   }
 
@@ -69,21 +59,39 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
         val profile = getProfiles(req).head
         val bucket = Try(profile.getAttribute("bucket").toString)
         val name = Try(profile.getAttribute("name").toString)
-        val scope = Try(profile.getAttribute("scope").toString)
         val backend = Try(profile.getAttribute("backend").toString)
 
         backends.getBackend(backend.getOrElse("")) match {
-          case Some(back) => {
-                       val res = scope.flatMap(s =>
-              if (s.equalsIgnoreCase("storage:write"))
-                for {n <- name; b <- bucket} yield
-                  Right(if (back.write(req, b, n, source)) Created else NotFound)
-              else
-                Failure(new PlayException("Forbidden", "Wrong scope")))
-            res.getOrElse(Right(Forbidden("The token is missing the required permissions")))
-          }
+          case Some(back) =>
+            (for {n <- name; b <- bucket} yield
+                  Right(
+                    if (back.write(req, b, n, source))
+                      Created
+                    else
+                      NotFound
+                  )
+              ).getOrElse(Right(BadRequest))
           case None => Right(BadRequest(s"The backend $backend is not enabled."))
         }
+      }
+    }
+  }
+
+  def bucketCreate = Action.async { implicit request =>
+    Future {
+      val profile = getProfiles(request).head
+      val bucket = Try(profile.getAttribute("bucket").toString)
+      val backend = Try(profile.getAttribute("backend").toString)
+
+      backends.getBackend(backend.getOrElse("")) match {
+        case Some(back) =>
+          bucket.map( b =>
+            if (back.createBucket(request, b))
+              Created
+            else
+              Conflict
+          ).getOrElse(BadRequest)
+        case None => BadRequest(s"The backend $backend is not enabled.")
       }
     }
   }

@@ -1,6 +1,6 @@
 package controllers.storageBackends
 
-import java.io.{FileInputStream, FileNotFoundException, FileOutputStream}
+import java.io.{File, FileInputStream, FileNotFoundException, FileOutputStream}
 import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
@@ -21,7 +21,7 @@ import scala.util.matching.Regex
 @Singleton
 class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
 
-  def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
+  override def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
       val fullPath = s"$bucket/$name"
       val (from, to) = getRange(request)
@@ -45,7 +45,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
   }
 
 
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
+  override def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
     implicit val actorSystem: ActorSystem  = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
 
@@ -70,4 +70,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
 
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
+  override def createBucket(request: RequestHeader, bucket: String): Boolean = {
+    new File(bucket).mkdir()
+  }
 }

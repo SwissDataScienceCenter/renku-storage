@@ -4,12 +4,13 @@
 # ~~~~
 
 
-GET     /io/read                                  controllers.IOController.read_object
-POST    /io/write                                 controllers.IOController.write_object
-# POST    /io/bucket                                controllers.IOController.bucketCreate
+GET     /io/read                                  controllers.IOController.objectRead
+POST    /io/write                                 controllers.IOController.objectWrite
+POST    /io/bucket                                controllers.IOController.bucketCreate
 
-# POST    /authorize/read                           controllers.AuthorizeController.read_object
-# POST    /authorize/write                          controllers.AuthorizeController.write_object
+# POST    /authorize/read                           controllers.AuthorizeController.objectRead
+# POST    /authorize/write                          controllers.AuthorizeController.objectWrite
+# POST    /authorize/bucket                         controllers.AuthorizeController.bucketCreate
 
 GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
 GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
