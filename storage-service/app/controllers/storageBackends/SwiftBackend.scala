@@ -14,14 +14,12 @@ import org.javaswift.joss.model.Account
 
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 
 
 @Singleton
-class SwiftBackend @Inject()(config: play.api.Configuration) extends Controller with Backend {
+class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
 
   val swiftConfig = new AccountConfig()
   swiftConfig.setUsername(config.getString("swift.username").get)
@@ -33,40 +31,35 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Controller 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
 
-  def read(request: RequestHeader, bucket: String, name: String): Future[Result] =
-    Future {
-      val CHUNK_SIZE = 100
-      val container = swiftAccount.getContainer(bucket)
-      if (container.exists() && container.getObject(name).exists()) {
-        val instructions = new DownloadInstructions()
-        request.headers.get("Range").map {
-          case RangePattern(null, to) => instructions.setRange(new FirstPartRange(to.toInt))
-          case RangePattern(from, null) => instructions.setRange(new LastPartRange(from.toInt))
-          case RangePattern(from, to) => instructions.setRange(new MidPartRange(from.toInt, to.toInt))
-          case _ =>
-        }
-        val data = container.getObject(name).downloadObjectAsInputStream(instructions)
-        val dataContent: Source[ByteString, _] = StreamConverters.fromInputStream(() => data, CHUNK_SIZE)
-
-        Ok.chunked(dataContent)
-      } else {
-        NotFound("File not found")
+  def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
+    val CHUNK_SIZE = 100
+    val container = swiftAccount.getContainer(bucket)
+    if (container.exists() && container.getObject(name).exists()) {
+      val instructions = new DownloadInstructions()
+      request.headers.get("Range").map {
+        case RangePattern(null, to) => instructions.setRange(new FirstPartRange(to.toInt))
+        case RangePattern(from, null) => instructions.setRange(new LastPartRange(from.toInt))
+        case RangePattern(from, to) => instructions.setRange(new MidPartRange(from.toInt, to.toInt))
+        case _ =>
       }
+      val data = container.getObject(name).downloadObjectAsInputStream(instructions)
+      Some(StreamConverters.fromInputStream(() => data, CHUNK_SIZE))
+    } else {
+      None
+    }
   }
 
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Result = {
+  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
     implicit val system = ActorSystem("Sys")
     implicit val materializer = ActorMaterializer()
     val container = swiftAccount.getContainer(bucket)
-    if (!container.exists())
-      NotFound
-    else {
+    container.exists() && {
       val obj = container.getObject(name)
       val inputStream = source.runWith(
         StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
       )
       obj.uploadObject(inputStream)
-      Created
+      true
     }
   }
 }
