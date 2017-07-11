@@ -41,8 +41,9 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
 
   def objectRead = Action.async(bodyParseJson[ReadResourceRequest](readResourceRequestReads)) { implicit request =>
     Future {
+      implicit val token: String = request.headers.get("Authorization").getOrElse("")
       val rrr = request.body
-      val rmc = new ResourcesManagerClient
+      val rmc = new ResourcesManagerClient(host)
       rmc.authorize(readResourceRequestWrites, rrr)
 
       // TODO Check permission and forward token
@@ -53,9 +54,10 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
 
   def objectWrite = Action.async(bodyParseJson[WriteResourceRequest](writeResourceRequestReads)) { implicit request =>
     Future {
-      val rrr = request.body
-      val rmc = new ResourcesManagerClient
-      rmc.authorize(writeResourceRequestWrites, rrr)
+      implicit val token: String = request.headers.get("Authorization").getOrElse("")
+      val wrr = request.body
+      val rmc = new ResourcesManagerClient(host)
+      rmc.authorize(writeResourceRequestWrites, wrr)
 
       // TODO Check permission and forward token
 
@@ -65,9 +67,10 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
 
   def bucketCreate = Action.async(bodyParseJson[CreateBucketRequest](createBucketRequestReads)) { implicit request =>
     Future{
-  val rrr = request.body
-  val rmc = new ResourcesManagerClient
-  rmc.authorize(createBucketRequestWrites, rrr)
+      implicit val token: String = request.headers.get("Authorization").getOrElse("")
+      val cbr = request.body
+      val rmc = new ResourcesManagerClient(host)
+      rmc.authorize(createBucketRequestWrites, cbr)
 
   // TODO Check permission and forward token
 
