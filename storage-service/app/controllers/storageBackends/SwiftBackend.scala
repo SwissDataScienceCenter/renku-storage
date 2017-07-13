@@ -84,7 +84,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
   def createBucket(request: RequestHeader, bucket: String): Boolean = {
     val container = swiftAccount.getContainer(bucket)
     !container.exists() && {
-      container.create()
+      container.setCustomHeaders().create()
       true
     }
   }
