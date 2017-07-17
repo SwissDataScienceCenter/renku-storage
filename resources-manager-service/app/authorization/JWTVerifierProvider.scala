@@ -16,27 +16,28 @@
  * limitations under the License.
  */
 
-import javax.inject.Inject
+package authorization
 
-import org.pac4j.play.filters.SecurityFilter
-import play.api.http.DefaultHttpFilters
-import play.filters.cors.CORSFilter
-import play.filters.headers.SecurityHeadersFilter
-import play.filters.hosts.AllowedHostsFilter
+import java.security.interfaces.RSAPublicKey
+import javax.inject.{Inject, Singleton}
+
+import ch.datascience.service.security.PublicKeyReader
+import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.{JWT, JWTVerifier}
+import play.api.Configuration
 
 /**
- * Add the following filters by default to all projects
- * 
- * https://www.playframework.com/documentation/latest/ScalaCsrf 
- * https://www.playframework.com/documentation/latest/AllowedHostsFilter
- * https://www.playframework.com/documentation/latest/SecurityHeaders
- */
-class Filters @Inject() (
-  allowedHostsFilter: AllowedHostsFilter,
-  corsFilter: CORSFilter,
-  securityHeadersFilter: SecurityHeadersFilter
-) extends DefaultHttpFilters(
-  allowedHostsFilter,
-  corsFilter,
-  securityHeadersFilter
-)
+  * Created by johann on 14/07/17.
+  */
+@Singleton
+class JWTVerifierProvider @Inject() (configuration: Configuration) {
+
+  def get: JWTVerifier = verifier
+
+  private[this] lazy val verifier: JWTVerifier = {
+    val publicKey: RSAPublicKey = PublicKeyReader.readRSAPublicKey(configuration.getString("key.keycloak.public").get)
+    val algorithm = Algorithm.RSA256(publicKey, null)
+    JWT.require(algorithm).build()
+  }
+
+}
