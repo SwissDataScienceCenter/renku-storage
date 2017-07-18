@@ -85,6 +85,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider
             StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
           )
           obj.uploadObject(inputStream)
+          inputStream.close()
           Created
         }
     }
