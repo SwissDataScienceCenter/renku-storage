@@ -53,7 +53,7 @@ class PermissionController @Inject() (
     val accessRequest = request.body
     val accessToken = request.token
 
-    val futureScopes = accessRequest.permissionHolderId match {
+    val futureScope = accessRequest.permissionHolderId match {
       case Some(resourceId) =>
         authorizeAccess(accessToken, resourceId, accessRequest.scope)
       case None =>
@@ -61,14 +61,14 @@ class PermissionController @Inject() (
     }
 
     val futureToken = for {
-      scopes <- futureScopes
+      scope <- futureScope
     } yield {
       val tokenBuilder = JWT.create()
       tokenBuilder.withSubject(accessToken.getSubject)
       for (resourceId <- accessRequest.permissionHolderId) {
         tokenBuilder.withClaim("resource_id", Long.box(resourceId))
       }
-      tokenBuilder.withArrayClaim("resource_scope", scopes.toArray.map(_.toString))
+      tokenBuilder.withArrayClaim("resource_scope", scope.toArray.map(_.name))
       for (extraClaims <- accessRequest.extraClaims) {
         tokenBuilder.withClaim("resource_extras", extraClaims.toString())
       }
