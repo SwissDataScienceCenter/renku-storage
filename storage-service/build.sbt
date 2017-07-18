@@ -8,12 +8,14 @@ lazy val root = Project(
   base = file(".")
 ).dependsOn(
   core,
-  mutationClient
+  mutationClient,
+  serviceCommons
 ).enablePlugins(PlayScala)
 
 
 lazy val core = RootProject(file("../graph-core"))
 lazy val mutationClient = RootProject(file("../graph-mutation-client"))
+lazy val serviceCommons = RootProject(file("../service-commons"))
 
 scalaVersion := "2.11.8"
 lazy val janusgraph_version = "0.1.0"
@@ -24,9 +26,6 @@ libraryDependencies ++= Seq(
   "io.minio" % "minio" % "3.0.3",
   "org.javaswift" % "joss" % "0.9.7",
   cache,
-  "org.pac4j" % "play-pac4j" % "3.0.0-RC2",
-  "org.pac4j" % "pac4j-jwt" % "2.0.0-RC2",
-  "org.pac4j" % "pac4j-http" % "2.0.0-RC2",
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 )
 
