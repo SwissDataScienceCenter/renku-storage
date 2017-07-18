@@ -16,19 +16,28 @@
  * limitations under the License.
  */
 
-package controllers
+package authorization
 
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json._
-import play.api.mvc._
+import java.security.interfaces.RSAPublicKey
+import javax.inject.{Inject, Singleton}
+
+import ch.datascience.service.security.PublicKeyReader
+import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.{JWT, JWTVerifier}
+import play.api.Configuration
 
 /**
-  * Created by johann on 25/04/17.
+  * Created by johann on 14/07/17.
   */
-trait JsonComponent { this: Controller =>
+@Singleton
+class JWTVerifierProvider @Inject()(configuration: Configuration) {
 
-  def  bodyParseJson[A](implicit rds: Reads[A]): BodyParser[A] = BodyParsers.parse.json.validate(
-    _.validate[A](rds).asEither.left.map(e => BadRequest(JsError.toJson(e)))
-  )
+  def get: JWTVerifier = verifier
+
+  private[this] lazy val verifier: JWTVerifier = {
+    val publicKey: RSAPublicKey = PublicKeyReader.readRSAPublicKey(configuration.getString("key.keycloak.public").get)
+    val algorithm = Algorithm.RSA256(publicKey, null)
+    JWT.require(algorithm).build()
+  }
 
 }

@@ -18,30 +18,18 @@
 
 package controllers
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 
-import ch.datascience.graph.Constants
-import ch.datascience.graph.elements.mutation.create.CreateVertexOperation
-import ch.datascience.graph.elements.mutation.{GraphMutationClient, Mutation}
-import ch.datascience.graph.elements.new_.build.NewVertexBuilder
-import ch.datascience.graph.elements.persisted.PersistedVertex
-import ch.datascience.graph.elements.persisted.json.PersistedVertexFormat
-import ch.datascience.graph.naming.NamespaceAndName
-import ch.datascience.graph.values.{StringValue, UuidValue}
-import models.{CreateBucketRequest, ReadResourceRequest, WriteResourceRequest}
-import models.json._
-import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.pac4j.play.store.PlaySessionStore
-import persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
-import persistence.reader.VertexReader
+import authorization.JWTVerifierProvider
+import ch.datascience.service.models.resource.{CreateBucketRequest, ReadResourceRequest, WriteResourceRequest}
+import ch.datascience.service.security.ProfileFilterAction
+import ch.datascience.service.utils.ControllerWithBodyParseJson
+import ch.datascience.service.models.resource.json._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.Controller
 import clients.ResourcesManagerClient
 
-import scala.collection.JavaConversions._
 import scala.concurrent.Future
 
 /**
@@ -49,20 +37,20 @@ import scala.concurrent.Future
   */
 @Singleton
 class AuthorizeController @Inject()(config: play.api.Configuration,
-                                    implicit val playSessionStore: PlaySessionStore,
+                                    jwtVerifier: JWTVerifierProvider,
                                     implicit val wsclient: WSClient
-                                    ) extends Controller with JsonComponent with RequestHelper{
+                                    ) extends Controller with ControllerWithBodyParseJson with RequestHelper{
 
   lazy val host: String = config
     .getString("resources.manager.service.host")
     .getOrElse("http://localhost:9000/api/resources/")
 
-  def objectRead = Action.async(bodyParseJson[ReadResourceRequest](readResourceRequestReads)) { implicit request =>
+  def objectRead = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[ReadResourceRequest](ReadResourceRequestFormat)) { implicit request =>
     Future {
       implicit val token: String = request.headers.get("Authorization").getOrElse("")
       val rrr = request.body
       val rmc = new ResourcesManagerClient(host)
-      rmc.authorize(readResourceRequestWrites, rrr)
+      rmc.authorize(ReadResourceRequestFormat, rrr)
 
       // TODO Check permission and forward token
 
@@ -70,12 +58,12 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
     }
   }
 
-  def objectWrite = Action.async(bodyParseJson[WriteResourceRequest](writeResourceRequestReads)) { implicit request =>
+  def objectWrite = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[WriteResourceRequest](WriteResourceRequestFormat)) { implicit request =>
     Future {
       implicit val token: String = request.headers.get("Authorization").getOrElse("")
       val wrr = request.body
       val rmc = new ResourcesManagerClient(host)
-      rmc.authorize(writeResourceRequestWrites, wrr)
+      rmc.authorize(WriteResourceRequestFormat, wrr)
 
       // TODO Check permission and forward token
 
@@ -83,12 +71,12 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
     }
   }
 
-  def bucketCreate = Action.async(bodyParseJson[CreateBucketRequest](createBucketRequestReads)) { implicit request =>
+  def bucketCreate = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateBucketRequest](CreateBucketRequestFormat)) { implicit request =>
     Future{
       implicit val token: String = request.headers.get("Authorization").getOrElse("")
       val cbr = request.body
       val rmc = new ResourcesManagerClient(host)
-      rmc.authorize(createBucketRequestWrites, cbr)
+      rmc.authorize(CreateBucketRequestFormat, cbr)
 
   // TODO Check permission and forward token
 

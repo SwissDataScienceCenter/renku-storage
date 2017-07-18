@@ -21,6 +21,7 @@ package controllers
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 
+import authorization.JWTVerifierProvider
 import ch.datascience.graph.Constants
 import ch.datascience.graph.elements.mutation.create.CreateVertexOperation
 import ch.datascience.graph.elements.mutation.{GraphMutationClient, Mutation}
@@ -29,18 +30,20 @@ import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.elements.persisted.json.PersistedVertexFormat
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.{StringValue, UuidValue}
-import models.CreateBucketRequest
-
+import ch.datascience.service.models.resource.CreateBucketRequest
+import ch.datascience.service.security.ProfileFilterAction
+import ch.datascience.service.utils.ControllerWithBodyParseJson
+import controllers.storageBackends.Backends
+import ch.datascience.service.models.resource.json._
+import ch.datascience.graph.elements.mutation.log.model.json._
 import scala.collection.JavaConversions._
-import org.pac4j.play.store.PlaySessionStore
 import persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
 import persistence.reader.VertexReader
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
-import models.json._
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import play.api.libs.ws.WSClient
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.Controller
 
 import scala.concurrent.Future
 
@@ -49,22 +52,23 @@ import scala.concurrent.Future
   */
 @Singleton
 class ExplorerController @Inject()(config: play.api.Configuration,
-                                   implicit val playSessionStore: PlaySessionStore,
+                                   jwtVerifier: JWTVerifierProvider,
                                    wsclient: WSClient,
+                                   backends: Backends,
                                    implicit val graphExecutionContextProvider: GraphExecutionContextProvider,
                                    implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
                                    implicit val vertexReader: VertexReader
-                                    ) extends Controller with JsonComponent with GraphTraversalComponent with RequestHelper{
+                                    ) extends Controller with ControllerWithBodyParseJson with GraphTraversalComponent with RequestHelper{
+
+  implicit lazy val persistedVertexFormat = PersistedVertexFormat
 
 
-
-
-  def bucketBackends = Action.async { implicit request =>
-    Future(Ok(Json.toJson(List("swift"))))
+  def bucketBackends = ProfileFilterAction(jwtVerifier.get).async { implicit request =>
+    Future(Ok(Json.toJson(backends.map.keys)))
   }
 
 
-  def bucketList = Action.async { implicit request =>
+  def bucketList = ProfileFilterAction(jwtVerifier.get).async { implicit request =>
     val g = graphTraversalSource
     val t = g.V().has(Constants.TypeKey, "resource:bucket")
 
@@ -77,7 +81,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
 
   }
 
-  def fileList(id: Long) = Action.async { implicit request =>
+  def fileList(id: Long) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
     val g = graphTraversalSource
     val t = g.V(Long.box(id)).inE("resource:stored_in").inV().has(Constants.TypeKey, "resource:file")
 
@@ -90,7 +94,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
 
   }
 
-  def fileMetadata(id: Long) = Action.async { implicit request =>
+  def fileMetadata(id: Long) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
 
     val g = graphTraversalSource
     val t = g.V(Long.box(id)).as("data").out("resource:stored_in").as("bucket").select[Vertex]("data", "bucket")
@@ -110,7 +114,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
     }).map(i => Ok(Json.toJson(i.toMap)))
   }
 
-  def bucketMetadata(id: Long) = Action.async { implicit request =>
+  def bucketMetadata(id: Long) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
 
     getVertex(id).map {
       case Some(vertex) =>
@@ -122,9 +126,8 @@ class ExplorerController @Inject()(config: play.api.Configuration,
     }
   }
 
-  def bucketCreate = Action.async(bodyParseJson[CreateBucketRequest](createBucketRequestReads)) {
+  def bucketCreate =  ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateBucketRequest](CreateBucketRequestFormat)) {
     implicit request =>
-      val profile = getProfiles().head
       val bucket: CreateBucketRequest = request.body
 //      val v = NewVertex(1, Set(NamespaceAndName("resource:bucket")),Map(
 //        NamespaceAndName("system:owner") -> SingleValue(
@@ -137,7 +140,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
       b.addType(NamespaceAndName("resource:bucket"))
         .addSingleProperty(NamespaceAndName("resource:bucket_backend_id"), UuidValue(bucketBackendId))
         .addSingleProperty(NamespaceAndName("resource:bucket_name"), StringValue(bucket.name))
-        .addSingleProperty(NamespaceAndName("system:owner"), StringValue(profile.getEmail))
+        .addSingleProperty(NamespaceAndName("system:owner"), StringValue(request.userId))
       // TODO add more properties
       val v = b.result()
       val gc = GraphMutationClient(config

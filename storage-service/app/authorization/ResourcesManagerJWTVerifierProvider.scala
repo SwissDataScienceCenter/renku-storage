@@ -16,23 +16,28 @@
  * limitations under the License.
  */
 
-package controllers.security
+package authorization
 
-import org.pac4j.core.authorization.authorizer.ProfileAuthorizer
-import org.pac4j.core.context.WebContext
-import org.pac4j.core.profile.CommonProfile
+import java.security.interfaces.RSAPublicKey
+import javax.inject.{Inject, Singleton}
 
-class UserTokenAuthorizer extends ProfileAuthorizer[CommonProfile] {
+import ch.datascience.service.security.PublicKeyReader
+import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.{JWT, JWTVerifier}
+import play.api.Configuration
 
-  def isAuthorized(context: WebContext, profiles: java.util.List[CommonProfile]): Boolean = {
-    return isAnyAuthorized(context, profiles)
+/**
+  * Created by johann on 14/07/17.
+  */
+@Singleton
+class ResourcesManagerJWTVerifierProvider @Inject()(configuration: Configuration) {
+
+  def get: JWTVerifier = verifier
+
+  private[this] lazy val verifier: JWTVerifier = {
+    val publicKey: RSAPublicKey = PublicKeyReader.readRSAPublicKey(configuration.getString("key.resources-manager.public").get)
+    val algorithm = Algorithm.RSA256(publicKey, null)
+    JWT.require(algorithm).build()
   }
 
-  def isProfileAuthorized(context: WebContext, profile: CommonProfile): Boolean = {
-    if (profile == null) {
-      false
-    } else {
-      true // TODO do we need to restrict here?
-    }
-  }
 }
