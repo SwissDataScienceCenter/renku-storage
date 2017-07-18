@@ -2,7 +2,6 @@ package controllers
 
 import javax.inject._
 
-import akka.util.ByteString
 import controllers.storageBackends.Backends
 import org.pac4j.core.profile.{CommonProfile, ProfileManager}
 import org.pac4j.play.PlayWebContext
@@ -49,13 +48,8 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
     }
   }
 
-  def objectWrite = Action(forward()) { request =>
-    request.body
-  }
+  def objectWrite = EssentialAction { req =>
 
-  def forward(): BodyParser[Result] = BodyParser { req =>
-    Accumulator.source[ByteString].mapFuture { source =>
-      Future {
         val profile = getProfiles(req).head
         val bucket = Try(profile.getAttribute("bucket").toString)
         val name = Try(profile.getAttribute("name").toString)
@@ -64,18 +58,12 @@ class IOController @Inject()(config: play.api.Configuration, val playSessionStor
         backends.getBackend(backend.getOrElse("")) match {
           case Some(back) =>
             (for {n <- name; b <- bucket} yield
-                  Right(
-                    if (back.write(req, b, n, source))
-                      Created
-                    else
-                      NotFound
-                  )
-              ).getOrElse(Right(BadRequest))
-          case None => Right(BadRequest(s"The backend $backend is not enabled."))
+                    back.write(req, b, n)
+              ).getOrElse(Accumulator.done(BadRequest))
+          case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
         }
       }
-    }
-  }
+
 
   def bucketCreate = Action.async { implicit request =>
     Future {

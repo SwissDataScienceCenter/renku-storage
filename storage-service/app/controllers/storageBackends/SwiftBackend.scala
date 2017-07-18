@@ -11,15 +11,20 @@ import org.javaswift.joss.client.factory.{AccountConfig, AccountFactory}
 import org.javaswift.joss.headers.`object`.range.{FirstPartRange, LastPartRange, MidPartRange}
 import org.javaswift.joss.instructions.DownloadInstructions
 import org.javaswift.joss.model.Account
+import play.api.libs.concurrent.ActorSystemProvider
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.libs.streams.Accumulator
 import play.api.mvc._
+import play.api.mvc.Results._
 
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 
 
 @Singleton
-class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
+class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
   val swiftConfig = new AccountConfig()
   swiftConfig.setUsername(config.getString("swift.username").get)
@@ -49,24 +54,30 @@ class SwiftBackend @Inject()(config: play.api.Configuration) extends Backend {
     }
   }
 
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
-    implicit val system = ActorSystem("Sys")
-    implicit val materializer = ActorMaterializer()
+  def write(req: RequestHeader, bucket: String, name: String): Accumulator[ByteString, Result] = {
+
+    implicit val actorSystem: ActorSystem  = actorSystemProvider.get
+    implicit val mat: ActorMaterializer = ActorMaterializer()
     val container = swiftAccount.getContainer(bucket)
-    container.exists() && {
-      val obj = container.getObject(name)
-      val inputStream = source.runWith(
-        StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
-      )
-      obj.uploadObject(inputStream)
-      true
+    if (container.exists())
+      Accumulator.source[ByteString].mapFuture { source =>
+        Future {
+          val obj = container.getObject(name)
+          val inputStream = source.runWith(
+            StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
+          )
+          obj.uploadObject(inputStream)
+          Created
+        }
     }
+    else
+      Accumulator.done(NotFound)
   }
 
   def createBucket(request: RequestHeader, bucket: String): Boolean = {
     val container = swiftAccount.getContainer(bucket)
     !container.exists() && {
-      container.setCustomHeaders().create()
+      container.create()
       true
     }
   }

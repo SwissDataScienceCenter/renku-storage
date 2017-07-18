@@ -9,9 +9,10 @@ import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
-import play.api.mvc.RequestHeader
-
-import scala.concurrent.ExecutionContext
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{RequestHeader, Result}
+import play.api.mvc.Results.Created
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -48,15 +49,18 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
   }
 
 
-  def write(req: RequestHeader, bucket: String, name: String, source: Source[ByteString, _]): Boolean = {
-    implicit val actorSystem: ActorSystem  = actorSystemProvider.get
+  def write(req: RequestHeader, bucket: String, name: String): Accumulator[ByteString, Result] = {
+    implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
-
-    val fullPath = s"$bucket/$name"
-    val os = new FileOutputStream(fullPath)
-    val sink = StreamConverters.fromOutputStream(() => os)
-    source.runWith(sink)
-    true
+    Accumulator.source[ByteString].mapFuture { source =>
+      Future {
+        val fullPath = s"$bucket/$name"
+        val os = new FileOutputStream(fullPath)
+        val sink = StreamConverters.fromOutputStream(() => os)
+        source.runWith(sink)
+        Created
+      }
+    }
   }
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
