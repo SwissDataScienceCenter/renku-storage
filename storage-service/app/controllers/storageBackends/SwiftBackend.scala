@@ -27,7 +27,7 @@ import scala.util.matching.Regex
 class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
   val swiftConfig = new AccountConfig()
-  lazy val subConfig = config.getConfig("storage.backend.swift").get
+  private[this] val subConfig = config.getConfig("storage.backend.swift").get
   swiftConfig.setUsername(subConfig.getString("username").get)
   swiftConfig.setPassword(subConfig.getString("password").get)
   swiftConfig.setAuthUrl(subConfig.getString("auth_url").get)
