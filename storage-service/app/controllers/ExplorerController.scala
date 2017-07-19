@@ -30,12 +30,13 @@ import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.elements.persisted.json.PersistedVertexFormat
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.{StringValue, UuidValue}
-import ch.datascience.service.models.resource.CreateBucketRequest
 import ch.datascience.service.security.ProfileFilterAction
 import ch.datascience.service.utils.ControllerWithBodyParseJson
 import controllers.storageBackends.Backends
-import ch.datascience.service.models.resource.json._
+import ch.datascience.service.models.storage.json._
 import ch.datascience.graph.elements.mutation.log.model.json._
+import ch.datascience.service.models.storage.CreateBucketRequest
+
 import scala.collection.JavaConversions._
 import persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
 import persistence.reader.VertexReader
