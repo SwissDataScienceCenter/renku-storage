@@ -12,9 +12,11 @@ POST    /authorize/read                           controllers.AuthorizeControlle
 POST    /authorize/write                          controllers.AuthorizeController.objectWrite
 POST    /authorize/bucket                         controllers.AuthorizeController.bucketCreate
 
-GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
-GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
-GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
 GET      /explore/list                            controllers.ExplorerController.bucketList
 GET      /explore/backends                        controllers.ExplorerController.bucketBackends
+GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
+GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
+GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
+
+
 # GET      /explore/:id/*path                     controllers.ExplorerController.fileMetadata(id: Long, path: String)
