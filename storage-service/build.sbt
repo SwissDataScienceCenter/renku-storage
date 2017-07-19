@@ -26,13 +26,11 @@ lazy val root = Project(
   base = file(".")
 ).dependsOn(
   core,
-  mutationClient,
   serviceCommons
 ).enablePlugins(PlayScala)
 
 
 lazy val core = RootProject(file("../graph-core"))
-lazy val mutationClient = RootProject(file("../graph-mutation-client"))
 lazy val serviceCommons = RootProject(file("../service-commons"))
 
 scalaVersion := "2.11.8"
