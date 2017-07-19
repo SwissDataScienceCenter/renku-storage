@@ -90,21 +90,4 @@ class IOController @Inject()(config: play.api.Configuration, backends: Backends,
           case Left(res) => Accumulator.done(res)
         }
       }
-
-
-  def bucketCreate = ProfileFilterAction(jwtVerifier.get).async { implicit request =>
-    Future {
-      val bucket = request.token.getClaim("bucket").asString()
-      val backend = request.token.getClaim("backend").asString()
-
-      backends.getBackend(backend) match {
-        case Some(back) =>
-            if (back.createBucket(request, bucket))
-              Created
-            else
-              Conflict
-        case None => BadRequest(s"The backend $backend is not enabled.")
-      }
-    }
-  }
 }

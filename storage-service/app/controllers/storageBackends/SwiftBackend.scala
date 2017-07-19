@@ -93,11 +93,10 @@ class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider
       Accumulator.done(NotFound)
   }
 
-  def createBucket(request: RequestHeader, bucket: String): Boolean = {
-    val container = swiftAccount.getContainer(bucket)
-    !container.exists() && {
-      container.create()
-      true
-    }
+  def createBucket(request: RequestHeader, bucket: String): String = {
+    val uuid = java.util.UUID.randomUUID.toString
+    val container = swiftAccount.getContainer(uuid)
+    container.create()
+    uuid
   }
 }

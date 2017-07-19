@@ -29,6 +29,6 @@ import play.api.mvc.{RequestHeader, Result}
 trait Backend {
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]]
   def write(request: RequestHeader, bucket: String, name: String):  Accumulator[ByteString, Result]
-  def createBucket(request: RequestHeader, bucket: String): Boolean
+  def createBucket(request: RequestHeader, bucket: String): String
 
 }
