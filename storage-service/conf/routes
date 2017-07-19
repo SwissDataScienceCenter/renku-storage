@@ -8,9 +8,9 @@ GET     /io/read                                  controllers.IOController.objec
 POST    /io/write                                 controllers.IOController.objectWrite
 POST    /io/bucket                                controllers.IOController.bucketCreate
 
-# POST    /authorize/read                           controllers.AuthorizeController.objectRead
-# POST    /authorize/write                          controllers.AuthorizeController.objectWrite
-# POST    /authorize/bucket                         controllers.AuthorizeController.bucketCreate
+POST    /authorize/read                           controllers.AuthorizeController.objectRead
+POST    /authorize/write                          controllers.AuthorizeController.objectWrite
+POST    /authorize/bucket                         controllers.AuthorizeController.bucketCreate
 
 GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
 GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
