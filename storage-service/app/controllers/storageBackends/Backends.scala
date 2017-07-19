@@ -35,9 +35,10 @@ class Backends @Inject()(injector: Injector, configuration: Configuration) {
 
   private[this] def loadBackends: Map[String, Backend] = {
     val it = for {
-      names <- configuration.getStringSeq("backends")
+      conf <- configuration.getConfig("storage.backend")
     } yield for {
-      name <- names
+      name <- conf.subKeys
+      if conf.getBoolean(s"$name.enabled").getOrElse(false)
     } yield {
       val key = BindingKey(classOf[Backend]).qualifiedWith(name)
       name -> injector.instanceOf(key)
