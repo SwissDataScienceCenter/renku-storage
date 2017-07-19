@@ -77,8 +77,9 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
 
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
-  def createBucket(request: RequestHeader, bucket: String): Boolean = {
+  def createBucket(request: RequestHeader, bucket: String): String = {
     new File(bucket).mkdir()
+    bucket
   }
 
   private[this] def takeFromByteStringSource(source: Source[ByteString, _], n: Int, chunkSize: Int = 8192): Source[ByteString, _] = {
