@@ -27,10 +27,11 @@ import scala.util.matching.Regex
 class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
   val swiftConfig = new AccountConfig()
-  swiftConfig.setUsername(config.getString("swift.username").get)
-  swiftConfig.setPassword(config.getString("swift.password").get)
-  swiftConfig.setAuthUrl(config.getString("swift.auth_url").get)
-  swiftConfig.setTenantId(config.getString("swift.project").get)
+  val subConfig = config.getConfig("storage.backend.swift").get
+  swiftConfig.setUsername(subConfig.getString("username").get)
+  swiftConfig.setPassword(subConfig.getString("password").get)
+  swiftConfig.setAuthUrl(subConfig.getString("auth_url").get)
+  swiftConfig.setTenantId(subConfig.getString("project").get)
   lazy val swiftAccount: Account = new AccountFactory(swiftConfig).createAccount()
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
