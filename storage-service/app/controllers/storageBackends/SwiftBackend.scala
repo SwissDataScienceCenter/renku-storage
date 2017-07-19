@@ -31,7 +31,7 @@ class SwiftBackend @Inject()(config: play.api.Configuration, actorSystemProvider
   swiftConfig.setPassword(config.getString("swift.password").get)
   swiftConfig.setAuthUrl(config.getString("swift.auth_url").get)
   swiftConfig.setTenantId(config.getString("swift.project").get)
-  val swiftAccount: Account = new AccountFactory(swiftConfig).createAccount()
+  lazy val swiftAccount: Account = new AccountFactory(swiftConfig).createAccount()
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
