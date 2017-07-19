@@ -53,7 +53,14 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
     persistedVertex.properties.get(NamespaceAndName(name)).flatMap(v => v.values.headOption.map(value => value.asInstanceOf[StringValue].self))
 
   def objectRead = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[ReadResourceRequest](ReadResourceRequestFormat)) { implicit request =>
+    /* Steps:
+     *   1. Resolve graph entities
+     *   2. Request access authorization from Resource Manager
+     *   3. Validate response from RM and log to Knowledge Graph
+     *   4. Send authorization to client
+     */
 
+    // Step 1: Resolve graph entities
     implicit val token: String = request.headers.get("Authorization").getOrElse("")
     val rmc = new ResourcesManagerClient(host)
     val g = graphTraversalSource
@@ -79,12 +86,21 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
       else
         Future(None)
     }.flatMap(extra => {
+      // Step 2: Request access authorization from Resource Manager
       rmc.authorize(AccessRequestFormat, request.body.toAccessRequest(extra))
     }).map(ret => Ok(ret))
 
+    // TODO: Steps 3 and 4
   }
 
   def objectWrite = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[WriteResourceRequest](WriteResourceRequestFormat)) { implicit request =>
+    /* Steps:
+     *   1. Resolve graph entities
+     *   2. Request access authorization from Resource Manager
+     *   3. Validate response from RM and log to Knowledge Graph
+     *   4. Send authorization to client
+     */
+
     implicit val token: String = request.headers.get("Authorization").getOrElse("")
     val rmc = new ResourcesManagerClient(host)
     val g = graphTraversalSource
@@ -115,6 +131,15 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
   }
 
   def objectCreate = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateFileRequest](CreateFileRequestFormat)) { implicit request =>
+    /* Steps:
+     *   1. Resolve graph entities
+     *   2. Request access authorization from Resource Manager (a. create file)
+     *   3. Validate response from RM and log to Knowledge Graph
+     *   4. Request access authorization from Resource Manager (b. write file)
+     *   5. Validate response from RM and log to Knowledge Graph
+     *   6. Send authorization to client (b)
+     */
+
     implicit val token: String = request.headers.get("Authorization").getOrElse("")
     val rmc = new ResourcesManagerClient(host)
     getVertex(request.body.bucketId).flatMap {
@@ -145,6 +170,12 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
   }
 
   def bucketCreate = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateBucketRequest](CreateBucketRequestFormat)) { implicit request =>
+    /* Steps:
+     *   1. Request access authorization from Resource Manager
+     *   2. Validate response from RM and log to Knowledge Graph
+     *   3. Create bucket and send response to client
+     */
+
     implicit val token: String = request.headers.get("Authorization").getOrElse("")
     val rmc = new ResourcesManagerClient(host)
     val backend = request.body.backend
