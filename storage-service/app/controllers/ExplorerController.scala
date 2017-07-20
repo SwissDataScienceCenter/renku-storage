@@ -77,6 +77,26 @@ class ExplorerController @Inject()(config: play.api.Configuration,
 
   }
 
+  def fileMetadatafromPath(id: Long, path: String) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
+
+    val g = graphTraversalSource
+    val t = g.V().has("resource:filename",path).as("data").outE("resource:stored_in").V(Long.box(id)).as("bucket").select[Vertex]("data", "bucket")
+
+    Future.sequence(graphExecutionContext.execute {
+      if (t.hasNext) {
+        import scala.collection.JavaConverters._
+        val jmap: Map[String, Vertex] = t.next().asScala.toMap
+        for {
+          (key, value) <- jmap
+        } yield for {
+          vertex <- vertexReader.read(value)
+        } yield key -> vertex
+      }
+      else
+        Seq.empty
+    }).map(i => Ok(Json.toJson(i.toMap)))
+  }
+
   def fileMetadata(id: Long) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
 
     val g = graphTraversalSource
@@ -107,30 +127,6 @@ class ExplorerController @Inject()(config: play.api.Configuration,
           NotAcceptable // to differentiate from not found
       case None => NotFound
     }
-  }
-
-  def bucketCreate =  ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateBucketRequest](CreateBucketRequestFormat)) {
-    implicit request =>
-      val bucket: CreateBucketRequest = request.body
-//      val v = NewVertex(1, Set(NamespaceAndName("resource:bucket")),Map(
-//        NamespaceAndName("system:owner") -> SingleValue(
-//        DetachedRichProperty(NamespaceAndName("system:owner"),  // TODO add more
-//          StringValue(profile.getEmail),
-//          Map()))))
-      val bucketBackendId = UUID.randomUUID()
-      // TODO: decide if we want to create the bucket at this point, might be dependent on backend
-      val b = new NewVertexBuilder()
-      b.addType(NamespaceAndName("resource:bucket"))
-        .addSingleProperty(NamespaceAndName("resource:bucket_backend_id"), UuidValue(bucketBackendId))
-        .addSingleProperty(NamespaceAndName("resource:bucket_name"), StringValue(bucket.name))
-        .addSingleProperty(NamespaceAndName("system:owner"), StringValue(request.userId))
-      // TODO add more properties
-      val v = b.result()
-      val gc = GraphMutationClient(config
-        .getString("graph.mutation.service.host")
-        .getOrElse("http://localhost:9000/api/mutation/"),implicitly, wsclient)
-      val mut = Mutation(Seq(CreateVertexOperation(v)))
-      gc.post(mut).flatMap(e => gc.wait(e.uuid).map(s => Ok(Json.toJson(s))))
   }
 
 }
