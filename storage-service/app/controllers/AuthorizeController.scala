@@ -60,8 +60,8 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
                                     ) extends Controller with ControllerWithBodyParseJson with GraphTraversalComponent with RequestHelper {
 
   lazy val host: String = config
-    .getString("resources.manager.service.host")
-    .getOrElse("http://localhost:9000/api/resources/")
+    .getString("resource-manager.service.host")
+    .getOrElse("http://localhost:9000/api/resource-manager")
 
   lazy val mhost: String = config
     .getString("graph.mutation.service.host")

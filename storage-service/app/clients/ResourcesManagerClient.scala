@@ -35,6 +35,7 @@ class ResourcesManagerClient @Inject()(host: String)(implicit context: Execution
       .withRequestTimeout(10000.millis)
     val futureResult: Future[JsValue] = request.post(Json.toJson(rrequest)(writer)).map {
       response =>
+        println(response.body)
         response.json
     }
     futureResult
