@@ -20,9 +20,9 @@ package controllers
 
 import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.execution.GraphExecutionContext
+import ch.datascience.service.utils.persistence.reader.VertexReader
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import persistence.reader.VertexReader
 import play.api.mvc.Controller
 
 import scala.concurrent.ExecutionContext.Implicits.global
