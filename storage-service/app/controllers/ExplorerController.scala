@@ -13,15 +13,15 @@ import ch.datascience.graph.elements.persisted.json.PersistedVertexFormat
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.{StringValue, UuidValue}
 import ch.datascience.service.security.ProfileFilterAction
-import ch.datascience.service.utils.ControllerWithBodyParseJson
+import ch.datascience.service.utils.{ControllerWithBodyParseJson, ControllerWithGraphTraversal}
 import controllers.storageBackends.Backends
 import ch.datascience.service.models.storage.json._
 import ch.datascience.graph.elements.mutation.log.model.json._
 import ch.datascience.service.models.storage.CreateBucketRequest
+import ch.datascience.service.utils.persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
+import ch.datascience.service.utils.persistence.reader.VertexReader
 
 import scala.collection.JavaConversions._
-import persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
-import persistence.reader.VertexReader
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -41,7 +41,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
                                    implicit val graphExecutionContextProvider: GraphExecutionContextProvider,
                                    implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
                                    implicit val vertexReader: VertexReader
-                                    ) extends Controller with ControllerWithBodyParseJson with GraphTraversalComponent with RequestHelper{
+                                    ) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal with RequestHelper{
 
   implicit lazy val persistedVertexFormat = PersistedVertexFormat
 
