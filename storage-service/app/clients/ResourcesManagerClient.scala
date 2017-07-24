@@ -19,6 +19,7 @@ class ResourcesManagerClient @Inject()(host: String)(implicit context: Execution
       .withRequestTimeout(10000.millis)
     request.post(Json.toJson(rrequest)(writer)).map {
       response =>
+        println(response.body)
         response.json.validate(AccessGrantFormat).asOpt
     }
   }
