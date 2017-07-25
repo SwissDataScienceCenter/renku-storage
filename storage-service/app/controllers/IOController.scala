@@ -2,97 +2,53 @@ package controllers
 
 import javax.inject._
 
-import akka.util.ByteString
+import authorization.ResourcesManagerJWTVerifierProvider
+import ch.datascience.service.security.{ProfileFilterAction, TokenFilter}
 import controllers.storageBackends.Backends
-import org.pac4j.core.profile.{CommonProfile, ProfileManager}
-import org.pac4j.play.PlayWebContext
-import org.pac4j.play.store.PlaySessionStore
 import play.api.libs.streams._
 import play.api.mvc._
 
-import scala.collection.JavaConversions.asScalaBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.matching.Regex
-import scala.util.Try
 
 
 @Singleton
-class IOController @Inject()(config: play.api.Configuration, val playSessionStore: PlaySessionStore, backends: Backends) extends Controller {
+class IOController @Inject()(config: play.api.Configuration, backends: Backends, jwtVerifier: ResourcesManagerJWTVerifierProvider) extends Controller {
 
-  private def getProfiles(implicit request: RequestHeader): List[CommonProfile] = {
-    val webContext = new PlayWebContext(request, playSessionStore)
-    val profileManager = new ProfileManager[CommonProfile](webContext)
-    val profiles = profileManager.getAll(true)
-    asScalaBuffer(profiles).toList
-  }
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
 
-  def objectRead = Action.async { implicit request =>
+  def objectRead = ProfileFilterAction(jwtVerifier.get).async { implicit request =>
     Future {
-      val profile = getProfiles(request).head
-      val bucket = Try(profile.getAttribute("bucket").toString)
-      val name = Try(profile.getAttribute("name").toString)
-      val backend = Try(profile.getAttribute("backend").toString)
+      val bucket = request.token.getClaim("bucket").asString()
+      val name = request.token.getClaim("name").asString()
+      val backend = request.token.getClaim("backend").asString()
 
-      backends.getBackend(backend.getOrElse("")) match {
+      backends.getBackend(backend) match {
         case Some(back) =>
-          (for { n <- name; b <- bucket } yield
-              back.read(request, b, n) match {
+              back.read(request, bucket, name) match {
                 case Some(dataContent) => Ok.chunked(dataContent)
                 case None => NotFound
-              }).getOrElse(BadRequest)
+              }
         case None => BadRequest(s"The backend $backend is not enabled.")
       }
     }
   }
 
-  def objectWrite = Action(forward()) { request =>
-    request.body
-  }
-
-  def forward(): BodyParser[Result] = BodyParser { req =>
-    Accumulator.source[ByteString].mapFuture { source =>
-      Future {
-        val profile = getProfiles(req).head
-        val bucket = Try(profile.getAttribute("bucket").toString)
-        val name = Try(profile.getAttribute("name").toString)
-        val backend = Try(profile.getAttribute("backend").toString)
-
-        backends.getBackend(backend.getOrElse("")) match {
-          case Some(back) =>
-            (for {n <- name; b <- bucket} yield
-                  Right(
-                    if (back.write(req, b, n, source))
-                      Created
-                    else
-                      NotFound
-                  )
-              ).getOrElse(Right(BadRequest))
-          case None => Right(BadRequest(s"The backend $backend is not enabled."))
+  def objectWrite = EssentialAction { reqh =>
+        TokenFilter(jwtVerifier.get, "").filter(reqh) match {
+          case Right(profile) =>
+            val bucket = profile.getClaim("bucket").asString()
+            val name = profile.getClaim("name").asString()
+            val backend = profile.getClaim("backend").asString()
+            backends.getBackend(backend) match {
+              case Some(back) =>
+                  back.write(reqh, bucket, name)
+              case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
+            }
+          case Left(res) => Accumulator.done(res)
         }
       }
-    }
-  }
-
-  def bucketCreate = Action.async { implicit request =>
-    Future {
-      val profile = getProfiles(request).head
-      val bucket = Try(profile.getAttribute("bucket").toString)
-      val backend = Try(profile.getAttribute("backend").toString)
-
-      backends.getBackend(backend.getOrElse("")) match {
-        case Some(back) =>
-          bucket.map( b =>
-            if (back.createBucket(request, b))
-              Created
-            else
-              Conflict
-          ).getOrElse(BadRequest)
-        case None => BadRequest(s"The backend $backend is not enabled.")
-      }
-    }
-  }
 }
