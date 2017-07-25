@@ -6,15 +6,17 @@
 
 GET     /io/read                                  controllers.IOController.objectRead
 POST    /io/write                                 controllers.IOController.objectWrite
-POST    /io/bucket                                controllers.IOController.bucketCreate
 
-# POST    /authorize/read                           controllers.AuthorizeController.objectRead
-# POST    /authorize/write                          controllers.AuthorizeController.objectWrite
-# POST    /authorize/bucket                         controllers.AuthorizeController.bucketCreate
+POST    /authorize/read                           controllers.AuthorizeController.objectRead
+POST    /authorize/write                          controllers.AuthorizeController.objectWrite
+POST    /authorize/create_file                    controllers.AuthorizeController.objectCreate
+POST    /authorize/create_bucket                  controllers.AuthorizeController.bucketCreate
 
-GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
-GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
-GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
 GET      /explore/list                            controllers.ExplorerController.bucketList
 GET      /explore/backends                        controllers.ExplorerController.bucketBackends
-# GET      /explore/:id/*path                     controllers.ExplorerController.fileMetadata(id: Long, path: String)
+GET      /explore/file/:id                        controllers.ExplorerController.fileMetadata(id: Long)
+GET      /explore/:id/files                       controllers.ExplorerController.fileList(id: Long)
+GET      /explore/:id                             controllers.ExplorerController.bucketMetadata(id: Long)
+
+
+GET      /explore/:id/*path                       controllers.ExplorerController.fileMetadatafromPath(id: Long, path: String)
