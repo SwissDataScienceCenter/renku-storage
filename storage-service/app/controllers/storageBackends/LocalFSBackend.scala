@@ -7,11 +7,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
+import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{RequestHeader, Result}
 import play.api.mvc.Results.Created
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.matching.Regex
@@ -20,12 +22,12 @@ import scala.util.matching.Regex
   * Created by johann on 07/07/17.
   */
 @Singleton
-class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
+class LocalFSBackend @Inject()(configuration: Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
 
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
-      val fullPath = s"$bucket/$name"
+      val fullPath = s"$rootDir/$bucket/$name"
       val (from, to) = getRange(request)
 
       val is = new FileInputStream(fullPath)
@@ -54,7 +56,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
       Future {
-        val fullPath = s"$bucket/$name"
+        val fullPath = s"$rootDir/$bucket/$name"
         val os = new FileOutputStream(fullPath)
         val sink = StreamConverters.fromOutputStream(() => os)
         source.runWith(sink)
@@ -78,12 +80,15 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def createBucket(request: RequestHeader, bucket: String): String = {
-    new File(bucket).mkdir()
+    new File(rootDir, bucket).mkdir()
+    println(s"mkdir ${(new File(rootDir, bucket)).getPath}")
     bucket
   }
 
   private[this] def takeFromByteStringSource(source: Source[ByteString, _], n: Int, chunkSize: Int = 8192): Source[ByteString, _] = {
     source.mapConcat(identity).take(n).grouped(chunkSize).map{ bytes => ByteString(bytes: _*) }
   }
+
+  private[this] lazy val rootDir: String = configuration.getString("storage.backend.local.root").get
 
 }
