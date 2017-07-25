@@ -57,3 +57,4 @@ dockerBaseImage := "openjdk:8-jre-alpine"
 
 dockerCommands ~= { cmds => cmds.head +: ExecCmd("RUN", "apk", "add", "--no-cache", "bash") +: cmds.tail }
 
+dockerCommands ~= { cmds => cmds :+ Cmd("RUN", "mkdir", "-p", "data") :+ Cmd("VOLUME", "/data") }

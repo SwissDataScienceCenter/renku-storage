@@ -84,7 +84,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
 
   def fileList(id: Long) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
     val g = graphTraversalSource
-    val t = g.V(Long.box(id)).inE("resource:stored_in").inV().has(Constants.TypeKey, "resource:file")
+    val t = g.V(Long.box(id)).in("resource:stored_in").has(Constants.TypeKey, "resource:file")
 
     val future: Future[Seq[PersistedVertex]] = graphExecutionContext.execute {
       Future.sequence(t.toIterable.map(v =>
@@ -98,7 +98,7 @@ class ExplorerController @Inject()(config: play.api.Configuration,
   def fileMetadatafromPath(id: Long, path: String) =  ProfileFilterAction(jwtVerifier.get).async { implicit request =>
 
     val g = graphTraversalSource
-    val t = g.V().has("resource:filename",path).as("data").outE("resource:stored_in").V(Long.box(id)).as("bucket").select[Vertex]("data", "bucket")
+    val t = g.V().has("resource:filename",path).as("data").out("resource:stored_in").V(Long.box(id)).as("bucket").select[Vertex]("data", "bucket")
 
     Future.sequence(graphExecutionContext.execute {
       if (t.hasNext) {
