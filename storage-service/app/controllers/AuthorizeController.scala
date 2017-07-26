@@ -40,7 +40,7 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
                                     implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
                                     implicit val vertexReader: VertexReader,
                                     backends: Backends
-                                    ) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal with RequestHelper {
+                                    ) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal {
 
   lazy val host: String = config
     .getString("resource-manager.service.host")
@@ -175,7 +175,18 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
 
     implicit val token: String = request.headers.get("Authorization").getOrElse("")
     val rmc = new ResourcesManagerClient(host)
-    getVertex(request.body.bucketId).flatMap {
+    val g = graphTraversalSource
+    val t = g.V(Long.box(request.body.bucketId))
+
+    val futureVertex: Future[Option[PersistedVertex]] = graphExecutionContext.execute {
+      if (t.hasNext) {
+        val vertex = t.next()
+        vertexReader.read(vertex).map(Some.apply)
+      }
+      else
+        Future.successful( None )
+    }
+    futureVertex.flatMap {
       case Some(vertex) =>
         if (vertex.types.contains(NamespaceAndName("resource:bucket"))) {
 
