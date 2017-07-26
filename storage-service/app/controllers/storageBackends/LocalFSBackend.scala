@@ -25,11 +25,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
+import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{RequestHeader, Result}
 import play.api.mvc.Results.Created
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.matching.Regex
@@ -38,14 +40,13 @@ import scala.util.matching.Regex
   * Created by johann on 07/07/17.
   */
 @Singleton
-class LocalFSBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
+class LocalFSBackend @Inject()(configuration: Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
-  private[this] val subConfig = config.getConfig("storage.backend.local").get
-  val path: String = subConfig.getString("path").getOrElse(".")
+  private[this] lazy val rootDir: String = configuration.getString("storage.backend.local.root").get
 
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
-      val fullPath = s"$path/$bucket/$name"
+      val fullPath = s"$rootDir/$bucket/$name"
       val (from, to) = getRange(request)
 
       val is = new FileInputStream(fullPath)
@@ -74,7 +75,7 @@ class LocalFSBackend @Inject()(config: play.api.Configuration, actorSystemProvid
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
       Future {
-        val fullPath = s"$path/$bucket/$name"
+        val fullPath = s"$rootDir/$bucket/$name"
         val os = new FileOutputStream(fullPath)
         val sink = StreamConverters.fromOutputStream(() => os)
         source.runWith(sink)
@@ -98,7 +99,7 @@ class LocalFSBackend @Inject()(config: play.api.Configuration, actorSystemProvid
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def createBucket(request: RequestHeader, bucket: String): String = {
-    new File(s"$path/$bucket").mkdir()
+    new File(rootDir, bucket).mkdir()
     bucket
   }
 

@@ -116,7 +116,7 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
         ret.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
           request.executionId.map(eId => {
             // Step 4: Log to KnowledgeGraph
-            val edge = NewEdge(NamespaceAndName("resource:read"), Right(request.body.resourceId), Right(eId), Map())
+            val edge = NewEdge(NamespaceAndName("resource:read"), Right(eId), Right(request.body.resourceId), Map())
             val mut = Mutation(Seq(CreateEdgeOperation(edge)))
             val gc = GraphMutationClient.makeStandaloneClient(mhost)
             gc.post(mut).map(ev => Ok(Json.toJson(ag)))
@@ -170,7 +170,7 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
         ret.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
           request.executionId.map(eId => {
             // Step 4: Log to KnowledgeGraph
-            val edge = NewEdge(NamespaceAndName("resource:write"), Right(request.body.resourceId), Right(eId), Map())
+            val edge = NewEdge(NamespaceAndName("resource:write"), Right(eId), Right(request.body.resourceId), Map())
             val mut = Mutation(Seq(CreateEdgeOperation(edge)))
             val gc = GraphMutationClient.makeStandaloneClient(mhost)
             gc.post(mut).map(ev => Ok(Json.toJson(ag)))
@@ -208,8 +208,14 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
               val nvertex = new NewVertexBuilder()
                 .addSingleProperty("resource:file_name", StringValue(request.body.fileName))
                 .addType(NamespaceAndName("resource:file"))
-              val edge = NewEdge(NamespaceAndName("resource:stored_in"), Right(vertex.id), Left(0), Map())
-              val mut = Mutation(Seq(CreateVertexOperation(nvertex.result()), CreateEdgeOperation(edge)))
+              val edge = NewEdge(NamespaceAndName("resource:stored_in"), Left(nvertex.tempId), Right(vertex.id), Map())
+              val createAndWriteEdges = request.executionId.map { execId =>
+                Seq(
+                  NewEdge(NamespaceAndName("resource:write"), Right(execId), Left(nvertex.tempId), Map()),
+                  NewEdge(NamespaceAndName("resource:create"), Right(execId), Left(nvertex.tempId), Map())
+                ).map(CreateEdgeOperation)
+              }
+              val mut = Mutation(Seq(CreateVertexOperation(nvertex.result()), CreateEdgeOperation(edge)) ++ createAndWriteEdges.getOrElse(Seq.empty))
               val gc = GraphMutationClient.makeStandaloneClient(mhost)
               gc.post(mut).map(ev => Ok(Json.toJson(ag)))  //TODO: maybe take into account if the node was created or not
             } else Future(InternalServerError("Resource Manager response is invalid."))
