@@ -42,6 +42,7 @@ import scala.util.matching.Regex
 @Singleton
 class LocalFSBackend @Inject()(configuration: Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
+  private[this] lazy val rootDir: String = configuration.getString("storage.backend.local.root").get
 
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
@@ -99,14 +100,11 @@ class LocalFSBackend @Inject()(configuration: Configuration, actorSystemProvider
 
   def createBucket(request: RequestHeader, bucket: String): String = {
     new File(rootDir, bucket).mkdir()
-    println(s"mkdir ${(new File(rootDir, bucket)).getPath}")
     bucket
   }
 
   private[this] def takeFromByteStringSource(source: Source[ByteString, _], n: Int, chunkSize: Int = 8192): Source[ByteString, _] = {
     source.mapConcat(identity).take(n).grouped(chunkSize).map{ bytes => ByteString(bytes: _*) }
   }
-
-  private[this] lazy val rootDir: String = configuration.getString("storage.backend.local.root").get
 
 }
