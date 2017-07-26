@@ -38,12 +38,14 @@ import scala.util.matching.Regex
   * Created by johann on 07/07/17.
   */
 @Singleton
-class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends Backend {
+class LocalFSBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider) extends Backend {
 
+  private[this] val subConfig = config.getConfig("storage.backend.local").get
+  val path: String = subConfig.getString("path").getOrElse(".")
 
   def read(request: RequestHeader, bucket: String, name: String): Option[Source[ByteString, _]] = {
     Try {
-      val fullPath = s"$bucket/$name"
+      val fullPath = s"$path/$bucket/$name"
       val (from, to) = getRange(request)
 
       val is = new FileInputStream(fullPath)
@@ -72,7 +74,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
       Future {
-        val fullPath = s"$bucket/$name"
+        val fullPath = s"$path/$bucket/$name"
         val os = new FileOutputStream(fullPath)
         val sink = StreamConverters.fromOutputStream(() => os)
         source.runWith(sink)
@@ -96,7 +98,7 @@ class LocalFSBackend @Inject()(actorSystemProvider: ActorSystemProvider) extends
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def createBucket(request: RequestHeader, bucket: String): String = {
-    new File(bucket).mkdir()
+    new File(s"$path/$bucket").mkdir()
     bucket
   }
 
