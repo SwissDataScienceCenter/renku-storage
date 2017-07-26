@@ -27,7 +27,6 @@ import controllers.storageBackends.Backends
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.streams._
 import play.api.mvc._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.matching.Regex
@@ -45,13 +44,12 @@ class IOController @Inject()(config: play.api.Configuration,
 
 
   def objectRead = ProfileFilterAction(rmjwtVerifier.get).async { implicit request =>
+
     val accessGrant = AccessGrant(request.token.getToken)
     val token = accessGrant.verifyAccessToken(rmjwtVerifier.get)
 
     val scope = token.scope
     val readRequest = token.extraClaims.get.as[JsObject]
-    println("Read request")
-    println(readRequest)
 
     //TODO: check token content here.
     if (!scope.contains(ScopeQualifier.StorageRead))
@@ -72,9 +70,6 @@ class IOController @Inject()(config: play.api.Configuration,
         }
       }
     }
-
-
-
   }
 
   def objectWrite = EssentialAction { reqh =>
