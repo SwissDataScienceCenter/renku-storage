@@ -70,6 +70,9 @@ class AuthorizeController @Inject() (
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
 
+  def get_creation_time( persistedVertex: PersistedVertex ) =
+    persistedVertex.properties.get( NamespaceAndName( "system:creation_time" ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[LongValue].self ) )
+
   //TODO: factorize read and write !
 
   def objectRead = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[ReadResourceRequest]( ReadResourceRequestFormat ) ) { implicit request =>
@@ -106,7 +109,7 @@ class AuthorizeController @Inject() (
           ( for { v <- version; d <- data; b <- bucket } yield {
             Some( Json.toJson( Map(
               "bucket" -> get_property( b, "resource:bucket_name" ).getOrElse( "" ),
-              "name" -> ( get_property( d, "resource:path" ).getOrElse( "" ) + get_property( v, "system:creation_time" ).getOrElse( "" ) ),
+              "name" -> ( get_property( d, "resource:path" ).getOrElse( "" ) + get_creation_time( v ).getOrElse( "" ) ),
               "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
             ) ).as[JsObject] )
           } ).flatMap( extra => {
@@ -170,23 +173,24 @@ class AuthorizeController @Inject() (
               // Step 2: Request access authorization from Resource Manager
               rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ), token ).flatMap( ret => {
                 // Step 3: Validate response from RM
-                ret.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
-                  request.executionId.map( eId => {
-                    // Step 4: Log to KnowledgeGraph
-                    val wedge = NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Left( 1 ), Map() )
-                    val aedge = NewEdge( NamespaceAndName( "resource:has_version" ), Right( d.id ), Left( 1 ), Map() )
-                    val edge = NewEdge( NamespaceAndName( "resource:version_of" ), Left( 1 ), Right( request.body.resourceId ), Map() )
+                ret.map( ag =>
+                  if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+                  // Step 4: Log to KnowledgeGraph
+                    val edges = (request.executionId.map( eId =>
+                      Seq(NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Left( 1 ), Map() ))
+                    ).getOrElse(Seq.empty) ++ Seq(
+                      NewEdge( NamespaceAndName( "resource:has_version" ), Right( d.id ), Left( 1 ), Map() ),
+                      NewEdge( NamespaceAndName( "resource:version_of" ), Left( 1 ), Right( request.body.resourceId ), Map() )
+                    )).map(CreateEdgeOperation)
 
-                    val version = new NewVertexBuilder( 1 )
-                      .addSingleProperty( "system:creation_time", LongValue( now ) )
-                      .addType( NamespaceAndName( "resource:version" ) ).result()
-                    val mut = Mutation( Seq( CreateVertexOperation( version ), CreateEdgeOperation( edge ), CreateEdgeOperation( aedge ), CreateEdgeOperation( wedge ) ) )
-                    val gc = GraphMutationClient.makeStandaloneClient( mhost )
-                    gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) )
-                  } //TODO: maybe take into account if the node was created or not
-                  // Step 5: Send authorization to client
-                  ).getOrElse( Future( Ok( Json.toJson( ag ) ) ) )
-                }
+                      val version = new NewVertexBuilder( 1 )
+                        .addSingleProperty( "system:creation_time", LongValue( now ) )
+                        .addType( NamespaceAndName( "resource:file_version" ) ).result()
+                      val mut = Mutation( Seq( CreateVertexOperation( version ) ) ++ edges )
+                      val gc = GraphMutationClient.makeStandaloneClient( mhost )
+                      gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) )
+                    } //TODO: maybe take into account if the node was created or not
+                    // Step 5: Send authorization to client
                 else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
               } )
             } )
@@ -245,7 +249,7 @@ class AuthorizeController @Inject() (
               val vertices = Seq( fvertex, lvertex, vvertex ).map( _.result() ).map( CreateVertexOperation )
               val mut = Mutation( vertices ++ createAndWriteEdges )
               val gc = GraphMutationClient.makeStandaloneClient( mhost )
-              gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) ) //TODO: maybe take into account if the node was created or not
+              gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) ) //TODO: maybe take into account if the node was created or not
             }
             else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
           } )
