@@ -70,9 +70,9 @@ class AuthorizeController @Inject() (
     val g = graphTraversalSource
     val t = g.V( Long.box( request.body.resourceId ) ).union(
       __.has( "type", "resource:file_version" ),
-      __.has( "type", "resource:file" ).out( "resource:has_version" ).order().by( "system:creation_time", Order.decr ).limit( 1 )
+      __.has( "type", "resource:file" ).in( "resource:version_of" ).order().by( "system:creation_time", Order.decr ).limit( 1 )
     ).as( "version" )
-      .out( "resource:has_alias" ).as( "data" )
+      .in( "resource:has_version" ).as( "data" )
       .out( "resource:stored_in" ).as( "bucket" )
       .select[Vertex]( "version", "data", "bucket" )
 
@@ -131,7 +131,7 @@ class AuthorizeController @Inject() (
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
     val rmc = new ResourceManagerClient( config )
     val g = graphTraversalSource
-    val t = g.V( Long.box( request.body.resourceId ) ).out( "resource:has_alias" ).as( "data" ).out( "resource:stored_in" ).as( "bucket" ).select[Vertex]( "data", "bucket" )
+    val t = g.V( Long.box( request.body.resourceId ) ).out( "resource:has_location" ).as( "data" ).out( "resource:stored_in" ).as( "bucket" ).select[Vertex]( "data", "bucket" )
     val now = System.currentTimeMillis
     graphExecutionContext.execute {
       if ( t.hasNext ) {
@@ -156,8 +156,8 @@ class AuthorizeController @Inject() (
                   request.executionId.map( eId => {
                     // Step 4: Log to KnowledgeGraph
                     val wedge = NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Left( 1 ), Map() )
-                    val aedge = NewEdge( NamespaceAndName( "resource:has_alias" ), Left( 1 ), Right( d.id ), Map() )
-                    val edge = NewEdge( NamespaceAndName( "resource:has_version" ), Right( request.body.resourceId ), Left( 1 ), Map() )
+                    val aedge = NewEdge( NamespaceAndName( "resource:has_version" ), Right( d.id ), Left( 1 ), Map() )
+                    val edge = NewEdge( NamespaceAndName( "resource:version_of" ), Left( 1 ), Right( request.body.resourceId ), Map() )
 
                     val version = new NewVertexBuilder( 1 )
                       .addSingleProperty( "system:creation_time", LongValue( now ) )
@@ -214,9 +214,9 @@ class AuthorizeController @Inject() (
                 .addType( NamespaceAndName( "resource:file_version" ) )
               val edges = Seq(
                 NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( vertex.id ), Map() ),
-                NewEdge( NamespaceAndName( "resource:has_version" ), Left( fvertex.tempId ), Left( vvertex.tempId ), Map() ),
-                NewEdge( NamespaceAndName( "resource:has_alias" ), Left( vvertex.tempId ), Left( lvertex.tempId ), Map() ),
-                NewEdge( NamespaceAndName( "resource:has_alias" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
+                NewEdge( NamespaceAndName( "resource:version_of" ), Left( vvertex.tempId ), Left( fvertex.tempId ), Map() ),
+                NewEdge( NamespaceAndName( "resource:has_version" ), Left( lvertex.tempId ), Left( vvertex.tempId ), Map() ),
+                NewEdge( NamespaceAndName( "resource:has_location" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
               )
               val createAndWriteEdges = ( request.executionId.map { execId =>
                 Seq(
