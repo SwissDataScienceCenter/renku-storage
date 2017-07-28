@@ -57,6 +57,7 @@ class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvid
     Accumulator.source[ByteString].mapFuture { source =>
       Future {
         val fullPath = s"$rootDir/$bucket/$name"
+        new File( fullPath ).getParentFile.mkdirs()
         val os = new FileOutputStream( fullPath )
         val sink = StreamConverters.fromOutputStream( () => os )
         source.runWith( sink )
