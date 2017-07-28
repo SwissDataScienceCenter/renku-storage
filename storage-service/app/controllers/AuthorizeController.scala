@@ -18,23 +18,23 @@
 
 package controllers
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
-import authorization.{JWTVerifierProvider, ResourcesManagerJWTVerifierProvider}
-import ch.datascience.graph.elements.mutation.{GraphMutationClient, Mutation}
-import ch.datascience.graph.elements.mutation.create.{CreateEdgeOperation, CreateVertexOperation}
+import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
+import ch.datascience.graph.elements.mutation.{ GraphMutationClient, Mutation }
+import ch.datascience.graph.elements.mutation.create.{ CreateEdgeOperation, CreateVertexOperation }
 import ch.datascience.graph.elements.new_.NewEdge
 import ch.datascience.graph.elements.new_.build.NewVertexBuilder
 import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.StringValue
 import ch.datascience.service.security.ProfileFilterAction
-import ch.datascience.service.utils.{ControllerWithBodyParseJson, ControllerWithGraphTraversal}
+import ch.datascience.service.utils.{ ControllerWithBodyParseJson, ControllerWithGraphTraversal }
 import ch.datascience.service.models.resource.json._
 import ch.datascience.service.models.storage.json._
 import ch.datascience.graph.elements.mutation.log.model.json._
-import ch.datascience.service.models.storage.{CreateBucketRequest, CreateFileRequest, ReadResourceRequest, WriteResourceRequest}
-import ch.datascience.service.utils.persistence.graph.{GraphExecutionContextProvider, JanusGraphTraversalSourceProvider}
+import ch.datascience.service.models.storage.{ CreateBucketRequest, CreateFileRequest, ReadResourceRequest, WriteResourceRequest }
+import ch.datascience.service.utils.persistence.graph.{ GraphExecutionContextProvider, JanusGraphTraversalSourceProvider }
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.ws.WSClient
 import play.api.mvc.Controller
@@ -42,39 +42,39 @@ import clients.ResourcesManagerClient
 import controllers.storageBackends.Backends
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import ch.datascience.service.utils.persistence.reader.VertexReader
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{ JsObject, Json }
 
 import scala.concurrent.Future
 
 /**
-  * Created by jeberle on 25.04.17.
-  */
+ * Created by jeberle on 25.04.17.
+ */
 @Singleton
-class AuthorizeController @Inject()(config: play.api.Configuration,
-                                    jwtVerifier: JWTVerifierProvider,
-                                    rmJwtVerifier: ResourcesManagerJWTVerifierProvider,
-                                    implicit val wsclient: WSClient,
-                                    implicit val graphExecutionContextProvider: GraphExecutionContextProvider,
-                                    implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
-                                    implicit val vertexReader: VertexReader,
-                                    backends: Backends
-                                    ) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal {
+class AuthorizeController @Inject() (
+    config:                                         play.api.Configuration,
+    jwtVerifier:                                    JWTVerifierProvider,
+    rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
+    implicit val wsclient:                          WSClient,
+    implicit val graphExecutionContextProvider:     GraphExecutionContextProvider,
+    implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
+    implicit val vertexReader:                      VertexReader,
+    backends:                                       Backends
+) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal {
 
   lazy val host: String = config
-    .getString("resource-manager.service.host")
-    .getOrElse("http://localhost:9000/api/resource-manager")
+    .getString( "resource-manager.service.host" )
+    .getOrElse( "http://localhost:9000/api/resource-manager" )
 
   lazy val mhost: String = config
-    .getString("graph.mutation.service.host")
-    .getOrElse("http://graph-mutation:9000/api/mutation")
+    .getString( "graph.mutation.service.host" )
+    .getOrElse( "http://graph-mutation:9000/api/mutation" )
 
-  def get_property(persistedVertex: PersistedVertex, name: String) =
-    persistedVertex.properties.get(NamespaceAndName(name)).flatMap(v => v.values.headOption.map(value => value.asInstanceOf[StringValue].self))
+  def get_property( persistedVertex: PersistedVertex, name: String ) =
+    persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
 
   //TODO: factorize read and write !
 
-
-  def objectRead = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[ReadResourceRequest](ReadResourceRequestFormat)) { implicit request =>
+  def objectRead = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[ReadResourceRequest]( ReadResourceRequestFormat ) ) { implicit request =>
 
     /* Steps:
      *   1. Resolve graph entities
@@ -85,51 +85,51 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
      */
 
     // Step 1: Resolve graph entities
-    implicit val token: String = request.headers.get("Authorization").getOrElse("")
-    val rmc = new ResourcesManagerClient(host)
+    implicit val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourcesManagerClient( host )
     val g = graphTraversalSource
-    val t = g.V(Long.box(request.body.resourceId)).as("data").out("resource:stored_in").as("bucket").select[Vertex]("data", "bucket")
+    val t = g.V( Long.box( request.body.resourceId ) ).as( "data" ).out( "resource:stored_in" ).as( "bucket" ).select[Vertex]( "data", "bucket" )
 
     graphExecutionContext.execute {
-      if (t.hasNext) {
+      if ( t.hasNext ) {
         import scala.collection.JavaConverters._
         val jmap: Map[String, Vertex] = t.next().asScala.toMap
-        (for {
-          data <- jmap.get("data").map(v => vertexReader.read(v))
-          bucket <- jmap.get("bucket").map(v => vertexReader.read(v))
+        ( for {
+          data <- jmap.get( "data" ).map( v => vertexReader.read( v ) )
+          bucket <- jmap.get( "bucket" ).map( v => vertexReader.read( v ) )
         } yield {
-          for {d <- data; b <- bucket} yield {
-            Some(Json.toJson(Map(
-              "bucket" -> get_property(b, "resource:bucket_name").getOrElse(""),
-              "name" -> get_property(d, "resource:file_name").getOrElse(""),
-              "backend" -> get_property(b, "resource:bucket_backend").getOrElse("")
-            )).as[JsObject])
+          for { d <- data; b <- bucket } yield {
+            Some( Json.toJson( Map(
+              "bucket" -> get_property( b, "resource:bucket_name" ).getOrElse( "" ),
+              "name" -> get_property( d, "resource:file_name" ).getOrElse( "" ),
+              "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
+            ) ).as[JsObject] )
           }
-        }).getOrElse(Future(None))
+        } ).getOrElse( Future( None ) )
       }
       else
-        Future(None)
-    }.flatMap(extra => {
+        Future( None )
+    }.flatMap( extra => {
       // Step 2: Request access authorization from Resource Manager
-      rmc.authorize(AccessRequestFormat, request.body.toAccessRequest(extra)).flatMap(ret => {
+      rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ) ).flatMap( ret => {
         // Step 3: Validate response from RM
-        ret.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
-          request.executionId.map(eId => {
+        ret.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+          request.executionId.map( eId => {
             // Step 4: Log to KnowledgeGraph
-            val edge = NewEdge(NamespaceAndName("resource:read"), Right(eId), Right(request.body.resourceId), Map())
-            val mut = Mutation(Seq(CreateEdgeOperation(edge)))
-            val gc = GraphMutationClient.makeStandaloneClient(mhost)
-            gc.post(mut).map(ev => Ok(Json.toJson(ag)))
+            val edge = NewEdge( NamespaceAndName( "resource:read" ), Right( eId ), Right( request.body.resourceId ), Map() )
+            val mut = Mutation( Seq( CreateEdgeOperation( edge ) ) )
+            val gc = GraphMutationClient.makeStandaloneClient( mhost )
+            gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) )
           } //TODO: maybe take into account if the node was created or not
-            // Step 5: Send authorization to client
-          ).getOrElse(Future(Ok(Json.toJson(ag))))
-        } else Future(InternalServerError("Resource Manager response is invalid."))
-        ).getOrElse(Future(InternalServerError("No response from Resource Manager.")))
-      })
-    })
+          // Step 5: Send authorization to client
+          ).getOrElse( Future( Ok( Json.toJson( ag ) ) ) )
+        }
+        else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+      } )
+    } )
   }
 
-  def objectWrite = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[WriteResourceRequest](WriteResourceRequestFormat)) { implicit request =>
+  def objectWrite = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[WriteResourceRequest]( WriteResourceRequestFormat ) ) { implicit request =>
     /* Steps:
  *   1. Resolve graph entities
  *   2. Request access authorization from Resource Manager
@@ -139,51 +139,51 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
  */
 
     // Step 1: Resolve graph entities
-    implicit val token: String = request.headers.get("Authorization").getOrElse("")
-    val rmc = new ResourcesManagerClient(host)
+    implicit val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourcesManagerClient( host )
     val g = graphTraversalSource
-    val t = g.V(Long.box(request.body.resourceId)).as("data").out("resource:stored_in").as("bucket").select[Vertex]("data", "bucket")
+    val t = g.V( Long.box( request.body.resourceId ) ).as( "data" ).out( "resource:stored_in" ).as( "bucket" ).select[Vertex]( "data", "bucket" )
 
     graphExecutionContext.execute {
-      if (t.hasNext) {
+      if ( t.hasNext ) {
         import scala.collection.JavaConverters._
         val jmap: Map[String, Vertex] = t.next().asScala.toMap
-        (for {
-          data <- jmap.get("data").map(v => vertexReader.read(v))
-          bucket <- jmap.get("bucket").map(v => vertexReader.read(v))
+        ( for {
+          data <- jmap.get( "data" ).map( v => vertexReader.read( v ) )
+          bucket <- jmap.get( "bucket" ).map( v => vertexReader.read( v ) )
         } yield {
-          for {d <- data; b <- bucket} yield {
-            Some(Json.toJson(Map(
-              "bucket" -> get_property(b, "resource:bucket_name").getOrElse(""),
-              "name" -> get_property(d, "resource:file_name").getOrElse(""),
-              "backend" -> get_property(b, "resource:bucket_backend").getOrElse("")
-            )).as[JsObject])
+          for { d <- data; b <- bucket } yield {
+            Some( Json.toJson( Map(
+              "bucket" -> get_property( b, "resource:bucket_name" ).getOrElse( "" ),
+              "name" -> get_property( d, "resource:file_name" ).getOrElse( "" ),
+              "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
+            ) ).as[JsObject] )
           }
-        }).getOrElse(Future(None))
+        } ).getOrElse( Future( None ) )
       }
       else
-        Future(None)
-    }.flatMap(extra => {
+        Future( None )
+    }.flatMap( extra => {
       // Step 2: Request access authorization from Resource Manager
-      rmc.authorize(AccessRequestFormat, request.body.toAccessRequest(extra)).flatMap(ret => {
+      rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ) ).flatMap( ret => {
         // Step 3: Validate response from RM
-        ret.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
-          request.executionId.map(eId => {
+        ret.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+          request.executionId.map( eId => {
             // Step 4: Log to KnowledgeGraph
-            val edge = NewEdge(NamespaceAndName("resource:write"), Right(eId), Right(request.body.resourceId), Map())
-            val mut = Mutation(Seq(CreateEdgeOperation(edge)))
-            val gc = GraphMutationClient.makeStandaloneClient(mhost)
-            gc.post(mut).map(ev => Ok(Json.toJson(ag)))
+            val edge = NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Right( request.body.resourceId ), Map() )
+            val mut = Mutation( Seq( CreateEdgeOperation( edge ) ) )
+            val gc = GraphMutationClient.makeStandaloneClient( mhost )
+            gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) )
           } //TODO: maybe take into account if the node was created or not
-            // Step 5: Send authorization to client
-          ).getOrElse(Future(Ok(Json.toJson(ag))))
-        } else Future(InternalServerError("Resource Manager response is invalid."))
-        ).getOrElse(Future(InternalServerError("No response from Resource Manager.")))
-      })
-    })
+          // Step 5: Send authorization to client
+          ).getOrElse( Future( Ok( Json.toJson( ag ) ) ) )
+        }
+        else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+      } )
+    } )
   }
 
-  def objectCreate = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateFileRequest](CreateFileRequestFormat)) { implicit request =>
+  def objectCreate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CreateFileRequest]( CreateFileRequestFormat ) ) { implicit request =>
     /* Steps:
      *   1. Resolve graph entities
      *   2. Request access authorization from Resource Manager
@@ -191,56 +191,57 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
      *   4. Send authorization to client
      */
 
-    implicit val token: String = request.headers.get("Authorization").getOrElse("")
-    val rmc = new ResourcesManagerClient(host)
+    implicit val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourcesManagerClient( host )
     val g = graphTraversalSource
-    val t = g.V(Long.box(request.body.bucketId))
+    val t = g.V( Long.box( request.body.bucketId ) )
 
     val futureVertex: Future[Option[PersistedVertex]] = graphExecutionContext.execute {
-      if (t.hasNext) {
+      if ( t.hasNext ) {
         val vertex = t.next()
-        vertexReader.read(vertex).map(Some.apply)
+        vertexReader.read( vertex ).map( Some.apply )
       }
       else
         Future.successful( None )
     }
     futureVertex.flatMap {
-      case Some(vertex) =>
-        if (vertex.types.contains(NamespaceAndName("resource:bucket"))) {
+      case Some( vertex ) =>
+        if ( vertex.types.contains( NamespaceAndName( "resource:bucket" ) ) ) {
 
-          val backend = get_property(vertex, "resource:bucket_backend").getOrElse("")
-          val extra = Some(Json.toJson(Map(
-            "bucket" -> get_property(vertex, "resource:bucket_name").getOrElse(""),
+          val backend = get_property( vertex, "resource:bucket_backend" ).getOrElse( "" )
+          val extra = Some( Json.toJson( Map(
+            "bucket" -> get_property( vertex, "resource:bucket_name" ).getOrElse( "" ),
             "name" -> request.body.fileName,
             "backend" -> backend
-          )).as[JsObject])
-          rmc.authorize(AccessRequestFormat, request.body.toAccessRequest(extra)).flatMap(res => {
-            res.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
+          ) ).as[JsObject] )
+          rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ) ).flatMap( res => {
+            res.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
               val nvertex = new NewVertexBuilder()
-                .addSingleProperty("resource:file_name", StringValue(request.body.fileName))
-                .addType(NamespaceAndName("resource:file"))
-              val edge = NewEdge(NamespaceAndName("resource:stored_in"), Left(nvertex.tempId), Right(vertex.id), Map())
+                .addSingleProperty( "resource:file_name", StringValue( request.body.fileName ) )
+                .addType( NamespaceAndName( "resource:file" ) )
+              val edge = NewEdge( NamespaceAndName( "resource:stored_in" ), Left( nvertex.tempId ), Right( vertex.id ), Map() )
               val createAndWriteEdges = request.executionId.map { execId =>
                 Seq(
-                  NewEdge(NamespaceAndName("resource:write"), Right(execId), Left(nvertex.tempId), Map()),
-                  NewEdge(NamespaceAndName("resource:create"), Right(execId), Left(nvertex.tempId), Map())
-                ).map(CreateEdgeOperation)
+                  NewEdge( NamespaceAndName( "resource:write" ), Right( execId ), Left( nvertex.tempId ), Map() ),
+                  NewEdge( NamespaceAndName( "resource:create" ), Right( execId ), Left( nvertex.tempId ), Map() )
+                ).map( CreateEdgeOperation )
               }
-              val mut = Mutation(Seq(CreateVertexOperation(nvertex.result()), CreateEdgeOperation(edge)) ++ createAndWriteEdges.getOrElse(Seq.empty))
-              val gc = GraphMutationClient.makeStandaloneClient(mhost)
-              gc.post(mut).map(ev => Ok(Json.toJson(ag)))  //TODO: maybe take into account if the node was created or not
-            } else Future(InternalServerError("Resource Manager response is invalid."))
-            ).getOrElse(Future(InternalServerError("No response from Resource Manager.")))
-          })
-        } else {
-          Future(BadRequest("Resource is not a bucket"))
+              val mut = Mutation( Seq( CreateVertexOperation( nvertex.result() ), CreateEdgeOperation( edge ) ) ++ createAndWriteEdges.getOrElse( Seq.empty ) )
+              val gc = GraphMutationClient.makeStandaloneClient( mhost )
+              gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) ) //TODO: maybe take into account if the node was created or not
+            }
+            else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+          } )
         }
-      case None => Future(BadRequest("Unknown resource Id"))
+        else {
+          Future( BadRequest( "Resource is not a bucket" ) )
+        }
+      case None => Future( BadRequest( "Unknown resource Id" ) )
     }
 
   }
 
-  def bucketCreate = ProfileFilterAction(jwtVerifier.get).async(bodyParseJson[CreateBucketRequest](CreateBucketRequestFormat)) { implicit request =>
+  def bucketCreate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CreateBucketRequest]( CreateBucketRequestFormat ) ) { implicit request =>
     /* Steps:
      *   1. Request access authorization from Resource Manager
      *   2. Validate response from RM
@@ -249,33 +250,32 @@ class AuthorizeController @Inject()(config: play.api.Configuration,
      *   5. Send response to client
      */
 
-    implicit val token: String = request.headers.get("Authorization").getOrElse("")
-    val rmc = new ResourcesManagerClient(host)
+    implicit val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourcesManagerClient( host )
     val backend = request.body.backend
     val name = request.body.name
-    val extra = Some(Json.toJson(Map(
-        "bucket" -> name,
-        "backend" -> backend
-      )).as[JsObject])
+    val extra = Some( Json.toJson( Map(
+      "bucket" -> name,
+      "backend" -> backend
+    ) ).as[JsObject] )
 
-      rmc.authorize(AccessRequestFormat, request.body.toAccessRequest(extra)).flatMap(res =>
-        res.map(ag => if (ag.verifyAccessToken(rmJwtVerifier.get).extraClaims.equals(extra)) {
-          backends.getBackend(backend) match {
-            case Some(back) =>
-              val bid = back.createBucket(request, request.body.name)
-              val vertex = new NewVertexBuilder()
-                .addSingleProperty("resource:bucket_backend_id", StringValue(bid))
-                .addSingleProperty("resource:bucket_name", StringValue(name))
-                .addSingleProperty("resource:bucket_backend", StringValue(backend))
-                .addType(NamespaceAndName("resource:bucket"))
-              val mut = Mutation(Seq(CreateVertexOperation(vertex.result())))
-              val gc = GraphMutationClient.makeStandaloneClient(mhost)
-              gc.post(mut).flatMap(ev => gc.wait(ev.uuid).map(e => Created(Json.toJson(e))))
+    rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ) ).flatMap( res =>
+      res.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+        backends.getBackend( backend ) match {
+          case Some( back ) =>
+            val bid = back.createBucket( request, request.body.name )
+            val vertex = new NewVertexBuilder()
+              .addSingleProperty( "resource:bucket_backend_id", StringValue( bid ) )
+              .addSingleProperty( "resource:bucket_name", StringValue( name ) )
+              .addSingleProperty( "resource:bucket_backend", StringValue( backend ) )
+              .addType( NamespaceAndName( "resource:bucket" ) )
+            val mut = Mutation( Seq( CreateVertexOperation( vertex.result() ) ) )
+            val gc = GraphMutationClient.makeStandaloneClient( mhost )
+            gc.post( mut ).flatMap( ev => gc.wait( ev.uuid ).map( e => Created( Json.toJson( e ) ) ) )
 
-            case None => Future(BadRequest(s"The backend $backend is not enabled."))
-          }
-        } else Future(InternalServerError("Resource Manager response is invalid."))
-        ).getOrElse(Future(InternalServerError("No response from Resource Manager.")))
-      )
-    }
+          case None => Future( BadRequest( s"The backend $backend is not enabled." ) )
+        }
+      }
+      else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) ) )
+  }
 }
