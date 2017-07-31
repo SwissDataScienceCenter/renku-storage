@@ -157,23 +157,22 @@ class AuthorizeController @Inject() (
                 // Step 3: Validate response from RM
                 ret.map( ag =>
                   if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
-                  // Step 4: Log to KnowledgeGraph
-                    val edges = (request.executionId.map( eId =>
-                      Seq(NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Left( 1 ), Map() ))
-                    ).getOrElse(Seq.empty) ++ Seq(
+                    // Step 4: Log to KnowledgeGraph
+                    val edges = ( request.executionId.map( eId =>
+                      Seq( NewEdge( NamespaceAndName( "resource:write" ), Right( eId ), Left( 1 ), Map() ) ) ).getOrElse( Seq.empty ) ++ Seq(
                       NewEdge( NamespaceAndName( "resource:has_version" ), Right( d.id ), Left( 1 ), Map() ),
                       NewEdge( NamespaceAndName( "resource:version_of" ), Left( 1 ), Right( request.body.resourceId ), Map() )
-                    )).map(CreateEdgeOperation)
+                    ) ).map( CreateEdgeOperation )
 
-                      val version = new NewVertexBuilder( 1 )
-                        .addSingleProperty( "system:creation_time", LongValue( now ) )
-                        .addType( NamespaceAndName( "resource:file_version" ) ).result()
-                      val mut = Mutation( Seq( CreateVertexOperation( version ) ) ++ edges )
-                      val gc = GraphMutationClient.makeStandaloneClient( mhost )
-                      gc.post( mut ).map( ev => Ok( Json.toJson( ag ) ) )
-                    } //TODO: maybe take into account if the node was created or not
-                    // Step 5: Send authorization to client
-                else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+                    val version = new NewVertexBuilder( 1 )
+                      .addSingleProperty( "system:creation_time", LongValue( now ) )
+                      .addType( NamespaceAndName( "resource:file_version" ) ).result()
+                    val mut = Mutation( Seq( CreateVertexOperation( version ) ) ++ edges )
+                    val gc = GraphMutationClient.makeStandaloneClient( mhost )
+                    gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) )
+                  } //TODO: maybe take into account if the node was created or not
+                  // Step 5: Send authorization to client
+                  else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
               } )
             } )
           } )
