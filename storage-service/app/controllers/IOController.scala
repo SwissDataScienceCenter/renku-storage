@@ -1,13 +1,12 @@
 package controllers
 
-import java.util.UUID
 import javax.inject._
 
-import authorization.ResourcesManagerJWTVerifierProvider
+import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
 import ch.datascience.service.models.resource.{ AccessGrant, ScopeQualifier }
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import controllers.storageBackends.Backends
-import play.api.libs.json.JsObject
+import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.streams._
 import play.api.mvc._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,14 +14,19 @@ import scala.concurrent.Future
 import scala.util.matching.Regex
 
 @Singleton
-class IOController @Inject() ( config: play.api.Configuration, backends: Backends, jwtVerifier: ResourcesManagerJWTVerifierProvider ) extends Controller {
+class IOController @Inject() (
+    config:        play.api.Configuration,
+    backends:      Backends,
+    rmjwtVerifier: ResourcesManagerJWTVerifierProvider,
+    jwtVerifier:   JWTVerifierProvider
+) extends Controller {
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
-  def objectRead = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+  def objectRead = ProfileFilterAction( rmjwtVerifier.get ).async { implicit request =>
 
     val accessGrant = AccessGrant( request.token.getToken )
-    val token = accessGrant.verifyAccessToken( jwtVerifier.get )
+    val token = accessGrant.verifyAccessToken( rmjwtVerifier.get )
 
     val scope = token.scope
     val readRequest = token.extraClaims.get.as[JsObject]
@@ -49,10 +53,10 @@ class IOController @Inject() ( config: play.api.Configuration, backends: Backend
   }
 
   def objectWrite = EssentialAction { reqh =>
-    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
+    TokenFilter( rmjwtVerifier.get, "" ).filter( reqh ) match {
       case Right( profile ) =>
         val accessGrant = AccessGrant( profile.getToken )
-        val token = accessGrant.verifyAccessToken( jwtVerifier.get )
+        val token = accessGrant.verifyAccessToken( rmjwtVerifier.get )
         val scope = token.scope
         val writeRequest = token.extraClaims.get.as[JsObject]
         println( "Write request" )
@@ -71,5 +75,9 @@ class IOController @Inject() ( config: play.api.Configuration, backends: Backend
         }
       case Left( res ) => Accumulator.done( res )
     }
+  }
+
+  def bucketBackends = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+    Future( Ok( Json.toJson( backends.map.keys ) ) )
   }
 }
