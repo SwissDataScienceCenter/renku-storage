@@ -1,0 +1,27 @@
+branches:
+  only:
+  - master
+language: scala
+scala:
+- '2.11.8'
+script: sbt ++$TRAVIS_SCALA_VERSION test && bash ./.travis/check-code-formatting.sh
+matrix:
+  include:
+  - {}
+  - env: TASK=DOCKER
+    sudo: true
+    script:
+    - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" $DOCKER_REGISTRY
+    - sbt ++$TRAVIS_SCALA_VERSION docker:publishLocal
+    - docker tag renga-storage:0.1.0-SNAPSHOT $DOCKER_REGISTRY/swissdatasciencecenter/images/renga-storage:0.1.0-SNAPSHOT
+    - docker push $DOCKER_REGISTRY/swissdatasciencecenter/images/renga-storage:0.1.0-SNAPSHOT
+
+# caching suggestions from http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
