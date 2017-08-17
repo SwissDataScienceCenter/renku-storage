@@ -16,24 +16,29 @@
  * limitations under the License.
  */
 
-name := """storage-service"""
 organization := "ch.datascience"
-
 version := "0.1.0-SNAPSHOT"
-
-lazy val root = Project(
-  id   = "storage-service",
-  base = file(".")
-).dependsOn(
-  core,
-  serviceCommons
-).enablePlugins(PlayScala)
-
-
-lazy val core = RootProject(file("../graph-core"))
-lazy val serviceCommons = RootProject(file("../service-commons"))
-
 scalaVersion := "2.11.8"
+name := "renga-storage"
+
+lazy val root = (project in file("."))
+  .dependsOn(
+    `graph-core`,
+    commons % "compile->compile;test->test"
+  ).enablePlugins(
+    PlayScala
+  )
+
+lazy val rengaGraphUri = uri(s"$rengaGraphRepo#$rengaGraphRef")
+lazy val rengaGraphRepo = "ssh://git@github.com/SwissDataScienceCenter/renga-graph.git"
+lazy val rengaGraphRef = "master"
+lazy val `graph-core` = ProjectRef(rengaGraphUri, "core")
+
+lazy val rengaCommonsUri = uri(s"$rengaCommonsRepo#$rengaCommonsRef")
+lazy val rengaCommonsRepo = "ssh://git@github.com/SwissDataScienceCenter/renga-commons.git"
+lazy val rengaCommonsRef = "master"
+lazy val commons = ProjectRef(rengaCommonsUri, "root")
+
 lazy val janusgraph_version = "0.1.0"
 
 libraryDependencies += filters
@@ -45,18 +50,10 @@ libraryDependencies ++= Seq(
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 )
 
-resolvers ++= Seq(
-  DefaultMavenRepository,
-  Resolver.mavenLocal
-)
 
 import com.typesafe.sbt.packager.docker._
-
 dockerBaseImage := "openjdk:8-jre-alpine"
-//dockerBaseImage := "openjdk:8-jre"
-
 dockerCommands ~= { cmds => cmds.head +: ExecCmd("RUN", "apk", "add", "--no-cache", "bash") +: cmds.tail }
-
 dockerCommands ~= { cmds => cmds :+ Cmd("RUN", "mkdir", "-p", "data") :+ Cmd("VOLUME", "/data") }
 
 // Source code formatting
