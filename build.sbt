@@ -22,22 +22,15 @@ scalaVersion := "2.11.8"
 name := "renga-storage"
 
 lazy val root = (project in file("."))
-  .dependsOn(
-    `graph-core`,
-    commons % "compile->compile;test->test"
-  ).enablePlugins(
+  .enablePlugins(
     PlayScala
   )
 
-lazy val rengaGraphUri = uri(s"$rengaGraphRepo#$rengaGraphRef")
-lazy val rengaGraphRepo = "ssh://git@github.com/SwissDataScienceCenter/renga-graph.git"
-lazy val rengaGraphRef = "master"
-lazy val `graph-core` = ProjectRef(rengaGraphUri, "core")
+resolvers += "SDSC Snapshots" at "https://testing.datascience.ch:18081/repository/maven-snapshots/"
 
-lazy val rengaCommonsUri = uri(s"$rengaCommonsRepo#$rengaCommonsRef")
-lazy val rengaCommonsRepo = "ssh://git@github.com/SwissDataScienceCenter/renga-commons.git"
-lazy val rengaCommonsRef = "master"
-lazy val commons = ProjectRef(rengaCommonsUri, "root")
+lazy val renga_version = "0.1.0-SNAPSHOT"
+libraryDependencies += "ch.datascience" %% "renga-graph-core" % renga_version
+libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
 
 lazy val janusgraph_version = "0.1.0"
 
@@ -91,3 +84,13 @@ val preferences =
     .setPreference( SpacesWithinPatternBinders,                   false )
 
 SbtScalariform.scalariformSettings ++ Seq(preferences)
+
+// Publishing
+publishTo := {
+  val nexus = "https://testing.datascience.ch:18081/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "repository/maven-snapshots/")
+  else
+    None //TODO
+}
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
