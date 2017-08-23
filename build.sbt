@@ -8,6 +8,8 @@ lazy val root = (project in file("."))
     PlayScala
   )
 
+resolvers += "jitpack" at "https://jitpack.io"
+resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven"
 resolvers += "SDSC Snapshots" at "https://testing.datascience.ch:18081/repository/maven-snapshots/"
 
 lazy val renga_version = "0.1.0-SNAPSHOT"
