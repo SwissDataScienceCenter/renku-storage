@@ -4,20 +4,16 @@ branches:
 language: scala
 scala:
 - '2.11.8'
+sudo: true
 before_script: bash ./.travis/make-nexus-credentials.sh
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test && bash ./.travis/check-code-formatting.sh
-- sbt publish
-matrix:
-  include:
-  - {}
-  - env: TASK=DOCKER
-    sudo: true
-    script:
-    - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" $DOCKER_REGISTRY
-    - sbt ++$TRAVIS_SCALA_VERSION docker:publishLocal
-    - docker tag renga-storage:0.1.0-SNAPSHOT $DOCKER_REGISTRY/swissdatasciencecenter/images/renga-storage:0.1.0-SNAPSHOT
-    - docker push $DOCKER_REGISTRY/swissdatasciencecenter/images/renga-storage:0.1.0-SNAPSHOT
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: bash ./.travis/deploy.sh
+  on:
+    branch: master
 
 # caching suggestions from http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
 cache:
@@ -28,4 +24,3 @@ before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
-  - find $HOME/.sbt        -name "staging"              -print -exec rm -rfv {} +
