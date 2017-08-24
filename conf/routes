@@ -3,6 +3,8 @@
 # https://www.playframework.com/documentation/latest/ScalaRouting
 # ~~~~
 
+# Api spec
+GET     /swagger.json                             controllers.SwaggerController.getSwagger
 
 GET     /io/read                                  controllers.IOController.objectRead
 POST    /io/write                                 controllers.IOController.objectWrite

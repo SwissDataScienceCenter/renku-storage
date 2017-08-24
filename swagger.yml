@@ -1,0 +1,257 @@
+# API spec in YAML
+swagger: '2.0'
+info:
+  title: Storage API
+  description: |
+    Storage API specification
+  version: '0.0.1'
+# Host and schemes are injected by the service
+# will be prefixed to all paths
+basePath: /api/storage
+produces:
+  - application/json
+consumes:
+  - application/json
+tags:
+- name: 'IO'
+  description: 'Perform I/O operations'
+- name: 'Authorize'
+  description: 'Request access to file resources'
+paths:
+  /io/backends:
+    get:
+      tags:
+      - 'IO'
+      summary: 'Backend list'
+      description: 'List all available backends'
+      parameters:
+      - name: Authorization
+        in: header
+        description: 'Bearer token'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: 'Ok'
+
+  /io/read:
+    get:
+      tags:
+      - 'IO'
+      summary: 'Read file'
+      description: 'Read file specified in authorization bearer token'
+      parameters:
+      - name: Authorization
+        in: header
+        description: 'Bearer token (from authorization request)'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: 'Successful read'
+
+  /io/write:
+    post:
+      tags:
+      - 'IO'
+      summary: 'Write file'
+      description: 'Read file specified in authorization bearer token'
+      consumes:
+      - application/octet-stream
+      - text/plain
+      parameters:
+      - name: Authorization
+        in: header
+        description: |
+          Bearer token (from authorization request)
+
+          Note: any MIME type can be used
+        required: true
+        type: string
+        example: "Bearer "
+      - name: body
+        in: body
+        description: 'File content'
+        required: true
+        schema:
+          type: string
+          format: binary
+      responses:
+        200:
+          description: 'Successful write'
+
+  /authorize/read:
+    post:
+      tags:
+      - 'Authorize'
+      summary: 'Request read access to a file'
+      description: 'Request read access to a file and retrieve access token for I/O calls'
+      parameters:
+      - name: body
+        in: body
+        description: 'Read file request object'
+        required: true
+        schema:
+          $ref: '#/definitions/ReadFileRequest'
+      - name: SDSC-DEPLOYMENT-ID
+        in: header
+        description: 'Deployment id, passed if request made from deployed application'
+        type: integer
+        format: int64
+      - name: Authorization
+        in: header
+        description: 'Bearer token (from authorization request)'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: ok
+
+  /authorize/write:
+    post:
+      tags:
+      - 'Authorize'
+      summary: 'Request write access to a file'
+      description: 'Request write access to a file and retrieve access token for I/O calls'
+      parameters:
+      - name: body
+        in: body
+        description: 'Write file request object'
+        required: true
+        schema:
+          $ref: '#/definitions/WriteFileRequest'
+      - name: SDSC-Deployment-Id
+        in: header
+        description: 'Deployment id, passed if request made from deployed application'
+        type: integer
+        format: int64
+      - name: Authorization
+        in: header
+        description: 'Bearer token (from authorization request)'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: ok
+
+  /authorize/create_bucket:
+    post:
+      tags:
+      - 'Authorize'
+      summary: 'Request creation of a bucket'
+      description: 'Request the creation of a new bucket on the given backend'
+      parameters:
+      - name: body
+        in: body
+        description: 'Create bucket request object'
+        required: true
+        schema:
+          $ref: '#/definitions/CreateBucketRequest'
+      - name: SDSC-DEPLOYMENT-ID
+        in: header
+        description: 'Deployment id, passed if request made from deployed application'
+        type: integer
+        format: int64
+      - name: Authorization
+        in: header
+        description: 'Bearer token (from authorization request)'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: ok
+
+  /authorize/create_file:
+    post:
+      tags:
+      - 'Authorize'
+      summary: 'Request creation of a new file'
+      description: 'Request the creation of a new file in the given bucket and retrieve access token for I/O calls'
+      parameters:
+      - name: body
+        in: body
+        description: 'Create file request object'
+        required: true
+        schema:
+          $ref: '#/definitions/CreateFileRequest'
+      - name: SDSC-DEPLOYMENT-ID
+        in: header
+        description: 'Deployment id, passed if request made from deployed application'
+        type: integer
+        format: int64
+      - name: Authorization
+        in: header
+        description: 'Bearer token (from authorization request)'
+        required: true
+        type: string
+        example: "Bearer "
+      responses:
+        200:
+          description: ok
+
+definitions:
+  ReadFileRequest:
+    type: object
+    required:
+      - resource_id
+      - request_type
+    properties:
+      resourceId:
+        type: integer
+        format: int64
+      request_type:
+        type: string
+        enum:
+          - "read_file"
+  WriteFileRequest:
+    type: object
+    required:
+      - resource_id
+      - request_type
+    properties:
+      resourceId:
+        type: integer
+        format: int64
+      request_type:
+        type: string
+        enum:
+          - "write_file"
+  CreateBucketRequest:
+    type: object
+    required:
+      - name
+      - backend
+      - request_type
+    properties:
+      name:
+        type: string
+      backend:
+        type: string
+        enum:
+          - "local"
+          - "swift"
+      request_type:
+        type: string
+        enum:
+          - "create_bucket"
+  CreateFileRequest:
+    type: object
+    required:
+      - bucket_id
+      - file_name
+      - request_type
+    properties:
+      bucket_id:
+        type: integer
+        format: int64
+      file_name:
+        type: string
+      request_type:
+        type: string
+        enum:
+          - "create_file"
