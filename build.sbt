@@ -37,13 +37,12 @@ libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
 lazy val janusgraph_version = "0.1.0"
 
 libraryDependencies += filters
-libraryDependencies ++= Seq(
-  "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version, //% Runtime
-  "io.minio" % "minio" % "3.0.3",
-  "org.javaswift" % "joss" % "0.9.7",
-  cache,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-)
+libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
+libraryDependencies += "io.minio" % "minio" % "3.0.3"
+libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
+libraryDependencies += cache
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
+libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
 
 
 import com.typesafe.sbt.packager.docker._
