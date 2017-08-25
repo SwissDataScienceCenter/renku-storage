@@ -5,13 +5,19 @@ language: scala
 scala:
 - '2.11.8'
 sudo: true
+env: DOCKER_PUSH_LATEST=true
 before_script: bash ./.travis/make-nexus-credentials.sh
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test && bash ./.travis/check-code-formatting.sh
 deploy:
 - provider: script
   skip_cleanup: true
-  script: bash ./.travis/deploy.sh
+  script: bash ./.travis/deploy-artifacts.sh
+  on:
+    branch: master
+- provider: script
+  skip_cleanup: true
+  script: bash ./.travis/deploy-docker.sh
   on:
     branch: master
 
