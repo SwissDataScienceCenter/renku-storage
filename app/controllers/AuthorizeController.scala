@@ -184,6 +184,7 @@ class AuthorizeController @Inject() (
 
                     val version = new NewVertexBuilder( 1 )
                       .addSingleProperty( "system:creation_time", LongValue( now ) )
+                      .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                       .addType( NamespaceAndName( "resource:file_version" ) ).result()
                     val mut = Mutation( Seq( CreateVertexOperation( version ) ) ++ edges )
                     val gc = GraphMutationClient.makeStandaloneClient( mhost )
@@ -226,12 +227,15 @@ class AuthorizeController @Inject() (
             res.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
               val fvertex = new NewVertexBuilder( 1 )
                 .addSingleProperty( "resource:file_name", StringValue( request.body.fileName ) )
+                .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                 .addType( NamespaceAndName( "resource:file" ) )
               val lvertex = new NewVertexBuilder( 2 )
                 .addSingleProperty( "resource:path", StringValue( request.body.fileName ) )
+                .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                 .addType( NamespaceAndName( "resource:file_location" ) )
               val vvertex = new NewVertexBuilder( 3 )
                 .addSingleProperty( "system:creation_time", LongValue( now ) )
+                .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                 .addType( NamespaceAndName( "resource:file_version" ) )
               val edges = Seq(
                 NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( vertex.id ), Map() ),
@@ -288,6 +292,7 @@ class AuthorizeController @Inject() (
               .addSingleProperty( "resource:bucket_backend_id", StringValue( bid ) )
               .addSingleProperty( "resource:bucket_name", StringValue( name ) )
               .addSingleProperty( "resource:bucket_backend", StringValue( backend ) )
+              .addSingleProperty( "resource:owner", StringValue( request.userId ) )
               .addType( NamespaceAndName( "resource:bucket" ) )
             val mut = Mutation( Seq( CreateVertexOperation( vertex.result() ) ) )
             val gc = GraphMutationClient.makeStandaloneClient( mhost )
