@@ -4,7 +4,7 @@ user=daemon
 
 if [[ "${STORAGE_BACKEND_LOCAL_ENABLED,,}" = "true" ]]; then
     echo "local storage enabled..."
-    file=$(ls /data | head -n1)
+    file=$(ls -A /data | head -n1)
     if [[ -z $file ]]; then
         echo "cannot determine user, running as $user"
     else
