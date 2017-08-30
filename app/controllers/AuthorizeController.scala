@@ -5,6 +5,7 @@ import javax.inject.{ Inject, Singleton }
 import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
 import ch.datascience.graph.elements.mutation.{ GraphMutationClient, Mutation }
 import ch.datascience.graph.elements.mutation.create.{ CreateEdgeOperation, CreateVertexOperation }
+import ch.datascience.graph.elements.mutation.log.model.{ EventStatus, MutationFailed, MutationResponse, MutationSuccess }
 import ch.datascience.graph.elements.new_.NewEdge
 import ch.datascience.graph.elements.new_.build.NewVertexBuilder
 import ch.datascience.graph.elements.persisted.PersistedVertex
@@ -21,12 +22,13 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.ws.WSClient
 import play.api.mvc.Controller
 import ch.datascience.service.ResourceManagerClient
+import ch.datascience.service.models.resource.AccessGrant
 import controllers.storageBackends.Backends
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json._
 
 import scala.concurrent.Future
 
@@ -232,9 +234,26 @@ class AuthorizeController @Inject() (
                 )
               }.getOrElse( Seq.empty ) ++ edges ).map( CreateEdgeOperation )
               val vertices = Seq( fvertex, lvertex, vvertex ).map( _.result() ).map( CreateVertexOperation )
-              val mut = Mutation( vertices ++ createAndWriteEdges )
+              val mut = Mutation( vertices ++ createAndWriteEdges ) // First vertex is the file vertex (used later)
               val gc = GraphMutationClient.makeStandaloneClient( mhost )
-              gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) ) //TODO: maybe take into account if the node was created or not
+              //TODO: maybe take into account if the node was created or not
+              gc.postAndWait( mut ).map { ev =>
+                val response = ev.status match {
+                  case EventStatus.Completed( res ) => res
+                  case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
+                }
+
+                val mutationResponse = response.event.as[MutationResponse]
+                val fileVertexId = mutationResponse match {
+                  case MutationSuccess( results ) => results.head // First vertex is the file vertex
+                  case MutationFailed( reason )   => throw new RuntimeException( s"Bucket creation failed, caused by: $reason" )
+                }
+
+                import play.api.libs.functional.syntax._
+                implicit val writes: OWrites[( AccessGrant, JsObject )] = ( JsPath.write[AccessGrant] and JsPath.write[JsObject] )( unlift( Tuple2.unapply[AccessGrant, JsObject] ) )
+
+                Created( Json.toJson( ( ag, fileVertexId ) ) )
+              }
             }
             else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
           } )
@@ -278,7 +297,20 @@ class AuthorizeController @Inject() (
               .addType( NamespaceAndName( "resource:bucket" ) )
             val mut = Mutation( Seq( CreateVertexOperation( vertex.result() ) ) )
             val gc = GraphMutationClient.makeStandaloneClient( mhost )
-            gc.post( mut ).flatMap( ev => gc.wait( ev.uuid ).map( e => Created( Json.toJson( e ) ) ) )
+            gc.postAndWait( mut ).map { ev =>
+              val response = ev.status match {
+                case EventStatus.Completed( res ) => res
+                case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
+              }
+
+              val mutationResponse = response.event.as[MutationResponse]
+              val bucketVertexId = mutationResponse match {
+                case MutationSuccess( results ) => results.head
+                case MutationFailed( reason )   => throw new RuntimeException( s"Bucket creation failed, caused by: $reason" )
+              }
+
+              Created( bucketVertexId )
+            }
 
           case None => Future( BadRequest( s"The backend $backend is not enabled." ) )
         }
