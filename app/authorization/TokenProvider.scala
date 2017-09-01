@@ -1,0 +1,5 @@
+package authorization
+
+class TokenProvider {
+
+}
