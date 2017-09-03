@@ -40,6 +40,7 @@ class AuthorizeController @Inject() (
     config:                                         play.api.Configuration,
     jwtVerifier:                                    JWTVerifierProvider,
     rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
+    graphMutationClientProvider:                    GraphMutationClientProvider,
     implicit val wsclient:                          WSClient,
     implicit val graphExecutionContextProvider:     GraphExecutionContextProvider,
     implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
@@ -47,9 +48,7 @@ class AuthorizeController @Inject() (
     backends:                                       Backends
 ) extends Controller with ControllerWithBodyParseJson with ControllerWithGraphTraversal with RequestHelper {
 
-  lazy val mhost: String = config
-    .getString( "graph.mutation.service.host" )
-    .getOrElse( "http://graph-mutation:9000/api/mutation" )
+  lazy val gc: GraphMutationClient = graphMutationClientProvider.get
 
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
@@ -106,7 +105,6 @@ class AuthorizeController @Inject() (
                     // Step 4: Log to KnowledgeGraph
                     val edge = NewEdge( NamespaceAndName( "resource:read" ), Right( eId ), Right( v.id ), Map() )
                     val mut = Mutation( Seq( CreateEdgeOperation( edge ) ) )
-                    val gc = GraphMutationClient.makeStandaloneClient( mhost )
                     gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) )
                   } //TODO: maybe take into account if the node was created or not
                   // Step 5: Send authorization to client
@@ -171,7 +169,6 @@ class AuthorizeController @Inject() (
                       .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                       .addType( NamespaceAndName( "resource:file_version" ) ).result()
                     val mut = Mutation( Seq( CreateVertexOperation( version ) ) ++ edges )
-                    val gc = GraphMutationClient.makeStandaloneClient( mhost )
                     gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) )
                   } //TODO: maybe take into account if the node was created or not
                   // Step 5: Send authorization to client
@@ -235,7 +232,6 @@ class AuthorizeController @Inject() (
               }.getOrElse( Seq.empty ) ++ edges ).map( CreateEdgeOperation )
               val vertices = Seq( fvertex, lvertex, vvertex ).map( _.result() ).map( CreateVertexOperation )
               val mut = Mutation( vertices ++ createAndWriteEdges ) // First vertex is the file vertex (used later)
-              val gc = GraphMutationClient.makeStandaloneClient( mhost )
               //TODO: maybe take into account if the node was created or not
               gc.postAndWait( mut ).map { ev =>
                 val response = ev.status match {
@@ -296,7 +292,6 @@ class AuthorizeController @Inject() (
               .addSingleProperty( "resource:owner", StringValue( request.userId ) )
               .addType( NamespaceAndName( "resource:bucket" ) )
             val mut = Mutation( Seq( CreateVertexOperation( vertex.result() ) ) )
-            val gc = GraphMutationClient.makeStandaloneClient( mhost )
             gc.postAndWait( mut ).map { ev =>
               val response = ev.status match {
                 case EventStatus.Completed( res ) => res
