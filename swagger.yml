@@ -24,16 +24,12 @@ paths:
       - 'IO'
       summary: 'Backend list'
       description: 'List all available backends'
-      parameters:
-      - name: Authorization
-        in: header
-        description: 'Bearer token'
-        required: true
-        type: string
-        example: "Bearer "
       responses:
         200:
           description: 'Ok'
+      security:
+      - token_auth:
+        - 'profile'
 
   /io/read:
     get:
@@ -100,17 +96,14 @@ paths:
         description: 'Deployment id, passed if request made from deployed application'
         type: integer
         format: int64
-      - name: Authorization
-        in: header
-        description: 'Bearer token (from authorization request)'
-        required: true
-        type: string
-        example: "Bearer "
       responses:
         200:
           description: ok
           schema:
             $ref: '#/definitions/AccessGrant'
+      security:
+      - token_auth:
+        - 'profile'
 
   /authorize/write:
     post:
@@ -130,17 +123,14 @@ paths:
         description: 'Deployment id, passed if request made from deployed application'
         type: integer
         format: int64
-      - name: Authorization
-        in: header
-        description: 'Bearer token (from authorization request)'
-        required: true
-        type: string
-        example: "Bearer "
       responses:
         200:
           description: ok
           schema:
             $ref: '#/definitions/AccessGrant'
+      security:
+      - token_auth:
+        - 'profile'
 
   /authorize/create_bucket:
     post:
@@ -160,12 +150,6 @@ paths:
         description: 'Deployment id, passed if request made from deployed application'
         type: integer
         format: int64
-      - name: Authorization
-        in: header
-        description: 'Bearer token (from authorization request)'
-        required: true
-        type: string
-        example: "Bearer "
       responses:
         201:
           description: ok
@@ -178,6 +162,9 @@ paths:
                 type: integer
                 format: int64
                 description: 'Id of the created bucket'
+      security:
+      - token_auth:
+        - 'profile'
 
   /authorize/create_file:
     post:
@@ -197,12 +184,6 @@ paths:
         description: 'Deployment id, passed if request made from deployed application'
         type: integer
         format: int64
-      - name: Authorization
-        in: header
-        description: 'Bearer token (from authorization request)'
-        required: true
-        type: string
-        example: "Bearer "
       responses:
         201:
           description: ok
@@ -218,6 +199,9 @@ paths:
                   type: integer
                   format: int64
                   description: 'Id of the created bucket'
+      security:
+      - token_auth:
+        - 'profile'
 
 definitions:
   ReadFileRequest:
@@ -288,3 +272,9 @@ definitions:
       access_token:
         type: string
         description: Authorization token
+securityDefinitions:
+  token_auth:
+    type: "oauth2"
+    flow: "implicit"
+    scopes:
+      profile: user profile
