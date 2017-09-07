@@ -212,6 +212,7 @@ class AuthorizeController @Inject() (
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
     val rmc = new ResourceManagerClient( config )
     val now = System.currentTimeMillis
+    val projectId = request.headers.get( "Renga-Projects-Project" ).map( _.toLong )
     getVertex( request.body.bucketId ).flatMap {
       case Some( vertex ) =>
         if ( vertex.types.contains( NamespaceAndName( "resource:bucket" ) ) ) {
@@ -227,29 +228,37 @@ class AuthorizeController @Inject() (
               val fvertex = new NewVertexBuilder( 1 )
                 .addSingleProperty( "resource:file_name", StringValue( request.body.fileName ) )
                 .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                .addLabels( request.body.labels )
                 .addType( NamespaceAndName( "resource:file" ) )
+                .result()
               val lvertex = new NewVertexBuilder( 2 )
                 .addSingleProperty( "resource:path", StringValue( request.body.fileName ) )
                 .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                 .addType( NamespaceAndName( "resource:file_location" ) )
+                .result()
               val vvertex = new NewVertexBuilder( 3 )
                 .addSingleProperty( "system:creation_time", LongValue( now ) )
                 .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                 .addType( NamespaceAndName( "resource:file_version" ) )
+                .result()
               val edges = Seq(
                 NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( vertex.id ), Map() ),
                 NewEdge( NamespaceAndName( "resource:version_of" ), Left( vvertex.tempId ), Left( fvertex.tempId ), Map() ),
                 NewEdge( NamespaceAndName( "resource:has_version" ), Left( lvertex.tempId ), Left( vvertex.tempId ), Map() ),
                 NewEdge( NamespaceAndName( "resource:has_location" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
               )
-              val createAndWriteEdges = ( request.executionId.map { execId =>
+              val createAndWriteEdges = request.executionId.map { execId =>
                 Seq(
                   NewEdge( NamespaceAndName( "resource:write" ), Right( execId ), Left( vvertex.tempId ), Map() ),
                   NewEdge( NamespaceAndName( "resource:create" ), Right( execId ), Left( vvertex.tempId ), Map() )
                 )
-              }.getOrElse( Seq.empty ) ++ edges ).map( CreateEdgeOperation )
-              val vertices = Seq( fvertex, lvertex, vvertex ).map( _.result() ).map( CreateVertexOperation )
-              val mut = Mutation( vertices ++ createAndWriteEdges ) // First vertex is the file vertex (used later)
+              }.getOrElse( Seq.empty )
+              val projectEdge = projectId.map { pid =>
+                NewEdge( NamespaceAndName( "project:is_part_of" ), Left( fvertex.tempId ), Right( pid ), Map() )
+              }
+              val vertices = Seq( fvertex, lvertex, vvertex ).map( CreateVertexOperation )
+              val allEdges = ( edges ++ createAndWriteEdges ++ projectEdge.toSeq ).map( CreateEdgeOperation )
+              val mut = Mutation( vertices ++ allEdges ) // First vertex is the file vertex (used later)
               //TODO: maybe take into account if the node was created or not
               gc.postAndWait( mut ).map { ev =>
                 val response = ev.status match {
@@ -297,19 +306,27 @@ class AuthorizeController @Inject() (
       "bucket" -> name,
       "backend" -> backend
     ) ).as[JsObject] )
+    val projectId = request.headers.get( "Renga-Projects-Project" ).map( _.toLong )
 
     rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ), token ).flatMap( res =>
       res.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
         backends.getBackend( backend ) match {
           case Some( back ) =>
-            val bid = back.createBucket( request, request.body.name )
+            val bid = back.createBucket( request, name )
             val vertex = new NewVertexBuilder()
               .addSingleProperty( "resource:bucket_backend_id", StringValue( bid ) )
               .addSingleProperty( "resource:bucket_name", StringValue( name ) )
               .addSingleProperty( "resource:bucket_backend", StringValue( backend ) )
               .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+              .addLabels( request.body.labels )
               .addType( NamespaceAndName( "resource:bucket" ) )
-            val mut = Mutation( Seq( CreateVertexOperation( vertex.result() ) ) )
+              .result()
+            val projectEdge = projectId.map { pid =>
+              CreateEdgeOperation(
+                NewEdge( NamespaceAndName( "project:is_part_of" ), Left( vertex.tempId ), Right( pid ), Map() )
+              )
+            }
+            val mut = Mutation( Seq( CreateVertexOperation( vertex ) ) ++ projectEdge.toSeq )
             gc.postAndWait( mut ).map { ev =>
               val response = ev.status match {
                 case EventStatus.Completed( res ) => res
@@ -329,5 +346,13 @@ class AuthorizeController @Inject() (
         }
       }
       else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) ) )
+  }
+
+  private[this] implicit class BuilderCanAddLabels( builder: NewVertexBuilder ) {
+    def addLabels( labels: Set[String] ): NewVertexBuilder = {
+      labels.foldLeft( builder ) { ( b, label ) =>
+        b.addSetProperty( NamespaceAndName( "annotation:label" ), StringValue( label ) )
+      }
+    }
   }
 }
