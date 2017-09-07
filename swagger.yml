@@ -13,15 +13,15 @@ produces:
 consumes:
   - application/json
 tags:
-- name: 'IO'
-  description: 'Perform I/O operations'
-- name: 'Authorize'
+- name: 'Storage-Authorize'
   description: 'Request access to file resources'
+- name: 'Storage-IO'
+  description: 'Perform I/O operations'
 paths:
   /io/backends:
     get:
       tags:
-      - 'IO'
+      - 'Storage-IO'
       summary: 'Backend list'
       description: 'List all available backends'
       responses:
@@ -34,7 +34,7 @@ paths:
   /io/read:
     get:
       tags:
-      - 'IO'
+      - 'Storage-IO'
       summary: 'Read file'
       description: 'Read file specified in authorization bearer token'
       parameters:
@@ -51,7 +51,7 @@ paths:
   /io/write:
     post:
       tags:
-      - 'IO'
+      - 'Storage-IO'
       summary: 'Write file'
       description: 'Read file specified in authorization bearer token'
       consumes:
@@ -81,7 +81,7 @@ paths:
   /authorize/read:
     post:
       tags:
-      - 'Authorize'
+      - 'Storage-Authorize'
       summary: 'Request read access to a file'
       description: 'Request read access to a file and retrieve access token for I/O calls'
       parameters:
@@ -108,7 +108,7 @@ paths:
   /authorize/write:
     post:
       tags:
-      - 'Authorize'
+      - 'Storage-Authorize'
       summary: 'Request write access to a file'
       description: 'Request write access to a file and retrieve access token for I/O calls'
       parameters:
@@ -135,7 +135,7 @@ paths:
   /authorize/create_bucket:
     post:
       tags:
-      - 'Authorize'
+      - 'Storage-Authorize'
       summary: 'Request creation of a bucket'
       description: 'Request the creation of a new bucket on the given backend'
       parameters:
@@ -169,7 +169,7 @@ paths:
   /authorize/create_file:
     post:
       tags:
-      - 'Authorize'
+      - 'Storage-Authorize'
       summary: 'Request creation of a new file'
       description: 'Request the creation of a new file in the given bucket and retrieve access token for I/O calls'
       parameters:
