@@ -75,7 +75,7 @@ paths:
           type: string
           format: binary
       responses:
-        200:
+        201:
           description: 'Successful write'
 
   /authorize/read:
