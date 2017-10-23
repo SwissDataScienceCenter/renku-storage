@@ -109,7 +109,7 @@ class AuthorizeController @Inject() (
         } yield {
           ( for { v <- version; d <- data; b <- bucket } yield {
             Some( Json.toJson( Map(
-              "bucket" -> get_property( b, "resource:bucket_name" ).getOrElse( "" ),
+              "bucket" -> get_property( b, "resource:bucket_backend_id" ).getOrElse( "" ),
               "name" -> ( get_property( d, "resource:path" ).getOrElse( "" ) + get_creation_time( v ).getOrElse( "" ) ),
               "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
             ) ).as[JsObject] )
@@ -164,7 +164,7 @@ class AuthorizeController @Inject() (
         } yield {
           ( for { d <- data; b <- bucket } yield {
             Some( Json.toJson( Map(
-              "bucket" -> get_property( b, "resource:bucket_name" ).getOrElse( "" ),
+              "bucket" -> get_property( b, "resource:bucket_backend_id" ).getOrElse( "" ),
               "name" -> ( get_property( d, "resource:path" ).getOrElse( "" ) + now.toString ),
               "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
             ) ).as[JsObject] )
@@ -219,7 +219,7 @@ class AuthorizeController @Inject() (
 
           val backend = get_property( vertex, "resource:bucket_backend" ).getOrElse( "" )
           val extra = Some( Json.toJson( Map(
-            "bucket" -> get_property( vertex, "resource:bucket_name" ).getOrElse( "" ),
+            "bucket" -> get_property( vertex, "resource:bucket_backend_id" ).getOrElse( "" ),
             "name" -> ( request.body.fileName + now.toString ),
             "backend" -> backend
           ) ).as[JsObject] )
