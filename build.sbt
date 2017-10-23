@@ -17,7 +17,7 @@
  */
 
 organization := "ch.datascience"
-version := "0.1.0-SNAPSHOT"
+version := "0.1.1-SNAPSHOT"
 scalaVersion := "2.11.8"
 name := "renga-storage"
 
@@ -30,9 +30,11 @@ resolvers += "jitpack" at "https://jitpack.io"
 resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven"
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-lazy val renga_version = "0.1.0"
+lazy val renga_version = "0.1.1-SNAPSHOT"
 libraryDependencies += "ch.datascience" %% "renga-graph-core" % renga_version
 libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
+
+libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
 
 lazy val janusgraph_version = "0.1.0"
 
