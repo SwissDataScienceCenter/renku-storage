@@ -22,6 +22,7 @@ import play.api.http.DefaultHttpFilters
 import play.filters.cors.CORSFilter
 import play.filters.headers.SecurityHeadersFilter
 import play.filters.hosts.AllowedHostsFilter
+import ch.datascience.service.utils.AccessLoggingFilter
 
 /**
  * Add the following filters by default to all projects
@@ -33,9 +34,11 @@ import play.filters.hosts.AllowedHostsFilter
 class Filters @Inject() (
     allowedHostsFilter:    AllowedHostsFilter,
     corsFilter:            CORSFilter,
-    securityHeadersFilter: SecurityHeadersFilter
+    securityHeadersFilter: SecurityHeadersFilter,
+    accessLoggingFilter:   AccessLoggingFilter
 ) extends DefaultHttpFilters(
   allowedHostsFilter,
   corsFilter,
-  securityHeadersFilter
+  securityHeadersFilter,
+  accessLoggingFilter
 )
