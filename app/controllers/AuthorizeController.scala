@@ -46,6 +46,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__
+import play.api.Logger
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -68,6 +69,8 @@ class AuthorizeController @Inject() (
 
   lazy val gc: GraphMutationClient = graphMutationClientProvider.get
 
+  lazy val logger: Logger = Logger( "application.AuthorizeController" )
+
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
 
@@ -77,6 +80,7 @@ class AuthorizeController @Inject() (
   //TODO: factorize read and write !
 
   def objectRead = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[ReadResourceRequest]( ReadResourceRequestFormat ) ) { implicit request =>
+    logger.info( s"objectRead - ${request.body} - ${request.token.getSubject}" )
 
     /* Steps:
      *   1. Resolve graph entities
@@ -128,7 +132,13 @@ class AuthorizeController @Inject() (
                   // Step 5: Send authorization to client
                   ).getOrElse( Future( Ok( Json.toJson( ag ) ) ) )
                 }
-                else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+                else {
+                  logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+                  Future( InternalServerError( "Resource Manager response is invalid." ) )
+                } ).getOrElse {
+                  logger.error( s"No response from Resource Manager" )
+                  Future( InternalServerError( "No response from Resource Manager." ) )
+                }
               } )
             } )
           } )
@@ -140,6 +150,8 @@ class AuthorizeController @Inject() (
   }
 
   def objectWrite = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[WriteResourceRequest]( WriteResourceRequestFormat ) ) { implicit request =>
+    logger.info( s"objectWrite - ${request.body} - ${request.token.getSubject}" )
+
     /* Steps:
  *   1. Resolve graph entities
  *   2. Request access authorization from Resource Manager
@@ -190,7 +202,13 @@ class AuthorizeController @Inject() (
                     gc.postAndWait( mut ).map( ev => Ok( Json.toJson( ag ) ) )
                   } //TODO: maybe take into account if the node was created or not
                   // Step 5: Send authorization to client
-                  else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+                  else {
+                    logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+                    Future( InternalServerError( "Resource Manager response is invalid." ) )
+                  } ).getOrElse {
+                  logger.error( s"No response from Resource Manager" )
+                  Future( InternalServerError( "No response from Resource Manager." ) )
+                }
               } )
             } )
           } )
@@ -202,6 +220,8 @@ class AuthorizeController @Inject() (
   }
 
   def objectCreate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CreateFileRequest]( CreateFileRequestFormat ) ) { implicit request =>
+    logger.info( s"objectCreate - ${request.body} - ${request.token.getSubject}" )
+
     /* Steps:
      *   1. Resolve graph entities
      *   2. Request access authorization from Resource Manager
@@ -278,18 +298,29 @@ class AuthorizeController @Inject() (
                 Created( Json.toJson( ( ag, fileVertexId ) ) )
               }
             }
-            else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) )
+            else {
+              logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+              Future( InternalServerError( "Resource Manager response is invalid." ) )
+            } ).getOrElse {
+              logger.error( s"No response from Resource Manager" )
+              Future( InternalServerError( "No response from Resource Manager." ) )
+            }
           } )
         }
         else {
+          logger.info( s"Resource ${request.body.bucketId} is not a bucket" )
           Future( BadRequest( "Resource is not a bucket" ) )
         }
-      case None => Future( BadRequest( "Unknown resource Id" ) )
+      case None =>
+        logger.info( s"Unknown resource Id ${request.body.bucketId}" )
+        Future( BadRequest( "Unknown resource Id" ) )
     }
 
   }
 
   def bucketCreate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CreateBucketRequest]( CreateBucketRequestFormat ) ) { implicit request =>
+    logger.info( s"bucketCreate - ${request.body} - ${request.token.getSubject}" )
+
     /* Steps:
      *   1. Request access authorization from Resource Manager
      *   2. Validate response from RM
@@ -342,10 +373,18 @@ class AuthorizeController @Inject() (
               Created( bucketVertexId )
             }
 
-          case None => Future( BadRequest( s"The backend $backend is not enabled." ) )
+          case None =>
+            logger.info( s"The backend $backend is not enabled" )
+            Future( BadRequest( s"The backend $backend is not enabled." ) )
         }
       }
-      else Future( InternalServerError( "Resource Manager response is invalid." ) ) ).getOrElse( Future( InternalServerError( "No response from Resource Manager." ) ) ) )
+      else {
+        logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+        Future( InternalServerError( "Resource Manager response is invalid." ) )
+      } ).getOrElse {
+        logger.error( s"No response from Resource Manager" )
+        Future( InternalServerError( "No response from Resource Manager." ) )
+      } )
   }
 
   private[this] implicit class BuilderCanAddLabels( builder: NewVertexBuilder ) {
