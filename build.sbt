@@ -36,7 +36,7 @@ libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
 
 libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
 
-lazy val janusgraph_version = "0.1.0"
+lazy val janusgraph_version = "0.2.0"
 
 libraryDependencies += filters
 libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
