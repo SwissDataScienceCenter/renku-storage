@@ -14,3 +14,5 @@ POST    /authorize/read                           controllers.AuthorizeControlle
 POST    /authorize/write                          controllers.AuthorizeController.objectWrite
 POST    /authorize/create_file                    controllers.AuthorizeController.objectCreate
 POST    /authorize/create_bucket                  controllers.AuthorizeController.bucketCreate
+
+PUT     /file/:id                                 controllers.FileController.objectRename(id: Long)
