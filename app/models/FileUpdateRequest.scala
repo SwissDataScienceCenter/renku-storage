@@ -21,12 +21,30 @@ package models
 import play.api.libs.json.{ JsPath, OFormat }
 import play.api.libs.functional.syntax._
 
-case class RenameRequest( newFileName: String )
+case class FileUpdateRequest(
+    fileName: Option[String],
+    labels:   Option[Set[String]]
+)
 
-object RenameRequest {
+object FileUpdateRequest {
 
-  def format: OFormat[RenameRequest] = (
-    JsPath \ "file_name"
-  ).format[String].inmap( RenameRequest.apply, unlift( RenameRequest.unapply ) )
+  def format: OFormat[FileUpdateRequest] = (
+    ( JsPath \ "file_name" ).formatNullable[String] and
+    ( JsPath \ "labels" ).formatNullable[Seq[String]]
+  )( read, write )
+
+  private[this] def read(
+      fileName: Option[String],
+      labels:   Option[Seq[String]]
+  ): FileUpdateRequest = {
+    FileUpdateRequest(
+      fileName,
+      labels.map( _.toSet )
+    )
+  }
+
+  private[this] def write( request: FileUpdateRequest ): ( Option[String], Option[Seq[String]] ) = {
+    ( request.fileName, request.labels.map( _.toSeq ) )
+  }
 
 }
