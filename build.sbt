@@ -42,6 +42,7 @@ libraryDependencies += filters
 libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
 libraryDependencies += "io.minio" % "minio" % "3.0.3"
 libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
+libraryDependencies += "com.microsoft.azure" % "azure-storage" % "6.1.0"
 libraryDependencies += cache
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
