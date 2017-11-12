@@ -23,7 +23,7 @@ import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import io.minio.MinioClient
 import play.api.libs.concurrent.ActorSystemProvider
@@ -37,7 +37,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 
 @Singleton
-class S3Backend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
+class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
 
   private[this] val subConfig = config.getConfig( "storage.backend.s3" ).get
   lazy val minioClient = new MinioClient(
@@ -52,10 +52,10 @@ class S3Backend @Inject()(config: play.api.Configuration, actorSystemProvider: A
     val CHUNK_SIZE = 100
     if ( minioClient.bucketExists( bucket ) && objectExists( bucket, name ) ) {
       val data = request.headers.get( "Range" ).map {
-        case RangePattern(null, to) => minioClient.getObject(bucket, name, 0, to.toLong)
-        case RangePattern(from, null) => minioClient.getObject(bucket, name, from.toLong)
-        case RangePattern(from, to) => minioClient.getObject(bucket, name, from.toLong, to.toLong)
-      }.getOrElse(minioClient.getObject(bucket, name))
+        case RangePattern( null, to )   => minioClient.getObject( bucket, name, 0, to.toLong )
+        case RangePattern( from, null ) => minioClient.getObject( bucket, name, from.toLong )
+        case RangePattern( from, to )   => minioClient.getObject( bucket, name, from.toLong, to.toLong )
+      }.getOrElse( minioClient.getObject( bucket, name ) )
       Some( StreamConverters.fromInputStream( () => data, CHUNK_SIZE ) )
     }
     else {
@@ -64,7 +64,7 @@ class S3Backend @Inject()(config: play.api.Configuration, actorSystemProvider: A
   }
 
   def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
-    val size = req.headers.get("Content-Length")
+    val size = req.headers.get( "Content-Length" )
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     if ( minioClient.bucketExists( bucket ) )
@@ -73,7 +73,7 @@ class S3Backend @Inject()(config: play.api.Configuration, actorSystemProvider: A
           val inputStream = source.runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
-          minioClient.putObject(bucket, name,inputStream, size.get.toLong, "application/octet-stream")
+          minioClient.putObject( bucket, name, inputStream, size.get.toLong, "application/octet-stream" )
           inputStream.close()
           Created
         }
@@ -90,10 +90,11 @@ class S3Backend @Inject()(config: play.api.Configuration, actorSystemProvider: A
 
   def objectExists( bucket: String, name: String ): Boolean = {
     try {
-      minioClient.statObject(bucket, name)
+      minioClient.statObject( bucket, name )
       return true
-    } catch {
-      case _:Throwable => return false
+    }
+    catch {
+      case _: Throwable => return false
     }
   }
 }

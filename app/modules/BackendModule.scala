@@ -19,8 +19,8 @@
 package modules
 
 import controllers.storageBackends._
-import play.api.inject.{Binding, Module}
-import play.api.{Configuration, Environment}
+import play.api.inject.{ Binding, Module }
+import play.api.{ Configuration, Environment }
 
 /**
  * Created by johann on 07/07/17.
