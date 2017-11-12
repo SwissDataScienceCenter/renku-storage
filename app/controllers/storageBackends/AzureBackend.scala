@@ -23,7 +23,7 @@ import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.blob.CloudBlobClient
@@ -38,11 +38,11 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
 
 @Singleton
-class AzureBackend @Inject()(config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
+class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
 
   private[this] val subConfig = config.getConfig( "storage.backend.azure" ).get
 
-  lazy val account: CloudStorageAccount = CloudStorageAccount.parse(subConfig.getString( "connection_string" ).get)
+  lazy val account: CloudStorageAccount = CloudStorageAccount.parse( subConfig.getString( "connection_string" ).get )
   lazy val serviceClient: CloudBlobClient = account.createCloudBlobClient
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
@@ -51,18 +51,18 @@ class AzureBackend @Inject()(config: play.api.Configuration, actorSystemProvider
     val CHUNK_SIZE = 100
     val container = serviceClient.getContainerReference( bucket )
     if ( container.exists() ) {
-      val blob = container.getBlockBlobReference(name)
+      val blob = container.getBlockBlobReference( name )
       if ( blob.exists() ) {
-        val source =  StreamConverters.asOutputStream()
-        source.mapMaterializedValue(outputStream => {
-          request.headers.get("Range") match {
-            case Some(RangePattern(null, to)) => blob.downloadRange(0, to.toLong, outputStream)
-            case Some(RangePattern(from, null)) => blob.downloadRange(from.toLong, null, outputStream)
-            case Some(RangePattern(from, to)) => blob.downloadRange(from.toLong, to.toLong, outputStream)
-            case _ => blob.download(outputStream)
+        val source = StreamConverters.asOutputStream()
+        source.mapMaterializedValue( outputStream => {
+          request.headers.get( "Range" ) match {
+            case Some( RangePattern( null, to ) )   => blob.downloadRange( 0, to.toLong, outputStream )
+            case Some( RangePattern( from, null ) ) => blob.downloadRange( from.toLong, null, outputStream )
+            case Some( RangePattern( from, to ) )   => blob.downloadRange( from.toLong, to.toLong, outputStream )
+            case _                                  => blob.download( outputStream )
           }
-        })
-        Some(source)
+        } )
+        Some( source )
       }
       else {
         None
@@ -74,7 +74,7 @@ class AzureBackend @Inject()(config: play.api.Configuration, actorSystemProvider
   }
 
   def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
-    val size = req.headers.get("Content-Length")
+    val size = req.headers.get( "Content-Length" )
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     val container = serviceClient.getContainerReference( bucket )
@@ -84,8 +84,8 @@ class AzureBackend @Inject()(config: play.api.Configuration, actorSystemProvider
           val inputStream = source.runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
-          val blob = container.getBlockBlobReference(name)
-          blob.upload(inputStream, size.get.toLong)
+          val blob = container.getBlockBlobReference( name )
+          blob.upload( inputStream, size.get.toLong )
           inputStream.close()
           Created
         }
