@@ -96,7 +96,7 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
 
   def createBucket( request: RequestHeader, bucket: String ): String = {
     val uuid = java.util.UUID.randomUUID.toString
-    serviceClient.getContainerReference( bucket ).createIfNotExists()
+    serviceClient.getContainerReference( uuid ).createIfNotExists()
     uuid
   }
 

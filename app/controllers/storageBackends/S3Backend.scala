@@ -84,7 +84,7 @@ class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider:
 
   def createBucket( request: RequestHeader, bucket: String ): String = {
     val uuid = java.util.UUID.randomUUID.toString
-    minioClient.makeBucket( bucket )
+    minioClient.makeBucket( uuid )
     uuid
   }
 
