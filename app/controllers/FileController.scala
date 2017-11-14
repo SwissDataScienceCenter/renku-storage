@@ -105,21 +105,26 @@ class FileController @Inject() (
               ret.map( ag =>
                 if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
                   // Step 4: Log to KnowledgeGraph
-                  val mut = Mutation( fileNameUpdate( request.body.fileName, vertex ).toSeq ++ labelsUpdate( request.body.labels, vertex ) )
-                  //gc.postAndWait( mut ).map( ev => Ok( s"Renamed file $fileId to ${request.body.fileName}" ) )
-                  gc.postAndWait( mut ).map { ev =>
-                    val response = ev.status match {
-                      case EventStatus.Completed( res ) => res
-                      case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
-                    }
+                  val ops = fileNameUpdate( request.body.fileName, vertex ).toSeq ++ labelsUpdate( request.body.labels, vertex )
+                  if ( ops.isEmpty )
+                    Future.successful( Ok( JsObject( Seq( "message" -> JsString( "Nothing to update" ) ) ) ) )
+                  else {
+                    val mut = Mutation( fileNameUpdate( request.body.fileName, vertex ).toSeq ++ labelsUpdate( request.body.labels, vertex ) )
+                    //gc.postAndWait( mut ).map( ev => Ok( s"Renamed file $fileId to ${request.body.fileName}" ) )
+                    gc.postAndWait( mut ).map { ev =>
+                      val response = ev.status match {
+                        case EventStatus.Completed( res ) => res
+                        case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
+                      }
 
-                    val mutationResponse = response.event.as[MutationResponse]
-                    val bucketVertexId = mutationResponse match {
-                      case MutationSuccess( results ) => results.head
-                      case MutationFailed( reason )   => throw new RuntimeException( s"File update failed, caused by: $reason" )
-                    }
+                      val mutationResponse = response.event.as[MutationResponse]
+                      val bucketVertexId = mutationResponse match {
+                        case MutationSuccess( results ) => results.head
+                        case MutationFailed( reason )   => throw new RuntimeException( s"File update failed, caused by: $reason" )
+                      }
 
-                    Ok( JsObject( Seq( "message" -> JsString( s"Applied update: ${request.body}" ) ) ) )
+                      Ok( JsObject( Seq( "message" -> JsString( s"Applied update: ${request.body}" ) ) ) )
+                    }
                   }
 
                 } //TODO: maybe take into account if the node was created or not
