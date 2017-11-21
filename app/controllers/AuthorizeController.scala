@@ -318,6 +318,135 @@ class AuthorizeController @Inject() (
 
   }
 
+  def objectDuplicate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CopyFileRequest]( CopyFileRequestFormat ) ) { implicit request =>
+    logger.info( s"objectDuplicate - ${request.body} - ${request.token.getSubject}" )
+
+    /* Steps:
+     *   1. Resolve graph entities
+     *   2. Request access authorization from Resource Manager
+     *   3. Validate response from RM and log to Knowledge Graph
+     *   4. Perform copy
+     */
+
+    val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourceManagerClient( config )
+    val now = System.currentTimeMillis
+    val projectId = request.headers.get( "Renga-Projects-Project" ).map( _.toLong )
+
+    val g = graphTraversalSource
+    val t = g.V( Long.box( request.body.resourceId ) ).union(
+      __.has( "type", "resource:file_version" ),
+      __.has( "type", "resource:file" ).in( "resource:version_of" ).order().by( "system:creation_time", Order.decr ).limit( 1 )
+    ).as( "version" )
+      .in( "resource:has_version" ).as( "data" )
+      .out( "resource:stored_in" ).as( "bucket" )
+      .select[Vertex]( "version", "data", "bucket" )
+
+    graphExecutionContext.execute {
+      if ( t.hasNext ) { //TODO: add some logic to select best alias
+        import scala.collection.JavaConverters._
+        val jmap: Map[String, Vertex] = t.next().asScala.toMap
+        ( for {
+          version <- jmap.get( "version" ).map( v => vertexReader.read( v ) )
+          data <- jmap.get( "data" ).map( v => vertexReader.read( v ) )
+          bucket <- jmap.get( "bucket" ).map( v => vertexReader.read( v ) )
+        } yield {
+          ( for { v <- version; d <- data; b <- bucket } yield {
+
+            getVertex( request.body.bucketId ).flatMap {
+              case Some( vertex ) =>
+                if ( vertex.types.contains( NamespaceAndName( "resource:bucket" ) ) ) {
+
+                  Some(Json.toJson(Map(
+                    "fromBucket" -> get_property(b, "resource:bucket_backend_id").getOrElse(""),
+                    "fromName" -> (get_property(d, "resource:path").getOrElse("") + get_creation_time(v).getOrElse("")),
+                    "fromBackend" -> get_property(b, "resource:bucket_backend").getOrElse(""),
+                    "toBucket" -> get_property(vertex, "resource:bucket_backend_id").getOrElse(""),
+                    "toName" -> (request.body.fileName + now.toString),
+                    "toBackend" -> get_property(vertex, "resource:bucket_backend").getOrElse("")
+                  )).as[JsObject])
+                }
+                else {
+                  logger.info( s"Resource ${request.body.bucketId} is not a bucket" )
+                  None
+                }
+              case None =>
+                logger.info( s"Unknown resource Id ${request.body.bucketId}" )
+                None
+             }
+          } ).flatMap( extra => {
+            version.flatMap( v => {
+              // Step 2: Request access authorization from Resource Manager
+              rmc.authorize( AccessRequestFormat, request.body.toAccessRequest( extra ), token ).flatMap( ret => {
+                // Step 3: Validate response from RM
+                ret.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+                  backends.getBackend(backend) match {
+                    case Some(back) =>
+                      val bid = back.createBucket(request, name)
+
+                      // Step 4: Log to KnowledgeGraph
+                      val fvertex = new NewVertexBuilder(1)
+                        .addSingleProperty("resource:file_name", StringValue(request.body.fileName))
+                        .addSingleProperty("resource:owner", StringValue(request.userId))
+                        .addLabels(request.body.labels)
+                        .addType(NamespaceAndName("resource:file"))
+                        .result()
+                      val lvertex = new NewVertexBuilder(2)
+                        .addSingleProperty("resource:path", StringValue(request.body.fileName))
+                        .addSingleProperty("resource:owner", StringValue(request.userId))
+                        .addType(NamespaceAndName("resource:file_location"))
+                        .result()
+                      val vvertex = new NewVertexBuilder(3)
+                        .addSingleProperty("system:creation_time", LongValue(now))
+                        .addSingleProperty("resource:owner", StringValue(request.userId))
+                        .addType(NamespaceAndName("resource:file_version"))
+                        .result()
+                      val edges = Seq(
+                        NewEdge(NamespaceAndName("resource:stored_in"), Left(lvertex.tempId), Right(vertex.id), Map()),
+                        NewEdge(NamespaceAndName("resource:version_of"), Left(vvertex.tempId), Left(fvertex.tempId), Map()),
+                        NewEdge(NamespaceAndName("resource:has_version"), Left(lvertex.tempId), Left(vvertex.tempId), Map()),
+                        NewEdge(NamespaceAndName("resource:has_location"), Left(fvertex.tempId), Left(lvertex.tempId), Map())
+                      ) ++ request.executionId.map(eId => {
+                        Seq(NewEdge(NamespaceAndName("resource:read"), Right(eId), Right(v.id), Map()))
+                      }).getOrElse(Seq())
+
+                      val createAndWriteEdges = request.executionId.map { execId =>
+                        Seq(
+                          NewEdge(NamespaceAndName("resource:write"), Right(execId), Left(vvertex.tempId), Map()),
+                          NewEdge(NamespaceAndName("resource:create"), Right(execId), Left(vvertex.tempId), Map())
+                        )
+                      }.getOrElse(Seq.empty)
+                      val projectEdge = projectId.map { pid =>
+                        NewEdge(NamespaceAndName("project:is_part_of"), Left(fvertex.tempId), Right(pid), Map())
+                      }
+                      val vertices = Seq(fvertex, lvertex, vvertex).map(CreateVertexOperation)
+                      val allEdges = (edges ++ createAndWriteEdges ++ projectEdge.toSeq).map(CreateEdgeOperation)
+                      val mut = Mutation(vertices ++ allEdges) // First vertex is the file vertex (used later)
+
+                      gc.postAndWait(mut).map(ev => Ok(Json.toJson(ag)))
+                  } //TODO: maybe take into account if the node was created or not
+                }
+                    // Step 5: Send authorization to client
+                  ).getOrElse( Future( Ok( Json.toJson( ag ) ) ) )
+                }
+                else {
+                  logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+                  Future( InternalServerError( "Resource Manager response is invalid." ) )
+                } ).getOrElse {
+                  logger.error( s"No response from Resource Manager" )
+                  Future( InternalServerError( "No response from Resource Manager." ) )
+                }
+              } )
+            } )
+          } )
+        } ).getOrElse( Future( NotFound ) )
+      }
+      else
+        Future( NotFound )
+    }
+  }
+
+
   def bucketCreate = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[CreateBucketRequest]( CreateBucketRequestFormat ) ) { implicit request =>
     logger.info( s"bucketCreate - ${request.body} - ${request.token.getSubject}" )
 
