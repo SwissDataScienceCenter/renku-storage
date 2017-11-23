@@ -333,7 +333,7 @@ class AuthorizeController @Inject() (
     val now = System.currentTimeMillis
     val projectId = request.headers.get( "Renga-Projects-Project" ).map( _.toLong )
 
-    val newBucket = request.body.bucketId.map(bid => getVertex( bid ))
+    val newBucket = request.body.bucketId.map(bid => getVertex( bid )).getOrElse(Future(None))
 
     val g = graphTraversalSource
     val t = g.V( Long.box( request.body.resourceId ) ).union(
@@ -371,8 +371,8 @@ class AuthorizeController @Inject() (
                     )).as[JsObject]
                     // Step 2: Request access authorization from Resource Manager
                     for {
-                      auth_read <- rmc.authorize(AccessRequestFormat, request.body.underlyingRead.toAccessRequest(extra_read) , token)
-                      auth_write <- rmc.authorize(AccessRequestFormat, request.body.underlyingCreate(dest_bucket.id).toAccessRequest(extra_write), token)
+                      auth_read <- rmc.authorize(AccessRequestFormat, request.body.underlyingRead.toAccessRequest(Some(extra_read)) , token)
+                      auth_write <- rmc.authorize(AccessRequestFormat, request.body.underlyingCreate(dest_bucket.id).toAccessRequest(Some(extra_write)), token)
                       result <- {
                         // Step 3: Validate response from RM
                         for {ag_read <- auth_read; ag_write <- auth_write} yield {
@@ -440,14 +440,12 @@ class AuthorizeController @Inject() (
                             }
                           }
                           else {
-                            logger.error(s"Resource Manager response is invalid. Got: $ag Expected extras: $extra")
+                            logger.error(s"Resource Manager response is invalid. Got: $ag_read, $ag_write Expected extras: $extra_read, $extra_write")
                             Future(InternalServerError("Resource Manager response is invalid."))
                           }
-                        }.getOrElse {
-                          logger.error(s"No response from Resource Manager")
-                          Future(InternalServerError("No response from Resource Manager."))
                         }
-                      } } yield { result }
+                      }.getOrElse(Future(NotFound))
+                    } yield { result }
                   }
                   else {
                     logger.error("Cannot duplicate accross backends.")
