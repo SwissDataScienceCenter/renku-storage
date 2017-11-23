@@ -18,21 +18,22 @@
 
 package controllers.storageBackends
 
-import java.io.{File, FileInputStream, FileNotFoundException, FileOutputStream}
-import javax.inject.{Inject, Singleton}
+import java.io.{ File, FileInputStream, FileNotFoundException, FileOutputStream }
+import java.nio.file.{ FileSystems, Files }
+import javax.inject.{ Inject, Singleton }
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{RequestHeader, Result}
-import play.api.mvc.Results.{Created, NotImplemented}
+import play.api.mvc.{ RequestHeader, Result }
+import play.api.mvc.Results.Created
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -103,7 +104,17 @@ class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvid
     bucket
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String): Option[Result] = None
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Option[Result] = Try {
+
+    val source = FileSystems.getDefault.getPath( s"$rootDir/$fromBucket/$fromName" )
+    val dest = FileSystems.getDefault.getPath( s"$rootDir/$toBucket/$toName" )
+
+    Files.copy( source, dest )
+
+    Some( Created )
+  }.recover {
+    case _: FileNotFoundException | _: SecurityException => None
+  }.get
 
   private[this] def takeFromByteStringSource( source: Source[ByteString, _], n: Int, chunkSize: Int = 8192 ): Source[ByteString, _] = {
     source.mapConcat( identity ).take( n ).grouped( chunkSize ).map { bytes => ByteString( bytes: _* ) }
