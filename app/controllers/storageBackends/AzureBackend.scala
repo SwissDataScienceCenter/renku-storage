@@ -18,6 +18,7 @@
 
 package controllers.storageBackends
 
+import java.io.{ PipedInputStream, PipedOutputStream }
 import java.util.concurrent.TimeUnit
 import javax.inject._
 
@@ -27,6 +28,7 @@ import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import com.microsoft.azure.storage.CloudStorageAccount
 import com.microsoft.azure.storage.blob.CloudBlobClient
+import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
@@ -48,21 +50,23 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]] = {
-    val CHUNK_SIZE = 100
     val container = serviceClient.getContainerReference( bucket )
     if ( container.exists() ) {
       val blob = container.getBlockBlobReference( name )
       if ( blob.exists() ) {
-        val source = StreamConverters.asOutputStream()
-        source.mapMaterializedValue( outputStream => {
-          request.headers.get( "Range" ) match {
-            case Some( RangePattern( null, to ) )   => blob.downloadRange( 0, to.toLong, outputStream )
-            case Some( RangePattern( from, null ) ) => blob.downloadRange( from.toLong, null, outputStream )
-            case Some( RangePattern( from, to ) )   => blob.downloadRange( from.toLong, to.toLong, outputStream )
-            case _                                  => blob.download( outputStream )
-          }
-        } )
-        Some( source )
+        val CHUNK_SIZE = 100
+
+        val outputStream = new PipedOutputStream()
+        val inputStream = new PipedInputStream( outputStream )
+
+        request.headers.get( "Range" ) match {
+          case Some( RangePattern( null, to ) )   => blob.downloadRange( 0, to.toLong, outputStream )
+          case Some( RangePattern( from, null ) ) => blob.downloadRange( from.toLong, null, outputStream )
+          case Some( RangePattern( from, to ) )   => blob.downloadRange( from.toLong, to.toLong, outputStream )
+          case _                                  => blob.downloadRange( 0, null, outputStream )
+        }
+        outputStream.close
+        Some( StreamConverters.fromInputStream( () => inputStream, CHUNK_SIZE ) )
       }
       else {
         None
@@ -74,10 +78,10 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
   }
 
   def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
-    val size = req.headers.get( "Content-Length" )
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     val container = serviceClient.getContainerReference( bucket )
+    val size = req.headers.get( "Content-Length" )
     if ( container.exists() )
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
@@ -85,7 +89,8 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           val blob = container.getBlockBlobReference( name )
-          blob.upload( inputStream, size.get.toLong )
+          // for some reason the declared size cannot be exactly the size of the input !!
+          blob.upload( inputStream, size.map( _.toLong.+( 1 ) ).getOrElse( -1 ) )
           inputStream.close()
           Created
         }
@@ -99,5 +104,7 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
     serviceClient.getContainerReference( uuid ).createIfNotExists()
     uuid
   }
+
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String): Option[Result] = None
 
 }

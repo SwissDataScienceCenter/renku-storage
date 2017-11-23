@@ -18,21 +18,21 @@
 
 package controllers.storageBackends
 
-import java.io.{ File, FileInputStream, FileNotFoundException, FileOutputStream }
-import javax.inject.{ Inject, Singleton }
+import java.io.{File, FileInputStream, FileNotFoundException, FileOutputStream}
+import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, StreamConverters }
+import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{ RequestHeader, Result }
-import play.api.mvc.Results.Created
+import play.api.mvc.{RequestHeader, Result}
+import play.api.mvc.Results.{Created, NotImplemented}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -102,6 +102,8 @@ class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvid
     new File( rootDir, bucket ).mkdir()
     bucket
   }
+
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String): Option[Result] = None
 
   private[this] def takeFromByteStringSource( source: Source[ByteString, _], n: Int, chunkSize: Int = 8192 ): Source[ByteString, _] = {
     source.mapConcat( identity ).take( n ).grouped( chunkSize ).map { bytes => ByteString( bytes: _* ) }
