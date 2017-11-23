@@ -23,7 +23,7 @@ import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import io.minio.MinioClient
 import play.api.libs.concurrent.ActorSystemProvider
@@ -89,12 +89,11 @@ class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider:
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String): Option[Result] =
-     Try {
-       minioClient.copyObject(fromBucket, fromName, toBucket, toName)
-       Created
-     }.toOption
-
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Option[Result] =
+    Try {
+      minioClient.copyObject( fromBucket, fromName, toBucket, toName )
+      Created
+    }.toOption
 
   def objectExists( bucket: String, name: String ): Boolean = {
     try {

@@ -213,7 +213,7 @@ paths:
       - token_auth:
         - 'profile'
 
-/authorize/copy_file:
+  /authorize/copy_file:
     post:
       tags:
       - 'Storage-Authorize'

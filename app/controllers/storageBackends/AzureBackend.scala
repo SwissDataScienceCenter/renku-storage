@@ -105,6 +105,6 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String): Option[Result] = None
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Option[Result] = None
 
 }
