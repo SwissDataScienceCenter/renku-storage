@@ -104,17 +104,14 @@ class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvid
     bucket
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Option[Result] = Try {
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = Try {
 
     val source = FileSystems.getDefault.getPath( s"$rootDir/$fromBucket/$fromName" )
     val dest = FileSystems.getDefault.getPath( s"$rootDir/$toBucket/$toName" )
 
     Files.copy( source, dest )
 
-    Some( Created )
-  }.recover {
-    case _: FileNotFoundException | _: SecurityException => None
-  }.get
+  }.isSuccess
 
   private[this] def takeFromByteStringSource( source: Source[ByteString, _], n: Int, chunkSize: Int = 8192 ): Source[ByteString, _] = {
     source.mapConcat( identity ).take( n ).grouped( chunkSize ).map { bytes => ByteString( bytes: _* ) }
