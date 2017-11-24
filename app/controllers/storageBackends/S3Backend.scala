@@ -89,11 +89,10 @@ class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider:
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Option[Result] =
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean =
     Try {
       minioClient.copyObject( fromBucket, fromName, toBucket, toName )
-      Created
-    }.toOption
+    }.isSuccess
 
   def objectExists( bucket: String, name: String ): Boolean = {
     try {

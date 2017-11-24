@@ -380,59 +380,73 @@ class AuthorizeController @Inject() (
                           if ( ag_read.verifyAccessToken( rmJwtVerifier.get ).extraClaims.contains( extra_read ) && ag_write.verifyAccessToken( rmJwtVerifier.get ).extraClaims.contains( extra_write ) ) {
                             backends.getBackend( backend ) match {
                               case Some( back ) => {
-                                back.duplicateFile(
+                                val duplicateResult = back.duplicateFile(
                                   request,
                                   get_property( b, "resource:bucket_backend_id" ).getOrElse( "" ),
                                   get_property( d, "resource:path" ).getOrElse( "" ) + get_creation_time( v ).getOrElse( "" ),
                                   get_property( dest_bucket, "resource:bucket_backend_id" ).getOrElse( "" ),
                                   request.body.fileName + now.toString
-                                ).map( duplicateResult => {
+                                )
+                                if ( duplicateResult ) {
+                                  // Step 4: Log to KnowledgeGraph
+                                  val fvertex = new NewVertexBuilder( 1 )
+                                    .addSingleProperty( "resource:file_name", StringValue( request.body.fileName ) )
+                                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                                    .addLabels( request.body.labels )
+                                    .addType( NamespaceAndName( "resource:file" ) )
+                                    .result()
+                                  val lvertex = new NewVertexBuilder( 2 )
+                                    .addSingleProperty( "resource:path", StringValue( request.body.fileName ) )
+                                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                                    .addType( NamespaceAndName( "resource:file_location" ) )
+                                    .result()
+                                  val vvertex = new NewVertexBuilder( 3 )
+                                    .addSingleProperty( "system:creation_time", LongValue( now ) )
+                                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                                    .addType( NamespaceAndName( "resource:file_version" ) )
+                                    .result()
+                                  val edges = Seq(
+                                    NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( b.id ), Map() ),
+                                    NewEdge( NamespaceAndName( "resource:version_of" ), Left( vvertex.tempId ), Left( fvertex.tempId ), Map() ),
+                                    NewEdge( NamespaceAndName( "resource:has_version" ), Left( lvertex.tempId ), Left( vvertex.tempId ), Map() ),
+                                    NewEdge( NamespaceAndName( "resource:has_location" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
+                                  ) ++ request.executionId.map( eId => {
+                                      Seq( NewEdge( NamespaceAndName( "resource:read" ), Right( eId ), Right( v.id ), Map() ) )
+                                    } ).getOrElse( Seq() )
 
-                                    // Step 4: Log to KnowledgeGraph
-                                    val fvertex = new NewVertexBuilder( 1 )
-                                      .addSingleProperty( "resource:file_name", StringValue( request.body.fileName ) )
-                                      .addSingleProperty( "resource:owner", StringValue( request.userId ) )
-                                      .addLabels( request.body.labels )
-                                      .addType( NamespaceAndName( "resource:file" ) )
-                                      .result()
-                                    val lvertex = new NewVertexBuilder( 2 )
-                                      .addSingleProperty( "resource:path", StringValue( request.body.fileName ) )
-                                      .addSingleProperty( "resource:owner", StringValue( request.userId ) )
-                                      .addType( NamespaceAndName( "resource:file_location" ) )
-                                      .result()
-                                    val vvertex = new NewVertexBuilder( 3 )
-                                      .addSingleProperty( "system:creation_time", LongValue( now ) )
-                                      .addSingleProperty( "resource:owner", StringValue( request.userId ) )
-                                      .addType( NamespaceAndName( "resource:file_version" ) )
-                                      .result()
-                                    val edges = Seq(
-                                      NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( b.id ), Map() ),
-                                      NewEdge( NamespaceAndName( "resource:version_of" ), Left( vvertex.tempId ), Left( fvertex.tempId ), Map() ),
-                                      NewEdge( NamespaceAndName( "resource:has_version" ), Left( lvertex.tempId ), Left( vvertex.tempId ), Map() ),
-                                      NewEdge( NamespaceAndName( "resource:has_location" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
-                                    ) ++ request.executionId.map( eId => {
-                                        Seq( NewEdge( NamespaceAndName( "resource:read" ), Right( eId ), Right( v.id ), Map() ) )
-                                      } ).getOrElse( Seq() )
-
-                                    val createAndWriteEdges = request.executionId.map { execId =>
-                                      Seq(
-                                        NewEdge( NamespaceAndName( "resource:write" ), Right( execId ), Left( vvertex.tempId ), Map() ),
-                                        NewEdge( NamespaceAndName( "resource:create" ), Right( execId ), Left( vvertex.tempId ), Map() )
-                                      )
-                                    }.getOrElse( Seq.empty )
-                                    val projectEdge = projectId.map { pid =>
-                                      NewEdge( NamespaceAndName( "project:is_part_of" ), Left( fvertex.tempId ), Right( pid ), Map() )
-                                    }
-                                    val vertices = Seq( fvertex, lvertex, vvertex ).map( CreateVertexOperation )
-                                    val allEdges = ( edges ++ createAndWriteEdges ++ projectEdge.toSeq ).map( CreateEdgeOperation )
-                                    val mut = Mutation( vertices ++ allEdges ) // First vertex is the file vertex (used later)
-
-                                    gc.postAndWait( mut ).map( ev => duplicateResult )
-
-                                  } ).getOrElse {
-                                    logger.error( "Error in the backend" )
-                                    Future( InternalServerError( "Error in the backend." ) )
+                                  val createAndWriteEdges = request.executionId.map { execId =>
+                                    Seq(
+                                      NewEdge( NamespaceAndName( "resource:write" ), Right( execId ), Left( vvertex.tempId ), Map() ),
+                                      NewEdge( NamespaceAndName( "resource:create" ), Right( execId ), Left( vvertex.tempId ), Map() )
+                                    )
+                                  }.getOrElse( Seq.empty )
+                                  val projectEdge = projectId.map { pid =>
+                                    NewEdge( NamespaceAndName( "project:is_part_of" ), Left( fvertex.tempId ), Right( pid ), Map() )
                                   }
+                                  val vertices = Seq( fvertex, lvertex, vvertex ).map( CreateVertexOperation )
+                                  val allEdges = ( edges ++ createAndWriteEdges ++ projectEdge.toSeq ).map( CreateEdgeOperation )
+                                  val mut = Mutation( vertices ++ allEdges ) // First vertex is the file vertex (used later)
+
+                                  gc.postAndWait( mut ).map( ev => {
+                                    val response = ev.status match {
+                                      case EventStatus.Completed( res ) => res
+                                      case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
+                                    }
+
+                                    val mutationResponse = response.event.as[MutationResponse]
+                                    val fileVertexId = mutationResponse match {
+                                      case MutationSuccess( results ) => results.head // First vertex is the file vertex
+                                      case MutationFailed( reason )   => throw new RuntimeException( s"Bucket creation failed, caused by: $reason" )
+                                    }
+
+                                    Created( Json.toJson( ( fileVertexId ) ) )
+                                  } )
+
+                                }
+                                else {
+                                  logger.error( "Error in the backend" )
+                                  Future( InternalServerError( "Error in the backend." ) )
+                                }
                               }
                               case None => {
                                 logger.error( s"Unknown backend $backend." )
