@@ -290,6 +290,44 @@ paths:
       security:
       - token_auth:
         - 'profile'
+  /bucket/{resource_id}:
+    put:
+      tags:
+      - 'Storage-Authorize'
+      summary: 'Request to modify bucket metadata'
+      description: 'Request the modification of `resource:bucket_name` and/or `annotation:label` metadata descriptors'
+      parameters:
+      - description: ID of bucket to modify
+        in: path
+        name: resource_id
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: 'File update request object'
+        required: true
+        schema:
+          $ref: '#/definitions/FileUpdateRequest'
+      - name: Renga-Deployer-Execution
+        in: header
+        description: 'Deployment id, passed if request made from deployed application'
+        type: integer
+        format: int64
+      - name: Renga-Projects-Project
+        in: header
+        description: 'Project id, passed to make this file explicitly part of a project'
+        type: integer
+        format: int64
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+        404:
+          description: Bucket not found
+      security:
+      - token_auth:
+        - 'profile'
 definitions:
   ReadFileRequest:
     type: object
