@@ -50,7 +50,7 @@ class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider:
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]] = {
-    val CHUNK_SIZE = 100
+    val CHUNK_SIZE = 1048576
     if ( minioClient.bucketExists( bucket ) && objectExists( bucket, name ) ) {
       val data = request.headers.get( "Range" ).map {
         case RangePattern( null, to )   => minioClient.getObject( bucket, name, 0, to.toLong )

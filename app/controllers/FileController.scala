@@ -34,7 +34,7 @@ import ch.datascience.graph.values.StringValue
 import ch.datascience.service.ResourceManagerClient
 import ch.datascience.service.models.resource.json._
 import ch.datascience.service.models.storage.WriteResourceRequest
-import ch.datascience.service.security.ProfileFilterAction
+import ch.datascience.service.security.{ ProfileFilterAction, RequestWithProfile }
 import ch.datascience.service.utils.persistence.graph.{ GraphExecutionContextProvider, JanusGraphTraversalSourceProvider }
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import ch.datascience.service.utils.{ ControllerWithBodyParseJson, ControllerWithGraphTraversal }
@@ -69,15 +69,24 @@ class FileController @Inject() (
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
 
-  def objectUpdate( fileId: Long ): Action[FileUpdateRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[FileUpdateRequest]( FileUpdateRequest.format ) ) { implicit request =>
-    logger.info( s"objectUpdate - ${request.body} - ${request.token.getSubject}" )
+  def fileUpdate( fileId: Long ): Action[FileUpdateRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[FileUpdateRequest]( FileUpdateRequest.format ) ) { implicit request =>
+    logger.info( s"fileUpdate - ${request.body} - ${request.token.getSubject}" )
+    objectUpdate( fileId, request, "resource:file", "resource:file_name" )
+  }
 
-    /* Steps:
+  def bucketUpdate( bucketId: Long ): Action[FileUpdateRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[FileUpdateRequest]( FileUpdateRequest.format ) ) { implicit request =>
+    logger.info( s"bucketUpdate - ${request.body} - ${request.token.getSubject}" )
+    objectUpdate( bucketId, request, "resource:bucket", "resource:bucket_name" )
+  }
+
+  /* Steps:
      *   1. Resolve graph entities
      *   2. Request access authorization from Resource Manager
      *   3. Validate response from RM
      *   4. Log to Knowledge Graph
      */
+
+  def objectUpdate( objectId: Long, request: RequestWithProfile[FileUpdateRequest], oType: String, attribute: String ) = {
 
     if ( request.body.fileName.isEmpty && request.body.labels.isEmpty ) {
       // Nothing to update
@@ -88,7 +97,7 @@ class FileController @Inject() (
       val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
       val rmc = new ResourceManagerClient( config )
       val g = graphTraversalSource
-      val t = g.V( Long.box( fileId ) ).has( "type", "resource:file" )
+      val t = g.V( Long.box( objectId ) ).has( "type", oType )
       graphExecutionContext.execute {
         if ( t.hasNext ) {
           vertexReader.read( t.next() ).flatMap { vertex =>
@@ -98,18 +107,18 @@ class FileController @Inject() (
                   ++ request.body.labels.map { x => "labels" -> JsArray( x.map( JsString ).toSeq ) }.toSeq
               )
             )
-            val resourceRequest = WriteResourceRequest( fileId )
+            val resourceRequest = WriteResourceRequest( objectId )
             // Step 2: Request access authorization from Resource Manager
             rmc.authorize( AccessRequestFormat, resourceRequest.toAccessRequest( extra ), token ).flatMap( ret => {
               // Step 3: Validate response from RM
               ret.map( ag =>
                 if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
                   // Step 4: Log to KnowledgeGraph
-                  val ops = fileNameUpdate( request.body.fileName, vertex ).toSeq ++ labelsUpdate( request.body.labels, vertex )
+                  val ops = objectNameUpdate( request.body.fileName, vertex, attribute ).toSeq ++ labelsUpdate( request.body.labels, vertex )
                   if ( ops.isEmpty )
                     Future.successful( Ok( JsObject( Seq( "message" -> JsString( "Nothing to update" ) ) ) ) )
                   else {
-                    val mut = Mutation( fileNameUpdate( request.body.fileName, vertex ).toSeq ++ labelsUpdate( request.body.labels, vertex ) )
+                    val mut = Mutation( objectNameUpdate( request.body.fileName, vertex, attribute ).toSeq ++ labelsUpdate( request.body.labels, vertex ) )
                     //gc.postAndWait( mut ).map( ev => Ok( s"Renamed file $fileId to ${request.body.fileName}" ) )
                     gc.postAndWait( mut ).map { ev =>
                       val response = ev.status match {
@@ -118,7 +127,7 @@ class FileController @Inject() (
                       }
 
                       val mutationResponse = response.event.as[MutationResponse]
-                      val bucketVertexId = mutationResponse match {
+                      val vertexId = mutationResponse match {
                         case MutationSuccess( results ) => results.head
                         case MutationFailed( reason )   => throw new RuntimeException( s"File update failed, caused by: $reason" )
                       }
@@ -128,7 +137,6 @@ class FileController @Inject() (
                   }
 
                 } //TODO: maybe take into account if the node was created or not
-                // Step 5: Send authorization to client
                 else {
                   logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
                   Future( InternalServerError( "Resource Manager response is invalid." ) )
@@ -145,9 +153,9 @@ class FileController @Inject() (
     }
   }
 
-  protected def fileNameUpdate( fileName: Option[String], vertex: PersistedVertex ): Option[UpdateVertexPropertyOperation] = {
-    fileName.map { fn =>
-      UpdateVertexPropertyOperation( vertex.properties( NamespaceAndName( "resource:file_name" ) ).head, StringValue( fn ) )
+  protected def objectNameUpdate( objectName: Option[String], vertex: PersistedVertex, attribute: String ): Option[UpdateVertexPropertyOperation] = {
+    objectName.map { fn =>
+      UpdateVertexPropertyOperation( vertex.properties( NamespaceAndName( attribute ) ).head, StringValue( fn ) )
     }
   }
 
