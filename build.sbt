@@ -40,7 +40,7 @@ lazy val janusgraph_version = "0.2.0"
 
 libraryDependencies += filters
 libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
-libraryDependencies += "io.minio" % "minio" % "3.0.3"
+libraryDependencies += "io.minio" % "minio" % "3.0.4"
 libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
 libraryDependencies += "com.microsoft.azure" % "azure-storage" % "6.1.0"
 libraryDependencies += cache

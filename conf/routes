@@ -16,4 +16,5 @@ POST    /authorize/create_file                    controllers.AuthorizeControlle
 POST    /authorize/create_bucket                  controllers.AuthorizeController.bucketCreate
 POST    /authorize/copy_file                      controllers.AuthorizeController.objectDuplicate
 
-PUT     /file/:id                                 controllers.FileController.objectUpdate(id: Long)
+PUT     /file/:id                                 controllers.FileController.fileUpdate(id: Long)
+PUT     /bucket/:id                               controllers.FileController.bucketUpdate(id: Long)
