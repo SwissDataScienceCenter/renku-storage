@@ -118,7 +118,7 @@ class FileController @Inject() (
                   if ( ops.isEmpty )
                     Future.successful( Ok( JsObject( Seq( "message" -> JsString( "Nothing to update" ) ) ) ) )
                   else {
-                    val mut = Mutation( objectNameUpdate( request.body.fileName, vertex, attribute ).toSeq ++ labelsUpdate( request.body.labels, vertex ) )
+                    val mut = Mutation( ops )
                     //gc.postAndWait( mut ).map( ev => Ok( s"Renamed file $fileId to ${request.body.fileName}" ) )
                     gc.postAndWait( mut ).map { ev =>
                       val response = ev.status match {
