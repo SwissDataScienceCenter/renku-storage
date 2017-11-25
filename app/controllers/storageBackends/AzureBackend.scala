@@ -26,7 +26,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import com.microsoft.azure.storage.CloudStorageAccount
+import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.blob.CloudBlobClient
 import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
@@ -54,19 +54,40 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
     if ( container.exists() ) {
       val blob = container.getBlockBlobReference( name )
       if ( blob.exists() ) {
-        val CHUNK_SIZE = 100
+        Some( StreamConverters.fromInputStream( () => {
 
-        val outputStream = new PipedOutputStream()
-        val inputStream = new PipedInputStream( outputStream )
+          val CHUNK_SIZE = 1048576
 
-        request.headers.get( "Range" ) match {
-          case Some( RangePattern( null, to ) )   => blob.downloadRange( 0, to.toLong, outputStream )
-          case Some( RangePattern( from, null ) ) => blob.downloadRange( from.toLong, null, outputStream )
-          case Some( RangePattern( from, to ) )   => blob.downloadRange( from.toLong, to.toLong, outputStream )
-          case _                                  => blob.downloadRange( 0, null, outputStream )
-        }
-        outputStream.close
-        Some( StreamConverters.fromInputStream( () => inputStream, CHUNK_SIZE ) )
+          // Pipe for getting data from the download thread
+          val outputStream = new PipedOutputStream()
+          val inputStream = new PipedInputStream( outputStream )
+
+          // listening to the download completion to close the pipe
+          val oc = new OperationContext()
+          val sem = new StorageEventMultiCaster[RequestCompletedEvent, StorageEvent[RequestCompletedEvent]]()
+
+          sem.addListener( new StorageEvent[RequestCompletedEvent] {
+            override def eventOccurred( eventArg: RequestCompletedEvent ): Unit = {
+              outputStream.close()
+            }
+          } )
+          oc.setRequestCompletedEventHandler( sem )
+
+          // asynchronously start the download
+          new Thread( new Runnable {
+            override def run() = {
+              request.headers.get( "Range" ) match {
+                case Some( RangePattern( null, to ) )   => blob.downloadRange( 0, to.toLong, outputStream, null, null, oc )
+                case Some( RangePattern( from, null ) ) => blob.downloadRange( from.toLong, null, outputStream, null, null, oc )
+                case Some( RangePattern( from, to ) )   => blob.downloadRange( from.toLong, to.toLong, outputStream, null, null, oc )
+                case _                                  => blob.downloadRange( 0, null, outputStream, null, null, oc )
+              }
+            }
+          } ).start()
+
+          inputStream
+
+        } ) )
       }
       else {
         None
