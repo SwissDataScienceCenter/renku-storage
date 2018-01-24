@@ -73,4 +73,22 @@ trait RequestHelper { this: Controller =>
     future
   }
 
+  def getVertexByType( vtype: String )( implicit
+      graphExecutionContext: GraphExecutionContext,
+                                        graphTraversalSource: GraphTraversalSource, vertexReader: VertexReader
+  ): Future[Option[PersistedVertex]] = {
+    val g = graphTraversalSource
+    val t = g.V().has( "type", vtype )
+
+    val future: Future[Option[PersistedVertex]] = graphExecutionContext.execute {
+      if ( t.hasNext ) {
+        val vertex = t.next()
+        vertexReader.read( vertex ).map( Some.apply )
+      }
+      else
+        Future.successful( None )
+    }
+    future
+  }
+
 }

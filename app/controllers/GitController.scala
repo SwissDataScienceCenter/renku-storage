@@ -1,0 +1,270 @@
+/*
+ * Copyright 2017 - Swiss Data Science Center (SDSC)
+ * A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
+ * Eidgenössische Technische Hochschule Zürich (ETHZ).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package controllers
+
+import javax.inject.{ Inject, Singleton }
+
+import akka.util.ByteString
+import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
+import ch.datascience.graph.elements.mutation.create.{ CreateEdgeOperation, CreateVertexOperation }
+import ch.datascience.graph.elements.mutation.log.model.{ EventStatus, MutationFailed, MutationResponse, MutationSuccess }
+import ch.datascience.graph.elements.mutation.{ GraphMutationClient, Mutation }
+import ch.datascience.graph.elements.new_.NewEdge
+import ch.datascience.graph.elements.new_.build.NewVertexBuilder
+import ch.datascience.graph.elements.persisted.PersistedVertex
+import ch.datascience.graph.naming.NamespaceAndName
+import ch.datascience.graph.values.{ LongValue, StringValue }
+import ch.datascience.service.ResourceManagerClient
+import ch.datascience.service.models.resource.{ SingleScopeAccessRequest, SingleScopeResourceAccessRequest }
+import ch.datascience.service.models.resource.json.AccessRequestFormat
+import ch.datascience.service.models.storage.{ CreateFileRequest, ReadResourceRequest }
+import ch.datascience.service.security.{ ProfileFilterAction, RequestWithProfile }
+import ch.datascience.service.utils.persistence.graph.{ GraphExecutionContextProvider, JanusGraphTraversalSourceProvider }
+import ch.datascience.service.utils.persistence.reader.VertexReader
+import ch.datascience.service.utils.ControllerWithGraphTraversal
+import models._
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import play.api.Logger
+import play.api.http.HttpEntity.Strict
+import play.api.http.{ HttpChunk, HttpEntity, Writeable }
+
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.json.{ JsObject, Json, OFormat }
+import play.api.libs.streams.Accumulator
+import play.api.libs.ws._
+import play.api.mvc._
+import utils.ControllerWithBodyParseTolerantJson
+
+import scala.concurrent.Future
+
+/**
+ * Created by jeberle on 25.04.17.
+ */
+@Singleton
+class GitController @Inject() (
+    config:                                         play.api.Configuration,
+    jwtVerifier:                                    JWTVerifierProvider,
+    rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
+    graphMutationClientProvider:                    GraphMutationClientProvider,
+    implicit val wsclient:                          WSClient,
+    implicit val graphExecutionContextProvider:     GraphExecutionContextProvider,
+    implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
+    implicit val vertexReader:                      VertexReader
+) extends Controller with ControllerWithBodyParseTolerantJson with ControllerWithGraphTraversal with RequestHelper {
+
+  lazy val gc: GraphMutationClient = graphMutationClientProvider.get
+
+  lazy val logger: Logger = Logger( "application.GitController" )
+
+  val repo_URL: String = config.getString( "git.repo_URL" ).get
+  val remote_host: String = config.getString( "git.remote_host" ).get
+  val host: String = config.getString( "git.lfs.host" ).get
+  val username: String = config.getString( "git.username" ).get
+  val pass: String = config.getString( "git.pass" ).get
+
+  implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
+  implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
+
+  implicit def FutureResponse2Result( response: Future[StreamedResponse] )( implicit writeable: Writeable[ByteString] ): Future[Result] = {
+    response map {
+      response: StreamedResponse =>
+        val headers = response.headers.headers map {
+          h => ( h._1, h._2.head )
+        }
+        Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
+    }
+  }
+  implicit def Response2Result( response: StreamedResponse )( implicit writeable: Writeable[ByteString] ): Result = {
+    val headers = response.headers.headers map {
+      h => ( h._1, h._2.head )
+    }
+    Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
+  }
+
+  implicit def StreamResponse2Result( response: Future[WSResponse] ): Future[Result] = {
+    response map {
+      response =>
+        val headers = response.allHeaders map {
+          h => ( h._1, h._2.head )
+        }
+        Result( ResponseHeader( response.status, headers ), Strict( response.bodyAsBytes, None ) )
+    }
+  }
+
+  def patchHeaders( h: Headers ): Array[( String, String )] = {
+    h.remove( AUTHORIZATION ).replace( ( HOST, remote_host ) ).toSimpleMap.toArray
+  }
+
+  def get_property( persistedVertex: PersistedVertex, name: String ) =
+    persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
+
+  def get_creation_time( persistedVertex: PersistedVertex ) =
+    persistedVertex.properties.get( NamespaceAndName( "system:creation_time" ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[LongValue].self ) )
+
+  def getRefs(id: Long) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+    val result = wsclient.url( repo_URL + "/info/refs?" + request.rawQueryString ).withHeaders( patchHeaders( request.headers ): _* ).withAuth( username, pass , WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
+    result.withMethod( "GET" ).stream()
+  }
+
+  def forward( url: String ): BodyParser[StreamedResponse] = BodyParser { req =>
+    Accumulator.source[ByteString].mapFuture { source =>
+      val client = wsclient.url( repo_URL + url + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
+      client.withBody( StreamedBody( source ) ).withMethod( "POST" ).stream().map( Right.apply )
+    }
+  }
+
+  def uploadPack(id: Long) = ProfileFilterAction( jwtVerifier.get )( forward( "/git-upload-pack?" ) ) { implicit request: RequestWithProfile[StreamedResponse] =>
+    request.body
+  }
+
+  def receivePack(id: Long) = ProfileFilterAction( jwtVerifier.get )( forward( "/git-receive-pack?" ) ) { implicit request: RequestWithProfile[StreamedResponse] =>
+    request.body
+  }
+
+  def lfsBatch(id: Long): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
+    val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
+    val rmc = new ResourceManagerClient( config )
+
+    if ( request.body.operation == "download" ) {
+
+      val objects = request.body.objects.map( lfsObject => {
+        val g = graphTraversalSource
+        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_MD5", lfsObject.oid ).as( "version" )
+          .in( "resource:has_version" ).as( "data" )
+          .out( "resource:stored_in" ).as( "bucket" )
+          .select[Vertex]( "version", "data", "bucket" )
+
+        graphExecutionContext.execute {
+          if ( t.hasNext ) { //TODO: add some logic to select best alias
+            import scala.collection.JavaConverters._
+            val jmap: Map[String, Vertex] = t.next().asScala.toMap
+            ( for {
+              version <- jmap.get( "version" ).map( v => vertexReader.read( v ) )
+              data <- jmap.get( "data" ).map( v => vertexReader.read( v ) )
+              bucket <- jmap.get( "bucket" ).map( v => vertexReader.read( v ) )
+            } yield {
+              ( for { v <- version; d <- data; b <- bucket } yield {
+                Some( Json.toJson( Map(
+                  "bucket" -> get_property( b, "resource:bucket_backend_id" ).getOrElse( "" ),
+                  "name" -> ( get_property( d, "resource:path" ).getOrElse( "" ) + get_creation_time( v ).getOrElse( "" ) ),
+                  "backend" -> get_property( b, "resource:bucket_backend" ).getOrElse( "" )
+                ) ).as[JsObject] )
+              } ).flatMap( extra => {
+                version.flatMap( v => {
+                  // Step 2: Request access authorization from Resource Manager
+                  rmc.authorize( AccessRequestFormat, SingleScopeResourceAccessRequest( v.id, ReadResourceRequest.scope, extra ), token ).flatMap( ret => {
+                    // Step 3: Validate response from RM
+                    Future( ret.flatMap( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+                      request.executionId.map( eId => {
+                        // Step 4: Log to KnowledgeGraph
+                        val edge = NewEdge( NamespaceAndName( "resource:read" ), Right( eId ), Right( v.id ), Map() )
+                        val mut = Mutation( Seq( CreateEdgeOperation( edge ) ) )
+                        gc.postAndWait( mut )
+                      } //TODO: maybe take into account if the node was created or not
+                      // Step 5: Send authorization to client
+                      )
+                      Some( LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/lfs/io/read", "Bearer " + ag.accessToken, 600 ) ) ) )
+                    }
+                    else {
+                      logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+                      None
+                    } ) )
+                  } )
+                } )
+              } )
+            } ).getOrElse( Future( None ) )
+          }
+          else
+            Future( None )
+        }
+      } )
+      Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+    }
+    else {
+      val objects = request.body.objects.map( lfsObject => {
+        val g = graphTraversalSource
+        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_MD5", lfsObject.oid )
+        val now = System.currentTimeMillis
+        if ( !graphExecutionContext.execute { t.hasNext } ) {
+          getVertexByType( "resource:bucket" ).flatMap {
+            case Some( vertex ) => {
+              val backend = get_property( vertex, "resource:bucket_backend" ).getOrElse( "" )
+              val extra = Some( Json.toJson( Map(
+                "bucket" -> get_property( vertex, "resource:bucket_backend_id" ).getOrElse( "" ),
+                "name" -> ( lfsObject.oid + now.toString ),
+                "backend" -> backend
+              ) ).as[JsObject] )
+              // Step 2: Request access authorization from Resource Manager
+              rmc.authorize( AccessRequestFormat, SingleScopeAccessRequest( permissionHolderId = None, CreateFileRequest.scope, extra ), token ).flatMap( ret => {
+                // Step 3: Validate response from RM
+                Future( ret.flatMap( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
+                  val fvertex = new NewVertexBuilder( 1 )
+                    .addSingleProperty( "resource:file_name", StringValue( lfsObject.oid ) )
+                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                    .addType( NamespaceAndName( "resource:file" ) )
+                    .result()
+                  val lvertex = new NewVertexBuilder( 2 )
+                    .addSingleProperty( "resource:path", StringValue( lfsObject.oid ) )
+                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                    .addType( NamespaceAndName( "resource:file_location" ) )
+                    .result()
+                  val vvertex = new NewVertexBuilder( 3 )
+                    .addSingleProperty( "system:creation_time", LongValue( now ) )
+                    .addSingleProperty( "resource:file_MD5", StringValue( lfsObject.oid ) )
+                    .addSingleProperty( "resource:file_size", StringValue( lfsObject.size.toString ) )
+                    .addSingleProperty( "resource:owner", StringValue( request.userId ) )
+                    .addType( NamespaceAndName( "resource:file_version" ) )
+                    .result()
+                  val edges = Seq(
+                    NewEdge( NamespaceAndName( "resource:stored_in" ), Left( lvertex.tempId ), Right( vertex.id ), Map() ),
+                    NewEdge( NamespaceAndName( "resource:version_of" ), Left( vvertex.tempId ), Left( fvertex.tempId ), Map() ),
+                    NewEdge( NamespaceAndName( "resource:has_version" ), Left( lvertex.tempId ), Left( vvertex.tempId ), Map() ),
+                    NewEdge( NamespaceAndName( "resource:has_location" ), Left( fvertex.tempId ), Left( lvertex.tempId ), Map() )
+                  )
+                  val vertices = Seq( fvertex, lvertex, vvertex ).map( CreateVertexOperation )
+                  val allEdges = edges.map( CreateEdgeOperation )
+                  val mut = Mutation( vertices ++ allEdges ) // First vertex is the file vertex (used later)
+                  //TODO: maybe take into account if the node was created or not
+                  gc.postAndWait( mut ).map { ev =>
+                    val response = ev.status match {
+                      case EventStatus.Completed( res ) => res
+                      case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
+                    }
+                  }
+                  Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/lfs/io/write", "Bearer " + ag.accessToken, 600 ) ) ) )
+                }
+                else {
+                  logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
+                  None
+                } ) )
+              } )
+            }
+            case _ => Future( None )
+          }
+        }
+        else
+          Future( Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) ) )
+      } )
+      Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+    }
+  }
+
+}
+
