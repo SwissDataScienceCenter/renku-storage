@@ -18,3 +18,11 @@ POST    /authorize/copy_file                      controllers.AuthorizeControlle
 
 PUT     /file/:id                                 controllers.FileController.fileUpdate(id: Long)
 PUT     /bucket/:id                               controllers.FileController.bucketUpdate(id: Long)
+
+# Git
+GET     /repo/:id/.git/info/refs                  controllers.GitController.getRefs(id: Long)
+POST    /repo/:id/.git/git-upload-pack            controllers.GitController.uploadPack(id: Long)
+POST    /repo/:id/.git/git-receive-pack           controllers.GitController.receivePack(id: Long)
+
+# LFS
+POST    /repo/:id/.git/info/lfs/objects/batch     controllers.GitController.lfsBatch(id: Long)
