@@ -27,18 +27,20 @@ import play.api.{ Configuration, Environment }
  */
 class BackendModule extends Module {
 
-  def bindings( environment: Environment, configuration: Configuration ): Seq[Binding[Backend]] = {
+  def bindings( environment: Environment, configuration: Configuration ): Seq[Binding[StorageBackend]] = {
     for {
       ( name, clazz ) <- availableBindings.toSeq
       if configuration.getBoolean( s"storage.backend.$name.enabled" ).getOrElse( false )
-    } yield bind( classOf[Backend] ).qualifiedWith( name ).to( clazz )
+    } yield bind( classOf[StorageBackend] ).qualifiedWith( name ).to( clazz )
   }
 
-  protected def availableBindings: Map[String, Class[_ <: Backend]] = Map(
-    "swift" -> classOf[SwiftBackend],
-    "local" -> classOf[LocalFSBackend],
-    "s3" -> classOf[S3Backend],
-    "azure" -> classOf[AzureBackend]
+  protected def availableBindings: Map[String, Class[_ <: StorageBackend]] = Map(
+    "swift" -> classOf[SwiftObjectBackend],
+    "local" -> classOf[LocalFSObjectBackend],
+    "s3" -> classOf[S3ObjectBackend],
+    "azure" -> classOf[AzureObjectBackend],
+    "gitlab" -> classOf[GitlabBackend],
+    "localgit" -> classOf[LocalGitBackend]
   )
 
 }

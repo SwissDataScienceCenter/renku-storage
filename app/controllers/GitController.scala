@@ -31,13 +31,14 @@ import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.{ LongValue, StringValue }
 import ch.datascience.service.ResourceManagerClient
-import ch.datascience.service.models.resource.{ SingleScopeAccessRequest, SingleScopeResourceAccessRequest }
+import ch.datascience.service.models.resource.{ AccessGrant, SingleScopeAccessRequest, SingleScopeResourceAccessRequest }
 import ch.datascience.service.models.resource.json.AccessRequestFormat
 import ch.datascience.service.models.storage.{ CreateFileRequest, ReadResourceRequest }
-import ch.datascience.service.security.{ ProfileFilterAction, RequestWithProfile }
+import ch.datascience.service.security.{ ProfileFilterAction, RequestWithProfile, TokenFilter }
 import ch.datascience.service.utils.persistence.graph.{ GraphExecutionContextProvider, JanusGraphTraversalSourceProvider }
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import ch.datascience.service.utils.ControllerWithGraphTraversal
+import controllers.storageBackends.{ Backends, GitBackend, ObjectBackend }
 import models._
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import play.api.Logger
@@ -52,7 +53,7 @@ import play.api.libs.ws._
 import play.api.mvc._
 import utils.ControllerWithBodyParseTolerantJson
 
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 
 /**
  * Created by jeberle on 25.04.17.
@@ -61,6 +62,7 @@ import scala.concurrent.Future
 class GitController @Inject() (
     config:                                         play.api.Configuration,
     jwtVerifier:                                    JWTVerifierProvider,
+    backends:                                       Backends,
     rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
     graphMutationClientProvider:                    GraphMutationClientProvider,
     implicit val wsclient:                          WSClient,
@@ -73,44 +75,10 @@ class GitController @Inject() (
 
   lazy val logger: Logger = Logger( "application.GitController" )
 
-  val repo_URL: String = config.getString( "git.repo_URL" ).get
-  val remote_host: String = config.getString( "git.remote_host" ).get
-  val host: String = config.getString( "git.lfs.host" ).get
-  val username: String = config.getString( "git.username" ).get
-  val pass: String = config.getString( "git.pass" ).get
+  val host: String = config.getString( "storage.git.lfs.host" ).get
 
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
-
-  implicit def FutureResponse2Result( response: Future[StreamedResponse] )( implicit writeable: Writeable[ByteString] ): Future[Result] = {
-    response map {
-      response: StreamedResponse =>
-        val headers = response.headers.headers map {
-          h => ( h._1, h._2.head )
-        }
-        Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
-    }
-  }
-  implicit def Response2Result( response: StreamedResponse )( implicit writeable: Writeable[ByteString] ): Result = {
-    val headers = response.headers.headers map {
-      h => ( h._1, h._2.head )
-    }
-    Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
-  }
-
-  implicit def StreamResponse2Result( response: Future[WSResponse] ): Future[Result] = {
-    response map {
-      response =>
-        val headers = response.allHeaders map {
-          h => ( h._1, h._2.head )
-        }
-        Result( ResponseHeader( response.status, headers ), Strict( response.bodyAsBytes, None ) )
-    }
-  }
-
-  def patchHeaders( h: Headers ): Array[( String, String )] = {
-    h.remove( AUTHORIZATION ).replace( ( HOST, remote_host ) ).toSimpleMap.toArray
-  }
 
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
@@ -118,27 +86,83 @@ class GitController @Inject() (
   def get_creation_time( persistedVertex: PersistedVertex ) =
     persistedVertex.properties.get( NamespaceAndName( "system:creation_time" ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[LongValue].self ) )
 
-  def getRefs(id: Long) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
-    val result = wsclient.url( repo_URL + "/info/refs?" + request.rawQueryString ).withHeaders( patchHeaders( request.headers ): _* ).withAuth( username, pass , WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
-    result.withMethod( "GET" ).stream()
-  }
+  def getRefs( id: String ) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
 
-  def forward( url: String ): BodyParser[StreamedResponse] = BodyParser { req =>
-    Accumulator.source[ByteString].mapFuture { source =>
-      val client = wsclient.url( repo_URL + url + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
-      client.withBody( StreamedBody( source ) ).withMethod( "POST" ).stream().map( Right.apply )
+    val g = graphTraversalSource
+    val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
+
+    graphExecutionContext.execute {
+      if ( t.hasNext ) {
+        vertexReader.read( t.next() ).map( Some.apply ).flatMap( r => r.map( repo => {
+          val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
+          val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
+          backends.getBackend( backend ) match {
+            case Some( back ) => back.asInstanceOf[GitBackend].getRefs( request, url, request.userId )
+            case None         => Future.successful( BadRequest( s"The backend $backend is not enabled." ) )
+          }
+        } ).getOrElse( Future.successful( NotFound ) ) )
+      }
+      else {
+        Future.successful( NotFound )
+      }
     }
   }
 
-  def uploadPack(id: Long) = ProfileFilterAction( jwtVerifier.get )( forward( "/git-upload-pack?" ) ) { implicit request: RequestWithProfile[StreamedResponse] =>
-    request.body
+  def uploadPack( id: String ) = EssentialAction { reqh =>
+    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
+      case Right( profile ) =>
+        val g = graphTraversalSource
+        val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
+
+        val futur = graphExecutionContext.execute {
+          if ( t.hasNext ) {
+            vertexReader.read( t.next() ).map( Some.apply ).map( r => r.map( repo => {
+              val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
+              val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
+              backends.getBackend( backend ) match {
+                case Some( back ) =>
+                  back.asInstanceOf[GitBackend].upload( reqh, url, profile.getId )
+                case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
+              }
+            } ).getOrElse( Accumulator.done( NotFound ) ) )
+          }
+          else {
+            Future( Accumulator.done( NotFound ) )
+          }
+        }
+        Await.result( futur, 10.seconds )
+      case Left( res ) => Accumulator.done( res )
+    }
   }
 
-  def receivePack(id: Long) = ProfileFilterAction( jwtVerifier.get )( forward( "/git-receive-pack?" ) ) { implicit request: RequestWithProfile[StreamedResponse] =>
-    request.body
+  def receivePack( id: String ) = EssentialAction { reqh =>
+    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
+      case Right( profile ) =>
+        val g = graphTraversalSource
+        val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
+
+        val futur = graphExecutionContext.execute {
+          if ( t.hasNext ) {
+            vertexReader.read( t.next() ).map( Some.apply ).map( r => r.map( repo => {
+              val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
+              val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
+              backends.getBackend( backend ) match {
+                case Some( back ) =>
+                  back.asInstanceOf[GitBackend].upload( reqh, url, profile.getId )
+                case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
+              }
+            } ).getOrElse( Accumulator.done( NotFound ) ) )
+          }
+          else {
+            Future( Accumulator.done( NotFound ) )
+          }
+        }
+        Await.result( futur, 10.seconds )
+      case Left( res ) => Accumulator.done( res )
+    }
   }
 
-  def lfsBatch(id: Long): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
+  def lfsBatch( id: String ): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
     val rmc = new ResourceManagerClient( config )
 
@@ -180,7 +204,7 @@ class GitController @Inject() (
                       } //TODO: maybe take into account if the node was created or not
                       // Step 5: Send authorization to client
                       )
-                      Some( LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/lfs/io/read", "Bearer " + ag.accessToken, 600 ) ) ) )
+                      Some( LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/io/read", "Bearer " + ag.accessToken, 600 ) ) ) )
                     }
                     else {
                       logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
@@ -248,7 +272,7 @@ class GitController @Inject() (
                       case EventStatus.Pending          => throw new RuntimeException( s"Expected completed mutation: ${ev.uuid}" )
                     }
                   }
-                  Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/lfs/io/write", "Bearer " + ag.accessToken, 600 ) ) ) )
+                  Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/io/write", "Bearer " + ag.accessToken, 600 ) ) ) )
                 }
                 else {
                   logger.error( s"Resource Manager response is invalid. Got: $ag Expected extras: $extra" )
@@ -256,11 +280,11 @@ class GitController @Inject() (
                 } ) )
               } )
             }
-            case _ => Future( None )
+            case _ => Future.successful( None )
           }
         }
         else
-          Future( Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) ) )
+          Future.successful( Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) ) )
       } )
       Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
     }

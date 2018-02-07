@@ -41,7 +41,7 @@ import scala.util.matching.Regex
  * Created by johann on 07/07/17.
  */
 @Singleton
-class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
+class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
 
   private[this] lazy val rootDir: String = configuration.getString( "storage.backend.local.root" ).get
 

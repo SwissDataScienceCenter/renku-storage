@@ -16,19 +16,18 @@
  * limitations under the License.
  */
 
-package controllers.storageBackends
+package models.persistence
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import play.api.libs.streams.Accumulator
-import play.api.mvc.{ RequestHeader, Result }
+import scala.collection.mutable
 
 /**
- * Created by jeberle on 07.07.17.
+ * Created by johann on 13/04/17.
  */
-trait Backend {
-  def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]]
-  def write( request: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result]
-  def createBucket( request: RequestHeader, bucket: String ): String
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean
+trait SchemasComponent { this: JdbcProfileComponent =>
+
+  final type Schema = profile.SchemaDescription
+
+  protected final lazy val _schemas: mutable.Builder[Schema, Seq[Schema]] = Seq.newBuilder[Schema]
+  final def schemas: Seq[Schema] = _schemas.result()
+
 }

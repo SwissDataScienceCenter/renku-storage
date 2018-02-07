@@ -18,33 +18,21 @@
 
 package controllers.storageBackends
 
-import javax.inject._
+import akka.util.ByteString
+import ch.datascience.service.security.RequestWithProfile
+import models.Repository
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{ RequestHeader, Result }
 
-import play.api.Configuration
-import play.api.inject.{ BindingKey, Injector }
+import scala.concurrent.Future
 
 /**
- * Created by johann on 07/07/17.
+ * Created by jeberle on 07.07.17.
  */
-@Singleton
-class Backends @Inject() ( injector: Injector, configuration: Configuration ) {
+trait GitBackend extends StorageBackend {
 
-  val map: Map[String, StorageBackend] = loadBackends
-
-  def getBackend( name: String ): Option[StorageBackend] = map.get( name )
-
-  private[this] def loadBackends: Map[String, StorageBackend] = {
-    val it = for {
-      conf <- configuration.getConfig( "storage.backend" )
-    } yield for {
-      name <- conf.subKeys
-      if conf.getBoolean( s"$name.enabled" ).getOrElse( false )
-    } yield {
-      val key = BindingKey( classOf[StorageBackend] ).qualifiedWith( name )
-      name -> injector.instanceOf( key )
-    }
-
-    it.getOrElse( Seq.empty ).toMap
-  }
-
+  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]]
+  def getRefs( request: RequestHeader, url: String, user: String ): Future[Result]
+  def upload( req: RequestHeader, url: String, user: String ): Accumulator[ByteString, Result]
+  def receive( req: RequestHeader, url: String, user: String ): Accumulator[ByteString, Result]
 }

@@ -41,7 +41,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.Controller
 import ch.datascience.service.ResourceManagerClient
 import ch.datascience.service.models.resource.AccessGrant
-import controllers.storageBackends.Backends
+import controllers.storageBackends.{ Backends, ObjectBackend }
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import org.apache.tinkerpop.gremlin.process.traversal.Order
@@ -380,7 +380,7 @@ class AuthorizeController @Inject() (
                           if ( ag_read.verifyAccessToken( rmJwtVerifier.get ).extraClaims.contains( extra_read ) && ag_write.verifyAccessToken( rmJwtVerifier.get ).extraClaims.contains( extra_write ) ) {
                             backends.getBackend( backend ) match {
                               case Some( back ) => {
-                                val duplicateResult = back.duplicateFile(
+                                val duplicateResult = back.asInstanceOf[ObjectBackend].duplicateFile(
                                   request,
                                   get_property( b, "resource:bucket_backend_id" ).getOrElse( "" ),
                                   get_property( d, "resource:path" ).getOrElse( "" ) + get_creation_time( v ).getOrElse( "" ),
@@ -510,7 +510,7 @@ class AuthorizeController @Inject() (
       res.map( ag => if ( ag.verifyAccessToken( rmJwtVerifier.get ).extraClaims.equals( extra ) ) {
         backends.getBackend( backend ) match {
           case Some( back ) =>
-            val bid = back.createBucket( request, name )
+            val bid = back.asInstanceOf[ObjectBackend].createBucket( request, name )
             val vertex = new NewVertexBuilder()
               .addSingleProperty( "resource:bucket_backend_id", StringValue( bid ) )
               .addSingleProperty( "resource:bucket_name", StringValue( name ) )
