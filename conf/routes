@@ -8,6 +8,7 @@ GET     /swagger.json                             controllers.SwaggerController.
 
 GET     /io/read                                  controllers.IOController.objectRead
 POST    /io/write                                 controllers.IOController.objectWrite
+PUT     /io/write                                 controllers.IOController.objectWrite
 GET     /io/backends                              controllers.IOController.bucketBackends
 
 POST    /authorize/read                           controllers.AuthorizeController.objectRead
@@ -20,9 +21,15 @@ PUT     /file/:id                                 controllers.FileController.fil
 PUT     /bucket/:id                               controllers.FileController.bucketUpdate(id: Long)
 
 # Git
-GET     /repo/:id/.git/info/refs                  controllers.GitController.getRefs(id: Long)
-POST    /repo/:id/.git/git-upload-pack            controllers.GitController.uploadPack(id: Long)
-POST    /repo/:id/.git/git-receive-pack           controllers.GitController.receivePack(id: Long)
+GET     /repo/:id.git/info/refs                  controllers.GitController.getRefs(id: String)
+POST    /repo/:id.git/git-upload-pack            controllers.GitController.uploadPack(id: String)
+POST    /repo/:id.git/git-receive-pack           controllers.GitController.receivePack(id: String)
 
 # LFS
-POST    /repo/:id/.git/info/lfs/objects/batch     controllers.GitController.lfsBatch(id: Long)
+POST    /repo/:id.git/info/lfs/objects/batch     controllers.GitController.lfsBatch(id: String)
+
+# Repositories
+GET    /repo                                     controllers.RepositoryController.listRepo
+POST   /repo                                     controllers.RepositoryController.createRepo
+GET    /repo/:id                                 controllers.RepositoryController.detailRepo(id: String)
+PUT    /repo/:id                                 controllers.RepositoryController.updateRepo(id: String)

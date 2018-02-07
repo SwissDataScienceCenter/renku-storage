@@ -18,33 +18,17 @@
 
 package controllers.storageBackends
 
-import javax.inject._
-
-import play.api.Configuration
-import play.api.inject.{ BindingKey, Injector }
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{ RequestHeader, Result }
 
 /**
- * Created by johann on 07/07/17.
+ * Created by jeberle on 07.07.17.
  */
-@Singleton
-class Backends @Inject() ( injector: Injector, configuration: Configuration ) {
-
-  val map: Map[String, StorageBackend] = loadBackends
-
-  def getBackend( name: String ): Option[StorageBackend] = map.get( name )
-
-  private[this] def loadBackends: Map[String, StorageBackend] = {
-    val it = for {
-      conf <- configuration.getConfig( "storage.backend" )
-    } yield for {
-      name <- conf.subKeys
-      if conf.getBoolean( s"$name.enabled" ).getOrElse( false )
-    } yield {
-      val key = BindingKey( classOf[StorageBackend] ).qualifiedWith( name )
-      name -> injector.instanceOf( key )
-    }
-
-    it.getOrElse( Seq.empty ).toMap
-  }
-
+trait ObjectBackend extends StorageBackend {
+  def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]]
+  def write( request: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result]
+  def createBucket( request: RequestHeader, bucket: String ): String
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean
 }
