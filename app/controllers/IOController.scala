@@ -23,10 +23,11 @@ import javax.inject._
 import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
 import ch.datascience.service.models.resource.{ AccessGrant, ScopeQualifier }
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
-import controllers.storageBackends.Backends
+import controllers.storageBackends.{ Backends, ObjectBackend }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.libs.streams._
 import play.api.mvc._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.matching.Regex
@@ -60,7 +61,7 @@ class IOController @Inject() (
 
         backends.getBackend( backend ) match {
           case Some( back ) =>
-            back.read( request, bucket, name ) match {
+            back.asInstanceOf[ObjectBackend].read( request, bucket, name ) match {
               case Some( dataContent ) => Ok.chunked( dataContent )
               case None                => NotFound
             }
@@ -88,7 +89,7 @@ class IOController @Inject() (
         val backend = ( writeRequest \ "backend" ).as[String]
         backends.getBackend( backend ) match {
           case Some( back ) =>
-            back.write( reqh, bucket, name )
+            back.asInstanceOf[ObjectBackend].write( reqh, bucket, name )
           case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
         }
       case Left( res ) => Accumulator.done( res )

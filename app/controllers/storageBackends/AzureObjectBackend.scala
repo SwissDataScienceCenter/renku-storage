@@ -42,7 +42,7 @@ import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
-class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
+class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
 
   private[this] val subConfig = config.getConfig( "storage.backend.azure" ).get
 
