@@ -252,6 +252,85 @@ paths:
       - token_auth:
         - 'profile'
 
+  /repo:
+    get:
+      tags:
+      - 'Storage-Repository'
+      summary: 'Get the list of repositories'
+      description: 'Get the list of repositories'
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+              items:
+                 $ref: '#/definitions/Repository'
+      security:
+      - token_auth:
+        - 'profile'
+    post:
+      tags:
+      - 'Storage-Repository'
+      summary: 'Create a new repositories'
+      description: 'Create a new repositories'
+      parameters:
+      - name: body
+        in: body
+        description: 'Repository object'
+        required: true
+        schema:
+          $ref: '#/definitions/Repository'
+      responses:
+        200:
+          description: ok
+      security:
+      - token_auth:
+        - 'profile'
+
+  /repo/{uuid}:
+    get:
+      tags:
+      - 'Storage-Repository'
+      summary: 'Get the list of repositories'
+      description: 'Get the list of repositories'
+      parameters:
+      - description: uuid of the repository
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: '#/definitions/Repository'
+      security:
+      - token_auth:
+        - 'profile'
+    put:
+      tags:
+      - 'Storage-Repository'
+      summary: 'Create a new repositories'
+      description: 'Create a new repositories'
+      parameters:
+      - description: uuid of the repository
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - name: body
+        in: body
+        description: 'Repository object'
+        required: true
+        schema:
+          $ref: '#/definitions/Repository'
+      responses:
+        200:
+          description: ok
+      security:
+      - token_auth:
+        - 'profile'
+
   /file/{resource_id}:
     put:
       tags:
@@ -420,6 +499,29 @@ definitions:
           type: array
           items:
             type: string
+  Repository:
+    type: object
+    required:
+      - uuid
+      - description
+      - path
+      - backend
+      properties:
+        uuid:
+          type: string
+        iid:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+        created:
+          type: string
+        backend:
+          type: object
+          properties:
+            name:
+              type: string
   FileUpdateRequest:
     type: object
     properties:
