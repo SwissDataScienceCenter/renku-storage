@@ -18,12 +18,12 @@
 
 package controllers
 
+import java.util.UUID
 import javax.inject.{ Inject, Singleton }
 
-import akka.util.ByteString
 import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
 import ch.datascience.graph.elements.mutation.create.{ CreateEdgeOperation, CreateVertexOperation }
-import ch.datascience.graph.elements.mutation.log.model.{ EventStatus, MutationFailed, MutationResponse, MutationSuccess }
+import ch.datascience.graph.elements.mutation.log.model.EventStatus
 import ch.datascience.graph.elements.mutation.{ GraphMutationClient, Mutation }
 import ch.datascience.graph.elements.new_.NewEdge
 import ch.datascience.graph.elements.new_.build.NewVertexBuilder
@@ -31,23 +31,22 @@ import ch.datascience.graph.elements.persisted.PersistedVertex
 import ch.datascience.graph.naming.NamespaceAndName
 import ch.datascience.graph.values.{ LongValue, StringValue }
 import ch.datascience.service.ResourceManagerClient
-import ch.datascience.service.models.resource.{ AccessGrant, SingleScopeAccessRequest, SingleScopeResourceAccessRequest }
+import ch.datascience.service.models.resource.{ SingleScopeAccessRequest, SingleScopeResourceAccessRequest }
 import ch.datascience.service.models.resource.json.AccessRequestFormat
 import ch.datascience.service.models.storage.{ CreateFileRequest, ReadResourceRequest }
-import ch.datascience.service.security.{ ProfileFilterAction, RequestWithProfile, TokenFilter }
+import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import ch.datascience.service.utils.persistence.graph.{ GraphExecutionContextProvider, JanusGraphTraversalSourceProvider }
 import ch.datascience.service.utils.persistence.reader.VertexReader
 import ch.datascience.service.utils.ControllerWithGraphTraversal
-import controllers.storageBackends.{ Backends, GitBackend, ObjectBackend }
+import controllers.storageBackends.{ Backends, GitBackend }
 import models._
+import models.persistence.DatabaseLayer
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import play.api.Logger
-import play.api.http.HttpEntity.Strict
-import play.api.http.{ HttpChunk, HttpEntity, Writeable }
 
 import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json.{ JsObject, Json, OFormat }
+import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
 import play.api.mvc._
@@ -60,12 +59,13 @@ import scala.concurrent.{ Await, Future }
  */
 @Singleton
 class GitController @Inject() (
-    config:                                         play.api.Configuration,
+    config: play.api.Configuration,
     jwtVerifier:                                    JWTVerifierProvider,
-    backends:                                       Backends,
+    backends: Backends,
     rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
     graphMutationClientProvider:                    GraphMutationClientProvider,
     implicit val wsclient:                          WSClient,
+    protected val orchestrator:                     DatabaseLayer,
     implicit val graphExecutionContextProvider:     GraphExecutionContextProvider,
     implicit val janusGraphTraversalSourceProvider: JanusGraphTraversalSourceProvider,
     implicit val vertexReader:                      VertexReader
@@ -80,87 +80,77 @@ class GitController @Inject() (
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
 
+  def getRefs( id: String ) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+
+    val json = JsString( id )
+    json.validate[UUID] match {
+      case JsError( e ) => Future( BadRequest( JsError.toJson( e ) ) )
+      case JsSuccess( uuid, _ ) =>
+        orchestrator.repositories.findByUUID( uuid ).flatMap {
+          case Some( repo ) =>
+            val backend = repo.backend
+            backends.getBackend( backend ) match {
+              case Some( back ) =>
+                back.asInstanceOf[GitBackend].getRefs( request, repo.path, request.userId )
+              case None => Future.successful( BadRequest( s"The backend $backend is not enabled." ) )
+            }
+          case None => Future.successful( NotFound )
+        }
+    }
+  }
+
+  def uploadPack( id: String ) = EssentialAction { reqh =>
+    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
+      case Right(profile) =>
+        val json = JsString(id)
+        val futur = json.validate[UUID] match {
+          case JsError(e) => Future(Accumulator.done(BadRequest(JsError.toJson(e))))
+          case JsSuccess(uuid, _) =>
+            orchestrator.repositories.findByUUID(uuid).map {
+              case Some(repo) =>
+                val backend = repo.backend
+                backends.getBackend(backend) match {
+                  case Some(back) =>
+                    back.asInstanceOf[GitBackend].upload(reqh, repo.path, "") //profile.getId )
+                  case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
+                }
+              case None => Accumulator.done(NotFound)
+            }
+        }
+        Await.result(futur, 10.seconds)
+      case Left(res) => Accumulator.done(res)
+    }
+  }
+
+  def receivePack( id: String ) = EssentialAction { reqh =>
+    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
+      case Right(profile) =>
+        val json = JsString(id)
+        val futur = json.validate[UUID] match {
+          case JsError(e) => Future(Accumulator.done(BadRequest(JsError.toJson(e))))
+          case JsSuccess(uuid, _) =>
+            orchestrator.repositories.findByUUID(uuid).map {
+              case Some(repo) =>
+                val backend = repo.backend
+                backends.getBackend(backend) match {
+                  case Some(back) =>
+                    back.asInstanceOf[GitBackend].receive(reqh, repo.path, profile.getId )
+                  case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
+                }
+              case None => Accumulator.done(NotFound)
+            }
+        }
+        Await.result(futur, 10.seconds)
+      case Left(res) => Accumulator.done(res)
+    }
+  }
+
   def get_property( persistedVertex: PersistedVertex, name: String ) =
     persistedVertex.properties.get( NamespaceAndName( name ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[StringValue].self ) )
 
   def get_creation_time( persistedVertex: PersistedVertex ) =
     persistedVertex.properties.get( NamespaceAndName( "system:creation_time" ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[LongValue].self ) )
 
-  def getRefs( id: String ) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
-
-    val g = graphTraversalSource
-    val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
-
-    graphExecutionContext.execute {
-      if ( t.hasNext ) {
-        vertexReader.read( t.next() ).map( Some.apply ).flatMap( r => r.map( repo => {
-          val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
-          val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
-          backends.getBackend( backend ) match {
-            case Some( back ) => back.asInstanceOf[GitBackend].getRefs( request, url, request.userId )
-            case None         => Future.successful( BadRequest( s"The backend $backend is not enabled." ) )
-          }
-        } ).getOrElse( Future.successful( NotFound ) ) )
-      }
-      else {
-        Future.successful( NotFound )
-      }
-    }
-  }
-
-  def uploadPack( id: String ) = EssentialAction { reqh =>
-    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
-      case Right( profile ) =>
-        val g = graphTraversalSource
-        val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
-
-        val futur = graphExecutionContext.execute {
-          if ( t.hasNext ) {
-            vertexReader.read( t.next() ).map( Some.apply ).map( r => r.map( repo => {
-              val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
-              val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
-              backends.getBackend( backend ) match {
-                case Some( back ) =>
-                  back.asInstanceOf[GitBackend].upload( reqh, url, profile.getId )
-                case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
-              }
-            } ).getOrElse( Accumulator.done( NotFound ) ) )
-          }
-          else {
-            Future( Accumulator.done( NotFound ) )
-          }
-        }
-        Await.result( futur, 10.seconds )
-      case Left( res ) => Accumulator.done( res )
-    }
-  }
-
-  def receivePack( id: String ) = EssentialAction { reqh =>
-    TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
-      case Right( profile ) =>
-        val g = graphTraversalSource
-        val t = g.V().has( "type", "resource:repository" ).has( "system:uuid", id )
-
-        val futur = graphExecutionContext.execute {
-          if ( t.hasNext ) {
-            vertexReader.read( t.next() ).map( Some.apply ).map( r => r.map( repo => {
-              val backend = get_property( repo, "resource:repository_backend" ).getOrElse( "" )
-              val url = get_property( repo, "resource:repository_url" ).getOrElse( "" )
-              backends.getBackend( backend ) match {
-                case Some( back ) =>
-                  back.asInstanceOf[GitBackend].upload( reqh, url, profile.getId )
-                case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
-              }
-            } ).getOrElse( Accumulator.done( NotFound ) ) )
-          }
-          else {
-            Future( Accumulator.done( NotFound ) )
-          }
-        }
-        Await.result( futur, 10.seconds )
-      case Left( res ) => Accumulator.done( res )
-    }
-  }
 
   def lfsBatch( id: String ): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )

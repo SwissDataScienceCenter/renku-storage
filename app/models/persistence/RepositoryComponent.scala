@@ -3,7 +3,6 @@ package models.persistence
 import java.time.Instant
 import java.util.UUID
 
-import ch.datascience.graph.types.persistence.relationaldb._
 import models.Repository
 import slick.lifted._
 

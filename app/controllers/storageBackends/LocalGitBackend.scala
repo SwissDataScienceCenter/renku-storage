@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 - Swiss Data Science Center (SDSC)
+ * Copyright 2018 - Swiss Data Science Center (SDSC)
  * A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
  * Eidgenössische Technische Hochschule Zürich (ETHZ).
  *
@@ -47,7 +47,7 @@ import org.eclipse.jgit.transport.RefAdvertiser.PacketLineOutRefAdvertiser
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 /**
- * Created by johann on 07/07/17.
+ * Created by julien on 01/02/18.
  */
 @Singleton
 class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends GitBackend {
@@ -81,71 +81,14 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
     }
   }
 
-  /*
-   * derived from SmartOutputStream to remove dependencies to servlet request and response objects
-   */
-  class ZippedBuffer( outputStream: OutputStream, compress: Boolean ) extends TemporaryBuffer( 32 * 1024 ) {
-
-    private[this] var startedOutput = false
-    var compressed: Boolean = compress
-    var len: Long = 0
-
-    override def overflow(): OutputStream = {
-      startedOutput = true
-      if ( compress ) new GZIPOutputStream( outputStream ) else outputStream
-    }
-
-    override def flush(): Unit = {
-      doFlush()
-    }
-
-    override def close(): Unit = {
-      super.close()
-      if ( !startedOutput ) {
-
-        val out = if ( 256 < this.length() && compress ) {
-          val gzbuf: TemporaryBuffer = new TemporaryBuffer.Heap( 32 * 1024 )
-          Try {
-            val gzip: GZIPOutputStream = new GZIPOutputStream( gzbuf )
-            try {
-              this.writeTo( gzip, null )
-            }
-            finally {
-              gzip.close()
-            }
-            if ( gzbuf.length() < this.length() ) {
-              compressed = true
-              gzbuf
-            }
-            else {
-              compressed = false
-              this
-            }
-          }.getOrElse( this )
-        }
-        else { this }
-
-        len = out.length()
-        try {
-          out.writeTo( outputStream, null )
-          outputStream.flush()
-        }
-        finally {
-          outputStream.close()
-        }
-      }
-    }
-  }
-
   override def getRefs( request: RequestHeader, url: String, user: String ): Future[Result] = Future {
 
     val svc = request.queryString.getOrElse( "service", Seq( "" ) ).head
 
     val output = Try {
       StreamConverters.asOutputStream().mapMaterializedValue { os =>
-        val out = new ZippedBuffer( os, true )
         try {
-          val plo = new PacketLineOut( out )
+          val plo = new PacketLineOut( os )
 
           plo.writeString( "# service=" + svc + "\n" )
           plo.end()
@@ -168,18 +111,18 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
               rep.getRevWalk.close()
             }
           }
-          out.close()
+          os.close()
         }
         catch {
           case e: ServiceMayNotContinueException =>
             if ( e.isOutput ) {
-              out.close()
+              os.close()
             }
             throw e
         }
       }
     }
-    output.map( o => Ok.chunked( o ).withHeaders( "Content-Type" -> ( "application/x-" + svc + "-advertisement" ) ) )
+    output.map( o => Ok.chunked( o ).as( "application/x-" + svc + "-advertisement" ) )
       .getOrElse( InternalServerError )
 
   }
@@ -196,28 +139,27 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
         )
         val output = Try {
           StreamConverters.asOutputStream().mapMaterializedValue { os =>
-            val out = new ZippedBuffer( os, false )
             try {
               val up = new UploadPack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
               up.setBiDirectionalPipe( false )
-              up.upload( inputStream, out, null )
-              out.close()
+              up.upload( inputStream, os, null )
+              os.close()
             }
             catch {
               case e: ServiceMayNotContinueException =>
                 if ( e.isOutput ) {
                   flushBody( inputStream )
-                  out.close()
+                  os.close()
                 }
                 throw e
               case e: UploadPackInternalServerErrorException =>
                 // Special case exception, error message was sent to client.
                 flushBody( inputStream )
-                out.close()
+                os.close()
             }
           }
         }
-        output.map( o => Ok.chunked( o ).withHeaders( "Content-Type" -> "application/x-git-upload-pack-result" ) )
+        output.map( o => Ok.chunked( o ).as( "application/x-git-upload-pack-result" ) )
           .getOrElse( InternalServerError )
       }
     }
@@ -235,7 +177,7 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
         )
         val output = Try {
           StreamConverters.asOutputStream().mapMaterializedValue { os =>
-            val out = new ZippedBuffer( os, false )
+            val out = os
             try {
               val rep = new ReceivePack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
               rep.setBiDirectionalPipe( false )
@@ -250,7 +192,7 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
             }
           }
         }
-        output.map( o => Ok.chunked( o ).withHeaders( "Content-Type" -> "application/x-git-receive-pack-result" ) )
+        output.map( o => Ok.chunked( o ).as( "application/x-git-receive-pack-result" ) )
           .getOrElse( InternalServerError )
       }
     }
