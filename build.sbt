@@ -45,7 +45,6 @@ libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_ve
 libraryDependencies += "com.typesafe.play" %% "play-slick" % play_slick_version
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % play_slick_version
 libraryDependencies += "org.postgresql" % "postgresql" % postgresql_version
-libraryDependencies += "com.h2database" % "h2" % "1.4.196"
 
 
 libraryDependencies += "io.minio" % "minio" % "3.0.4"

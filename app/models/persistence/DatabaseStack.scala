@@ -29,3 +29,4 @@ class DatabaseStack( protected val dbConfig: DatabaseConfig[JdbcProfile] )
   with SchemasComponent
   with ImplicitsComponent
   with RepositoryComponent
+

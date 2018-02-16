@@ -26,8 +26,9 @@ import play.db.NamedDatabase
 /**
  * Created by johann on 13/04/17.
  */
+
 class DatabaseLayer @Inject() (
-    @NamedDatabase( "sqldbdev" ) protected val dbConfigProvider:DatabaseConfigProvider
+    protected val dbConfigProvider: DatabaseConfigProvider
 )
   extends DatabaseStack(
     dbConfig = dbConfigProvider.get
