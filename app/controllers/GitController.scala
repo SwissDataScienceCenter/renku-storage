@@ -59,9 +59,9 @@ import scala.concurrent.{ Await, Future }
  */
 @Singleton
 class GitController @Inject() (
-    config: play.api.Configuration,
+    config:                                         play.api.Configuration,
     jwtVerifier:                                    JWTVerifierProvider,
-    backends: Backends,
+    backends:                                       Backends,
     rmJwtVerifier:                                  ResourcesManagerJWTVerifierProvider,
     graphMutationClientProvider:                    GraphMutationClientProvider,
     implicit val wsclient:                          WSClient,
@@ -101,47 +101,47 @@ class GitController @Inject() (
 
   def uploadPack( id: String ) = EssentialAction { reqh =>
     TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
-      case Right(profile) =>
-        val json = JsString(id)
+      case Right( profile ) =>
+        val json = JsString( id )
         val futur = json.validate[UUID] match {
-          case JsError(e) => Future(Accumulator.done(BadRequest(JsError.toJson(e))))
-          case JsSuccess(uuid, _) =>
-            orchestrator.repositories.findByUUID(uuid).map {
-              case Some(repo) =>
+          case JsError( e ) => Future( Accumulator.done( BadRequest( JsError.toJson( e ) ) ) )
+          case JsSuccess( uuid, _ ) =>
+            orchestrator.repositories.findByUUID( uuid ).map {
+              case Some( repo ) =>
                 val backend = repo.backend
-                backends.getBackend(backend) match {
-                  case Some(back) =>
-                    back.asInstanceOf[GitBackend].upload(reqh, repo.path, "") //profile.getId )
-                  case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
+                backends.getBackend( backend ) match {
+                  case Some( back ) =>
+                    back.asInstanceOf[GitBackend].upload( reqh, repo.path, "" ) //profile.getId )
+                  case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
                 }
-              case None => Accumulator.done(NotFound)
+              case None => Accumulator.done( NotFound )
             }
         }
-        Await.result(futur, 10.seconds)
-      case Left(res) => Accumulator.done(res)
+        Await.result( futur, 10.seconds )
+      case Left( res ) => Accumulator.done( res )
     }
   }
 
   def receivePack( id: String ) = EssentialAction { reqh =>
     TokenFilter( jwtVerifier.get, "" ).filter( reqh ) match {
-      case Right(profile) =>
-        val json = JsString(id)
+      case Right( profile ) =>
+        val json = JsString( id )
         val futur = json.validate[UUID] match {
-          case JsError(e) => Future(Accumulator.done(BadRequest(JsError.toJson(e))))
-          case JsSuccess(uuid, _) =>
-            orchestrator.repositories.findByUUID(uuid).map {
-              case Some(repo) =>
+          case JsError( e ) => Future( Accumulator.done( BadRequest( JsError.toJson( e ) ) ) )
+          case JsSuccess( uuid, _ ) =>
+            orchestrator.repositories.findByUUID( uuid ).map {
+              case Some( repo ) =>
                 val backend = repo.backend
-                backends.getBackend(backend) match {
-                  case Some(back) =>
-                    back.asInstanceOf[GitBackend].receive(reqh, repo.path, profile.getId )
-                  case None => Accumulator.done(BadRequest(s"The backend $backend is not enabled."))
+                backends.getBackend( backend ) match {
+                  case Some( back ) =>
+                    back.asInstanceOf[GitBackend].receive( reqh, repo.path, profile.getId )
+                  case None => Accumulator.done( BadRequest( s"The backend $backend is not enabled." ) )
                 }
-              case None => Accumulator.done(NotFound)
+              case None => Accumulator.done( NotFound )
             }
         }
-        Await.result(futur, 10.seconds)
-      case Left(res) => Accumulator.done(res)
+        Await.result( futur, 10.seconds )
+      case Left( res ) => Accumulator.done( res )
     }
   }
 
@@ -150,7 +150,6 @@ class GitController @Inject() (
 
   def get_creation_time( persistedVertex: PersistedVertex ) =
     persistedVertex.properties.get( NamespaceAndName( "system:creation_time" ) ).flatMap( v => v.values.headOption.map( value => value.asInstanceOf[LongValue].self ) )
-
 
   def lfsBatch( id: String ): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
