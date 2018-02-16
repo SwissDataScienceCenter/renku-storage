@@ -1,6 +1,9 @@
 # renga-storage
 Renga Storage Service
 
+**Renga is currently undergoing a major restructuring effort. For a preview, you can look
+at the development branch, but keep in mind it is highly volatile.**
+
 Documentation: https://renga.readthedocs.io/en/latest/developer/storage_service.html
 
 ## Development
