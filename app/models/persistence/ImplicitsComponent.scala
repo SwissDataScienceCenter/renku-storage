@@ -20,9 +20,6 @@ package models.persistence
 
 import java.time.Instant
 
-import ch.datascience.graph.types.persistence.model.{ EntityState, EntityType }
-import ch.datascience.graph.types.{ Cardinality, DataType, Multiplicity }
-
 /**
  * Created by johann on 13/04/17.
  */
