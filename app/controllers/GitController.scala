@@ -75,7 +75,7 @@ class GitController @Inject() (
 
   lazy val logger: Logger = Logger( "application.GitController" )
 
-  val host: String = config.getString( "storage.git.lfs.host" ).get
+  val host: String = config.getString( "renga_host" ).get
 
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
