@@ -1,5 +1,6 @@
 branches:
   only:
+  - development
   - master
 language: scala
 scala:
