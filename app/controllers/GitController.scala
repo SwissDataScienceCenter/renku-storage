@@ -159,7 +159,7 @@ class GitController @Inject() (
 
       val objects = request.body.objects.map( lfsObject => {
         val g = graphTraversalSource
-        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_MD5", lfsObject.oid ).as( "version" )
+        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_hash", lfsObject.oid ).as( "version" )
           .in( "resource:has_version" ).as( "data" )
           .out( "resource:stored_in" ).as( "bucket" )
           .select[Vertex]( "version", "data", "bucket" )
@@ -213,7 +213,7 @@ class GitController @Inject() (
     else {
       val objects = request.body.objects.map( lfsObject => {
         val g = graphTraversalSource
-        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_MD5", lfsObject.oid )
+        val t = g.V().has( "type", "resource:file_version" ).has( "resource:file_hash", lfsObject.oid )
         val now = System.currentTimeMillis
         if ( !graphExecutionContext.execute { t.hasNext } ) {
           getVertexByType( "resource:bucket" ).flatMap {
@@ -240,7 +240,7 @@ class GitController @Inject() (
                     .result()
                   val vvertex = new NewVertexBuilder( 3 )
                     .addSingleProperty( "system:creation_time", LongValue( now ) )
-                    .addSingleProperty( "resource:file_MD5", StringValue( lfsObject.oid ) )
+                    .addSingleProperty( "resource:file_hash", StringValue( lfsObject.oid ) )
                     .addSingleProperty( "resource:file_size", StringValue( lfsObject.size.toString ) )
                     .addSingleProperty( "resource:owner", StringValue( request.userId ) )
                     .addType( NamespaceAndName( "resource:file_version" ) )
