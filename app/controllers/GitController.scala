@@ -53,7 +53,6 @@ import play.api.mvc._
 import utils.ControllerWithBodyParseTolerantJson
 
 import scala.concurrent.{ Await, Future }
-
 /**
  * Created by jeberle on 25.04.17.
  */

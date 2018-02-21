@@ -26,7 +26,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
-import play.api.Configuration
+import play.api.{ Configuration, Logger }
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{ RequestHeader, Result }
@@ -34,6 +34,7 @@ import play.api.mvc.{ RequestHeader, Result }
 import scala.concurrent.Future
 import scala.util.Try
 import play.api.mvc.Results._
+import scala.concurrent.duration._
 import org.eclipse.jgit.util.TemporaryBuffer
 import org.eclipse.jgit.transport._
 import java.util.zip.GZIPOutputStream
@@ -51,6 +52,8 @@ import scala.concurrent.duration.FiniteDuration
  */
 @Singleton
 class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends GitBackend {
+
+  lazy val logger: Logger = Logger( "application.storageBackends.LocalGitBackend" )
 
   private[this] lazy val rootDir: String = configuration.getString( "storage.backend.localgit.root" ).get
 
@@ -86,39 +89,37 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
     val svc = request.queryString.getOrElse( "service", Seq( "" ) ).head
 
     val output = Try {
-      StreamConverters.asOutputStream().mapMaterializedValue { os =>
-        try {
-          val plo = new PacketLineOut( os )
+      StreamConverters.asOutputStream( 10.seconds ).mapMaterializedValue { os =>
+        Future {
+          try {
+            val plo = new PacketLineOut( os )
 
-          plo.writeString( "# service=" + svc + "\n" )
-          plo.end()
-          if ( svc.equals( "git-upload-pack" ) ) {
-            val up = new UploadPack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
-            try {
-              up.setBiDirectionalPipe( false )
-              up.sendAdvertisedRefs( new PacketLineOutRefAdvertiser( plo ) )
+            plo.writeString( "# service=" + svc + "\n" )
+            plo.end()
+            if ( svc.equals( "git-upload-pack" ) ) {
+              val up = new UploadPack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
+              try {
+                up.setBiDirectionalPipe( false )
+                up.sendAdvertisedRefs( new PacketLineOutRefAdvertiser( plo ) )
+              }
+              finally {
+                up.getRevWalk.close()
+              }
             }
-            finally {
-              up.getRevWalk.close()
+            else if ( svc.equals( "git-receive-pack" ) ) {
+              val rep = new ReceivePack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
+              try {
+                rep.sendAdvertisedRefs( new PacketLineOutRefAdvertiser( plo ) )
+              }
+              finally {
+                rep.getRevWalk.close()
+              }
             }
+            os.close()
           }
-          else if ( svc.equals( "git-receive-pack" ) ) {
-            val rep = new ReceivePack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
-            try {
-              rep.sendAdvertisedRefs( new PacketLineOutRefAdvertiser( plo ) )
-            }
-            finally {
-              rep.getRevWalk.close()
-            }
+          finally {
+            os.close()
           }
-          os.close()
-        }
-        catch {
-          case e: ServiceMayNotContinueException =>
-            if ( e.isOutput ) {
-              os.close()
-            }
-            throw e
         }
       }
     }
@@ -138,24 +139,29 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
           StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
         )
         val output = Try {
-          StreamConverters.asOutputStream().mapMaterializedValue { os =>
-            try {
-              val up = new UploadPack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
-              up.setBiDirectionalPipe( false )
-              up.upload( inputStream, os, null )
-              os.close()
-            }
-            catch {
-              case e: ServiceMayNotContinueException =>
-                if ( e.isOutput ) {
+          StreamConverters.asOutputStream( 10.seconds ).mapMaterializedValue { os =>
+            Future {
+              try {
+                val up = new UploadPack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
+                up.setBiDirectionalPipe( false )
+                up.upload( inputStream, os, null )
+                os.close()
+              }
+              catch {
+                case e: ServiceMayNotContinueException =>
+                  if ( e.isOutput ) {
+                    flushBody( inputStream )
+                    os.close()
+                  }
+                  throw e
+                case e: UploadPackInternalServerErrorException =>
+                  // Special case exception, error message was sent to client.
                   flushBody( inputStream )
                   os.close()
-                }
-                throw e
-              case e: UploadPackInternalServerErrorException =>
-                // Special case exception, error message was sent to client.
-                flushBody( inputStream )
+              }
+              finally {
                 os.close()
+              }
             }
           }
         }
@@ -176,19 +182,23 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
           StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
         )
         val output = Try {
-          StreamConverters.asOutputStream().mapMaterializedValue { os =>
-            val out = os
-            try {
-              val rep = new ReceivePack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
-              rep.setBiDirectionalPipe( false )
-              rep.receive( inputStream, out, null )
-              out.close()
-            }
-            catch {
-              case e@( _: CorruptObjectException | _: UnpackException | _: PackProtocolException ) =>
-                flushBody( inputStream )
-                out.close()
-                throw e
+          StreamConverters.asOutputStream( 10.seconds ).mapMaterializedValue { os =>
+            Future {
+              try {
+                val rep = new ReceivePack( FileRepositoryBuilder.create( new File( rootDir, url ) ) )
+                rep.setBiDirectionalPipe( false )
+                rep.receive( inputStream, os, null )
+                os.close()
+              }
+              catch {
+                case e@( _: CorruptObjectException | _: UnpackException | _: PackProtocolException ) =>
+                  flushBody( inputStream )
+                  os.close()
+                  throw e
+              }
+              finally {
+                os.close()
+              }
             }
           }
         }
