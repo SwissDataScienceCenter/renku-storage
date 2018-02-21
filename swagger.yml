@@ -263,8 +263,8 @@ paths:
           description: ok
           schema:
             type: array
-              items:
-                 $ref: '#/definitions/Repository'
+            items:
+              $ref: '#/definitions/Repository'
       security:
       - token_auth:
         - 'profile'
@@ -506,22 +506,22 @@ definitions:
       - description
       - path
       - backend
-      properties:
-        uuid:
-          type: string
-        iid:
-          type: string
-        description:
-          type: string
-        path:
-          type: string
-        created:
-          type: string
-        backend:
-          type: object
-          properties:
-            name:
-              type: string
+    properties:
+      uuid:
+        type: string
+      iid:
+        type: string
+      description:
+        type: string
+      path:
+        type: string
+      created:
+        type: string
+      backend:
+        type: object
+        properties:
+          name:
+            type: string
   FileUpdateRequest:
     type: object
     properties:

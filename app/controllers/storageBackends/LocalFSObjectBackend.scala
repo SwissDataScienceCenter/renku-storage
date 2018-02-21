@@ -98,7 +98,7 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def createBucket( request: RequestHeader, bucket: String ): String = {
-    new File( rootDir, bucket ).mkdir()
+    new File( rootDir, bucket ).mkdirs()
     bucket
   }
 
