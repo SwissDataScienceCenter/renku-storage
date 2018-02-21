@@ -27,9 +27,11 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 
 | Variable name  |  default  |  description  |
 |---|---|---|
-| STORAGE_BACKEND_DB_PASSWORD  |  storage  |  the password for the user `storage` for the postgres database  |
+| STORAGE_BACKEND_DB_URL  |  jdbc:postgres://db:5432/storage  |  the url for the postgres database  |
+| STORAGE_BACKEND_DB_USER  |  storage  |  the user for the postgres database  |
+| STORAGE_BACKEND_DB_PASSWORD  |  storage  |  the password for the postgres database  |
 | STORAGE_BACKEND_LOCAL_ENABLED  |  false  |  set to `true` to enable the local storage backend |
-| LOCAL_STORAGE_ROOT | /data  | the root folder in which buckets will be created as subfolders |
+| LOCAL_STORAGE_ROOT | /data/obj  | the root folder in which buckets will be created as subfolders |
 | STORAGE_BACKEND_SWIFT_ENABLED | false | set to `true` to enable the swift storage backend |
 | SWIFT_USERNAME |  | the swift username |
 | SWIFT_PASSWORD |  | the swift password |
@@ -42,9 +44,9 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 | STORAGE_BACKEND_AZURE_ENABLED | false | set to `true` to enable the azure storage backend |
 | AZURE_CONNECTION_STRING |  | the complete connection string for the Azure Blob Storage |
 | STORAGE_BACKEND_LOCALGIT_ENABLED | false | set to `true` to enable the local git storage backend |
-| LOCAL_STORAGE_GIT_ROOT | /data | the root folder in which repositories will be created as subfolders |
+| LOCAL_STORAGE_GIT_ROOT | /data/repo | the root folder in which repositories will be created as subfolders |
 | STORAGE_BACKEND_GITLAB_ENABLED | false | set to `true` to enable the gitlab storage backend |
 | GITLAB_URL |  | the root url of gitlab |
 | GITLAB_USER |  | the gitlab user |
 | GITLAB_PASS |  | the gitlab user's private token |
-| RENGA_ENDPOINT |  | the url to reach renga from the users perspective |
+| RENGA_ENDPOINT | http://localhost | the url to reach renga from the users perspective |
