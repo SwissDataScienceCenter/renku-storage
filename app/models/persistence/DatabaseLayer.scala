@@ -18,18 +18,34 @@
 
 package models.persistence
 
-import javax.inject.Inject
+import javax.inject.{ Inject, Singleton }
 
+import play.api.Logger
 import play.api.db.slick.DatabaseConfigProvider
-import play.db.NamedDatabase
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.Duration
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * Created by johann on 13/04/17.
  */
 
+@Singleton
 class DatabaseLayer @Inject() (
     protected val dbConfigProvider: DatabaseConfigProvider
 )
   extends DatabaseStack(
     dbConfig = dbConfigProvider.get
-  )
+  ) {
+  import profile.api._
+
+  lazy val logger: Logger = Logger( "application.DatabaseLayer" )
+
+  val run = db.run( schemas.reduce( _ ++ _ ).create )
+  Await.ready( run, Duration.Inf )
+  run.onFailure { case NonFatal( t ) => logger.error( t.getMessage ) }
+
+}

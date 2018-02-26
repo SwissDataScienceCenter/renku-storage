@@ -25,6 +25,8 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import ch.datascience.service.security.RequestWithProfile
+import models.Repository
 import org.javaswift.joss.client.factory.{ AccountConfig, AccountFactory }
 import org.javaswift.joss.headers.`object`.range.{ FirstPartRange, LastPartRange, MidPartRange }
 import org.javaswift.joss.instructions.DownloadInstructions
@@ -93,11 +95,10 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.done( NotFound )
   }
 
-  def createBucket( request: RequestHeader, bucket: String ): String = {
-    val uuid = java.util.UUID.randomUUID.toString
-    val container = swiftAccount.getContainer( uuid )
-    container.create()
-    uuid
+  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
+    val container = swiftAccount.getContainer( request.body.uuid.toString )
+    if ( container.create().exists() ) Some( container.getName )
+    else None
   }
 
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = false

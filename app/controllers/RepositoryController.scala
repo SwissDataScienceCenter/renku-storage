@@ -22,9 +22,9 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.{ Inject, Singleton }
 
-import authorization.{ JWTVerifierProvider, ResourcesManagerJWTVerifierProvider }
+import authorization.JWTVerifierProvider
 import ch.datascience.service.security.ProfileFilterAction
-import controllers.storageBackends.{ Backends, GitBackend, ObjectBackend }
+import controllers.storageBackends.Backends
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
@@ -43,10 +43,9 @@ class RepositoryController @Inject() (
     config:                     play.api.Configuration,
     jwtVerifier:                JWTVerifierProvider,
     backends:                   Backends,
-    rmJwtVerifier:              ResourcesManagerJWTVerifierProvider,
     protected val orchestrator: DatabaseLayer
 
-) extends Controller with ControllerWithBodyParseTolerantJson with RequestHelper {
+) extends Controller with ControllerWithBodyParseTolerantJson {
 
   lazy val logger: Logger = Logger( "application.RepositoryController" )
 
@@ -60,10 +59,10 @@ class RepositoryController @Inject() (
   def createRepo() = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
     backends.getBackend( request.body.backend ) match {
       case Some( back ) => {
-        back.asInstanceOf[GitBackend].createRepo( request ).flatMap(
+        back.createRepo( request ).flatMap(
           i =>
             i.map( iid => {
-              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ) )
+              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), UUID.fromString( request.userId ) )
               orchestrator.repositories.insert( rep ).map( i => if ( i == 1 ) Created else InternalServerError )
             } ).getOrElse( Future.successful( BadRequest ) )
         )
@@ -98,6 +97,10 @@ class RepositoryController @Inject() (
           case None => Future.successful( NotFound )
         }
     }
+  }
+
+  def repoBackends = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+    Future( Ok( Json.toJson( backends.map.keys ) ) )
   }
 
 }

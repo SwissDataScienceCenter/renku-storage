@@ -26,22 +26,17 @@ lazy val root = (project in file("."))
     PlayScala
   )
 
-resolvers += "jitpack" at "https://jitpack.io"
-resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven"
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-lazy val renga_version = "0.1.1-SNAPSHOT"
-libraryDependencies += "ch.datascience" %% "renga-graph-core" % renga_version
+lazy val renga_version = "0.2.0-SNAPSHOT"
 libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
 
 libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
 
-lazy val janusgraph_version = "0.2.0"
 lazy val play_slick_version = "2.1.1"
 lazy val postgresql_version = "42.0.0"
 
 libraryDependencies += filters
-libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
 libraryDependencies += "com.typesafe.play" %% "play-slick" % play_slick_version
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % play_slick_version
 libraryDependencies += "org.postgresql" % "postgresql" % postgresql_version

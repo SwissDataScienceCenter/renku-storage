@@ -19,8 +19,6 @@
 package controllers
 
 import authorization.{ JWTVerifierProvider, MockJWTVerifierProvider }
-import ch.datascience.service.utils.persistence.graph.JanusGraphProvider
-import ch.datascience.test.utils.persistence.graph.MockJanusGraphProvider
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.{ OneAppPerSuite, PlaySpec }
 import play.api.Application
@@ -37,7 +35,6 @@ class SwaggerControllerSpec extends PlaySpec with OneAppPerSuite with MockitoSug
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
     .overrides( bind[JWTVerifierProvider].to[MockJWTVerifierProvider] )
-    .overrides( bind[JanusGraphProvider].to[MockJanusGraphProvider] )
     .build()
 
   val swaggerController: SwaggerController = app.injector.instanceOf[SwaggerController]

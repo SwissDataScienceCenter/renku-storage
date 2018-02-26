@@ -25,7 +25,9 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import ch.datascience.service.security.RequestWithProfile
 import io.minio.MinioClient
+import models.Repository
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
@@ -83,10 +85,16 @@ class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemPro
       Accumulator.done( NotFound )
   }
 
-  def createBucket( request: RequestHeader, bucket: String ): String = {
+  def createRepo( request: RequestHeader, bucket: String ): String = {
     val uuid = java.util.UUID.randomUUID.toString
     minioClient.makeBucket( uuid )
     uuid
+  }
+
+  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
+    val uuid = request.body.uuid.toString
+    minioClient.makeBucket( uuid )
+    Some( uuid ).filter( minioClient.bucketExists )
   }
 
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean =
@@ -97,10 +105,10 @@ class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemPro
   def objectExists( bucket: String, name: String ): Boolean = {
     try {
       minioClient.statObject( bucket, name )
-      return true
+      true
     }
     catch {
-      case _: Throwable => return false
+      case _: Throwable => false
     }
   }
 }

@@ -29,6 +29,5 @@ import play.api.mvc.{ RequestHeader, Result }
 trait ObjectBackend extends StorageBackend {
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]]
   def write( request: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result]
-  def createBucket( request: RequestHeader, bucket: String ): String
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean
 }
