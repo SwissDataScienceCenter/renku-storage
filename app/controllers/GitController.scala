@@ -131,7 +131,7 @@ class GitController @Inject() (
           val objects = request.body.objects.map( lfsObject => {
             orchestrator.fileobjects.findByHash( lfsObject.oid ).flatMap( _.map( fo =>
               orchestrator.fileobjectrepositories.listByFileObject( fo.uuid ).map( _.headOption.map( rep =>
-                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
+                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, lfsObject.oid, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
           } )
           Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
         }

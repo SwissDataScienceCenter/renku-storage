@@ -24,6 +24,7 @@ import play.api.libs.json.{ JsPath, OFormat }
 case class LFSDownload(
     href:       String,
     token:      String,
+    hash:       String,
     expiration: Long
 )
 
@@ -32,21 +33,23 @@ object LFSDownload {
   def format: OFormat[LFSDownload] = (
     ( JsPath \ "download" \ "href" ).format[String] and
     ( JsPath \ "download" \ "header" \ "Authorization" ).format[String] and
+    ( JsPath \ "download" \ "header" \ "Content-Hash").format[String] and
     ( JsPath \ "download" \ "expires_in" ).format[Long]
   )( read, write )
 
   private[this] def read(
       href:       String,
       token:      String,
+      hash:       String,
       expiration: Long
   ): LFSDownload = {
     LFSDownload(
-      href, token, expiration
+      href, token, hash, expiration
     )
   }
 
-  private[this] def write( request: LFSDownload ): ( String, String, Long ) = {
-    ( request.href, request.token, request.expiration )
+  private[this] def write( request: LFSDownload ): ( String, String, String, Long ) = {
+    ( request.href, request.token, request.hash, request.expiration )
   }
 
 }
