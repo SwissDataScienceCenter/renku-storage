@@ -243,8 +243,8 @@ paths:
     get:
       tags:
       - 'Storage-Repository'
-      summary: 'Get the list of repositories'
-      description: 'Get the list of repositories'
+      summary: 'Get a repository'
+      description: 'Get a repository'
       parameters:
       - description: uuid of the repository
         in: path
@@ -262,8 +262,8 @@ paths:
     put:
       tags:
       - 'Storage-Repository'
-      summary: 'Create a new repositories'
-      description: 'Create a new repositories'
+      summary: 'Update a repository'
+      description: 'Update a repository'
       parameters:
       - description: uuid of the repository
         in: path

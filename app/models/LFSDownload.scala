@@ -33,7 +33,7 @@ object LFSDownload {
   def format: OFormat[LFSDownload] = (
     ( JsPath \ "download" \ "href" ).format[String] and
     ( JsPath \ "download" \ "header" \ "Authorization" ).format[String] and
-    ( JsPath \ "download" \ "header" \ "Content-Hash").format[String] and
+    ( JsPath \ "download" \ "header" \ "Content-Hash" ).format[String] and
     ( JsPath \ "download" \ "expires_in" ).format[Long]
   )( read, write )
 
