@@ -32,12 +32,14 @@ trait RepositoryComponent {
 
     def owner: Rep[UUID] = column[UUID]( "OWNER" )
 
+    def lfs_store: Rep[Option[UUID]] = column[Option[UUID]]( "LFS_STORE" )
+
     // Indexes
     def idx0: Index = index( "IDX_REPOSITORIES_IID_BACKEND", ( iid, backend ), unique = true )
     def idx1: Index = index( "IDX_REPOSITORIES_OWNER", owner, unique = false )
 
     // *
-    def * : ProvenShape[Repository] = ( uuid, iid.?, path, description, backend, created.?, owner ) <> ( ( Repository.apply _ ).tupled, Repository.unapply )
+    def * : ProvenShape[Repository] = ( uuid, iid.?, path, description, backend, created.?, owner.?, lfs_store ) <> ( ( Repository.apply _ ).tupled, Repository.unapply )
 
   }
 

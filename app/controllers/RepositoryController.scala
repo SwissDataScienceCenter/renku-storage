@@ -62,7 +62,7 @@ class RepositoryController @Inject() (
         back.createRepo( request ).flatMap(
           i =>
             i.map( iid => {
-              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), UUID.fromString( request.userId ) )
+              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), request.body.lfs_store )
               orchestrator.repositories.insert( rep ).map( i => if ( i == 1 ) Created else InternalServerError )
             } ).getOrElse( Future.successful( BadRequest ) )
         )

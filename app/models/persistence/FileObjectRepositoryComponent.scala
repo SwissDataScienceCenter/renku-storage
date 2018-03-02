@@ -39,20 +39,23 @@ trait FileObjectRepositoryComponent {
   object fileobjectrepositories extends TableQuery( new FileObjectRepositories( _ ) ) {
     def listByRepository( id: UUID ) = {
       val query = for {
-        ( fileObject, fileObjectRepository ) <- fileobjectrepositories join fileobjects on ( _.fileObject === _.uuid )
-      } yield ( fileObject, fileObjectRepository )
+        ( fileObjectRepository, fileObject ) <- fileobjectrepositories join fileobjects on ( _.fileObject === _.uuid )
+        if fileObjectRepository.repository === id
+      } yield ( fileObjectRepository, fileObject )
       db.run( query.result )
     }
     def listByFileObject( id: UUID ) = {
       val query = for {
-        ( repository, fileObjectRepository ) <- fileobjectrepositories join repositories on ( _.repository === _.uuid )
-      } yield ( repository, fileObjectRepository )
+        ( fileObjectRepository, repository ) <- fileobjectrepositories join repositories on ( _.repository === _.uuid )
+        if fileObjectRepository.fileObject === id
+      } yield ( fileObjectRepository, repository )
       db.run( query.result )
     }
     def findByPk( rid: UUID, oid: UUID ) = {
       val query = for {
-        ( repository, fileObjects ) <- repositories join ( fileobjectrepositories join fileobjects on ( _.fileObject === _.uuid ) ) on ( _.uuid === _._1.repository )
-      } yield ( repository, fileObjects )
+        ( fileObjects, repository ) <- repositories join ( fileobjectrepositories join fileobjects on ( _.fileObject === _.uuid ) ) on ( _.uuid === _._1.repository )
+        if repository._1.repository === rid && fileObjects.uuid === oid
+      } yield ( fileObjects, repository )
       db.run( query.result )
     }
     def all(): Future[Seq[FileObjectRepository]] = {

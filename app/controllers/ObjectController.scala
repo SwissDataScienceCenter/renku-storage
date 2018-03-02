@@ -68,7 +68,7 @@ class ObjectController @Inject() (
         val now = System.currentTimeMillis
         val valid = for (
           repo_id <- JsString( id ).validate[UUID].asOpt;
-          obj_id <- JsString( id ).validate[UUID].asOpt
+          obj_id <- JsString( oid ).validate[UUID].asOpt
         ) yield {
           orchestrator.repositories.findByUUID( repo_id ).flatMap( f => {
             val upload = for (
@@ -83,7 +83,7 @@ class ObjectController @Inject() (
                 ifr <- orchestrator.fileobjectrepositories.insert( fr )
               ) yield {
                 if ( ifo == 1 && ifr == 1 )
-                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename )
+                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString )
                 else
                   Accumulator.done( BadRequest )
               }
@@ -100,7 +100,7 @@ class ObjectController @Inject() (
   def downloadObject( id: String, oid: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
     val valid = for (
       repo_id <- JsString( id ).validate[UUID].asOpt;
-      obj_id <- JsString( id ).validate[UUID].asOpt
+      obj_id <- JsString( oid ).validate[UUID].asOpt
     ) yield {
       orchestrator.fileobjectrepositories.findByPk( repo_id, obj_id ).map( _.headOption.map( f =>
         backends.getBackend( f._1.backend ) match {

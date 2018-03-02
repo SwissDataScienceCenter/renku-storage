@@ -52,7 +52,6 @@ class GitController @Inject() (
   lazy val logger: Logger = Logger( "application.GitController" )
 
   val host: String = config.getString( "renga_host" ).get
-  val default_repo: String = config.getString( "default_repo" ).get
 
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
@@ -124,23 +123,31 @@ class GitController @Inject() (
 
   def lfsBatch( id: String ): Action[LFSBatchRequest] = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[LFSBatchRequest]( LFSBatchRequest.format ) ) { implicit request =>
     val token: String = request.headers.get( "Authorization" ).getOrElse( "" )
-
-    if ( request.body.operation == "download" ) {
-      val objects = request.body.objects.map( lfsObject => {
-        orchestrator.fileobjects.findByHash( lfsObject.oid ).flatMap( _.map( fo =>
-          orchestrator.fileobjectrepositories.listByFileObject( fo.uuid ).map( _.headOption.map( rep =>
-            LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
-      } )
-      Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
-    }
-    else {
-      val objects = request.body.objects.map( lfsObject => {
-        orchestrator.fileobjects.findByHash( lfsObject.oid ) map {
-          case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-          case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/repo/" + default_repo + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
+    val json = JsString( id )
+    json.validate[UUID] match {
+      case JsError( e ) => Future( BadRequest( JsError.toJson( e ) ) )
+      case JsSuccess( uuid, _ ) =>
+        if ( request.body.operation == "download" ) {
+          val objects = request.body.objects.map( lfsObject => {
+            orchestrator.fileobjects.findByHash( lfsObject.oid ).flatMap( _.map( fo =>
+              orchestrator.fileobjectrepositories.listByFileObject( fo.uuid ).map( _.headOption.map( rep =>
+                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
+          } )
+          Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
         }
-      } )
-      Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+        else {
+          orchestrator.repositories.findByUUID( uuid ).flatMap {
+            case Some( repo ) => {
+              val objects = request.body.objects.map( lfsObject =>
+                orchestrator.fileobjects.findByHash( lfsObject.oid ) map {
+                  case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
+                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.get + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
+                } )
+              Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+            }
+            case None => Future.successful( NotFound )
+          }
+        }
     }
   }
 
