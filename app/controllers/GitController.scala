@@ -20,11 +20,11 @@ package controllers
 
 import java.time.Instant
 import java.util.UUID
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import authorization.JWTVerifierProvider
-import ch.datascience.service.security.{ProfileFilterAction, TokenFilter}
-import controllers.storageBackends.{Backends, GitBackend}
+import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
+import controllers.storageBackends.{ Backends, GitBackend }
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
@@ -37,7 +37,7 @@ import play.api.libs.ws._
 import play.api.mvc._
 import utils.ControllerWithBodyParseTolerantJson
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 /**
  * Created by jeberle on 25.04.17.
  */
@@ -141,15 +141,15 @@ class GitController @Inject() (
           orchestrator.repositories.findByUUID( uuid ).flatMap {
             case Some( repo ) => {
               val new_uuid = UUID.randomUUID()
-              if (repo.lfs_store.isEmpty) {
+              if ( repo.lfs_store.isEmpty ) {
                 backends.getBackend( default_backend ) match {
                   case Some( back ) => {
-                    back.createRepo( Repository(new_uuid, None, "automatically created bucket for LFS of " + uuid.toString, "", default_backend, None, None, None) ).map(
+                    back.createRepo( Repository( new_uuid, None, "automatically created bucket for LFS of " + uuid.toString, "", default_backend, None, None, None ) ).map(
                       i =>
                         i.map( iid => {
                           val rep = Repository( new_uuid, Some( iid ), "automatically created bucket for LFS of " + uuid.toString, "", default_backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), None )
                           orchestrator.repositories.insert( rep )
-                          orchestrator.repositories.update( Repository(repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some(new_uuid)) )
+                          orchestrator.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
                         } )
                     )
                   }
@@ -159,7 +159,7 @@ class GitController @Inject() (
               val objects = request.body.objects.map( lfsObject =>
                 orchestrator.fileobjects.findByHash( lfsObject.oid ) map {
                   case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse(new_uuid) + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
+                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
                 } )
               Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
             }
