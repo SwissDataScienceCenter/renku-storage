@@ -6,5 +6,5 @@ import models.Repository
 import scala.concurrent.Future
 
 trait StorageBackend {
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]]
+  def createRepo( request: Repository ): Future[Option[String]]
 }

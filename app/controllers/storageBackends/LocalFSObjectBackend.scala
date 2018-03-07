@@ -104,10 +104,10 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
     bucket
   }
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
     Try {
-      new File( rootDir, request.body.path ).mkdirs()
-      request.body.path
+      new File( rootDir, request.path ).mkdirs()
+      request.path
     }.toOption
   }
 

@@ -95,8 +95,8 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.done( NotFound )
   }
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
-    val container = swiftAccount.getContainer( request.body.uuid.toString )
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
+    val container = swiftAccount.getContainer( request.uuid.toString )
     if ( container.create().exists() ) Some( container.getName )
     else None
   }

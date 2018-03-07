@@ -123,9 +123,9 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.done( NotFound )
   }
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
     Try {
-      val uuid = request.body.uuid.toString
+      val uuid = request.uuid.toString
       serviceClient.getContainerReference( uuid ).createIfNotExists()
       uuid
     }.toOption

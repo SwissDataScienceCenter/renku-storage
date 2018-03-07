@@ -91,8 +91,8 @@ class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemPro
     uuid
   }
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
-    val uuid = request.body.uuid.toString
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
+    val uuid = request.uuid.toString
     minioClient.makeBucket( uuid )
     Some( uuid ).filter( minioClient.bucketExists )
   }

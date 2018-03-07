@@ -59,7 +59,7 @@ class RepositoryController @Inject() (
   def createRepo() = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
     backends.getBackend( request.body.backend ) match {
       case Some( back ) => {
-        back.createRepo( request ).flatMap(
+        back.createRepo( request.body ).flatMap(
           i =>
             i.map( iid => {
               val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), request.body.lfs_store )
