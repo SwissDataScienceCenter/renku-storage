@@ -27,7 +27,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import com.microsoft.azure.storage._
-import com.microsoft.azure.storage.blob.CloudBlobClient
+import com.microsoft.azure.storage.blob.{ CloudBlobClient, CopyStatus }
 import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
@@ -126,6 +126,21 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = false
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean =
+    {
+      val container = serviceClient.getContainerReference( fromBucket )
+      val t_container = serviceClient.getContainerReference( toBucket )
+      ( container.exists() && t_container.exists() ) && {
+        val blob = container.getBlockBlobReference( fromName )
+        val t_blob = container.getBlockBlobReference( toName )
+        t_blob.startCopy( blob )
+        t_blob.downloadAttributes()
+        while ( t_blob.getCopyState.getStatus eq CopyStatus.PENDING ) {
+          Thread.sleep( 1000 )
+          blob.downloadAttributes()
+        }
+        t_blob.getCopyState.getStatus eq CopyStatus.SUCCESS
+      }
+    }
 
 }
