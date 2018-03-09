@@ -24,6 +24,7 @@ import javax.inject.{ Inject, Singleton }
 
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
+import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import controllers.storageBackends.{ Backends, GitBackend }
 import models._
 import models.persistence.DatabaseLayer
@@ -35,7 +36,6 @@ import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
 import play.api.mvc._
-import utils.ControllerWithBodyParseTolerantJson
 
 import scala.concurrent.{ Await, Future }
 /**

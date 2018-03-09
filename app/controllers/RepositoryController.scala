@@ -24,6 +24,7 @@ import javax.inject.{ Inject, Singleton }
 
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.ProfileFilterAction
+import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import controllers.storageBackends.Backends
 import models._
 import models.persistence.DatabaseLayer
@@ -31,7 +32,6 @@ import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
-import utils.ControllerWithBodyParseTolerantJson
 
 import scala.concurrent.Future
 

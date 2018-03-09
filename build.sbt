@@ -40,7 +40,7 @@ libraryDependencies += filters
 libraryDependencies += "com.typesafe.play" %% "play-slick" % play_slick_version
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % play_slick_version
 libraryDependencies += "org.postgresql" % "postgresql" % postgresql_version
-
+libraryDependencies += "com.h2database" % "h2" % "1.4.196"
 
 libraryDependencies += "io.minio" % "minio" % "3.0.4"
 libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
@@ -53,6 +53,7 @@ libraryDependencies += cache
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
 
+javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 
 import com.typesafe.sbt.packager.docker._
 lazy val newEntrypoint = "bin/docker-entrypoint.sh"

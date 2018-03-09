@@ -46,6 +46,10 @@ class DatabaseLayer @Inject() (
 
   val run = db.run( schemas.reduce( _ ++ _ ).create )
   Await.ready( run, Duration.Inf )
-  run.onFailure { case NonFatal( t ) => logger.error( t.getMessage ) }
-
+  run.onFailure {
+    case NonFatal( t ) => {
+      logger.error( t.getMessage )
+      System.exit( -1 )
+    }
+  }
 }
