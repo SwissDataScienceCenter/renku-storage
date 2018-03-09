@@ -35,8 +35,10 @@ import play.api.mvc.Results._
 import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.blocking
+import scala.concurrent.duration._
+import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
@@ -126,21 +128,31 @@ class AzureBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean =
-    {
-      val container = serviceClient.getContainerReference( fromBucket )
-      val t_container = serviceClient.getContainerReference( toBucket )
-      ( container.exists() && t_container.exists() ) && {
-        val blob = container.getBlockBlobReference( fromName )
-        val t_blob = container.getBlockBlobReference( toName )
-        t_blob.startCopy( blob )
-        t_blob.downloadAttributes()
-        while ( t_blob.getCopyState.getStatus eq CopyStatus.PENDING ) {
-          Thread.sleep( 1000 )
-          blob.downloadAttributes()
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = {
+    val fromContainer = serviceClient.getContainerReference( fromBucket )
+    val toContainer = serviceClient.getContainerReference( toBucket )
+    ( fromContainer.exists() && toContainer.exists() ) && {
+      val fromBlob = fromContainer.getBlockBlobReference( fromName )
+      val toBlob = toContainer.getBlockBlobReference( toName )
+      toBlob.startCopy( fromBlob )
+
+      def waitForIt( timeout: Deadline ): Future[Boolean] = {
+        toBlob.downloadAttributes()
+        if ( toBlob.getCopyState.getStatus ne CopyStatus.PENDING ) {
+
+          if ( timeout.hasTimeLeft() )
+            Future {
+              blocking( Thread.sleep( 1000 ) )
+            }.flatMap { _ => waitForIt( timeout ) }
+          else
+            Future.successful( false )
         }
-        t_blob.getCopyState.getStatus eq CopyStatus.SUCCESS
+        else {
+          Future.successful( toBlob.getCopyState.getStatus eq CopyStatus.SUCCESS )
+        }
       }
+      Await.result( waitForIt( Deadline( 5.minutes ) ), Duration.Inf )
     }
+  }
 
 }
