@@ -43,7 +43,7 @@ class RepositoryController @Inject() (
     config:                     play.api.Configuration,
     jwtVerifier:                JWTVerifierProvider,
     backends:                   Backends,
-    protected val orchestrator: DatabaseLayer
+    protected val dal:          DatabaseLayer
 
 ) extends Controller with ControllerWithBodyParseTolerantJson {
 
@@ -52,7 +52,7 @@ class RepositoryController @Inject() (
   implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
 
   def listRepo() = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
-    val all = orchestrator.repositories.all()
+    val all = dal.repositories.all()
     all.map( seq => Json.toJson( seq ) ).map( json => Ok( json ) )
   }
 
@@ -63,7 +63,7 @@ class RepositoryController @Inject() (
           i =>
             i.map( iid => {
               val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), request.body.lfs_store )
-              orchestrator.repositories.insert( rep ).map( i => if ( i == 1 ) Created else InternalServerError )
+              dal.repositories.insert( rep ).map(i => if ( i == 1 ) Created else InternalServerError )
             } ).getOrElse( Future.successful( BadRequest ) )
         )
       }
@@ -76,7 +76,7 @@ class RepositoryController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = orchestrator.repositories.findByUUID( uuid )
+        val future = dal.repositories.findByUUID( uuid )
         future map {
           case Some( repo ) => Ok( Json.toJson( repo ) )
           case None         => NotFound
@@ -89,10 +89,10 @@ class RepositoryController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = orchestrator.repositories.findByUUID( uuid )
+        val future = dal.repositories.findByUUID( uuid )
         future flatMap {
           case Some( _ ) => {
-            orchestrator.repositories.update( request.body ).map( i => if ( i == 1 ) Ok else InternalServerError )
+            dal.repositories.update( request.body ).map(i => if ( i == 1 ) Ok else InternalServerError )
           }
           case None => Future.successful( NotFound )
         }

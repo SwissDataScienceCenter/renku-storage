@@ -38,25 +38,24 @@ trait FileObjectComponent {
 
   }
 
-  object fileobjects extends TableQuery( new FileObjects( _ ) ) {
-    def findByUUID( id: UUID ): Future[Option[FileObject]] = {
-      db.run( fileobjects.findBy( _.uuid ).extract( id ).result ).map( s => s.headOption.map( r => r.copy() ) )
+  object fileObjects extends TableQuery( new FileObjects( _ ) ) {
+    def findByUUID( id: UUID ): DBIO[Option[FileObject]] = {
+      fileObjects.findBy( _.uuid ).extract( id ).result.headOption
     }
-    def findByHash( id: String ): Future[Option[FileObject]] = {
-      db.run( fileobjects.findBy( _.hash ).extract( id ).result ).map( s => s.headOption.map( r => r.copy() ) )
+    def findByHash( id: String ) = {
+      fileObjects.findBy( _.hash ).extract( id ).result.headOption
     }
-    def all(): Future[Seq[FileObject]] = {
-
-      db.run( fileobjects.result )
+    def all(): DBIO[Seq[FileObject]] = {
+      fileObjects.result
     }
-    def insert( r: FileObject ): Future[Int] = {
-      db.run( fileobjects += r )
+    def insert( r: FileObject ): DBIO[Int] = {
+      fileObjects += r
     }
-    def update( r: FileObject ): Future[Int] = {
-      db.run( ( for { c <- fileobjects if c.uuid === r.uuid } yield c ).update( r ) )
+    def update( r: FileObject ): DBIO[Int] = {
+      ( for {c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
     }
   }
 
-  _schemas += fileobjects.schema
+  _schemas += fileObjects.schema
 
 }

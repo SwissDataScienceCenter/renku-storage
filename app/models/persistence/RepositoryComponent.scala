@@ -44,21 +44,20 @@ trait RepositoryComponent {
   }
 
   object repositories extends TableQuery( new Repositories( _ ) ) {
-    def findByUUID( id: UUID ): Future[Option[Repository]] = {
-      db.run( repositories.findBy( _.uuid ).extract( id ).result ).map( s => s.headOption.map( r => r.copy() ) )
+    def findByUUID( id: UUID ): DBIO[Option[Repository]] = {
+      repositories.findBy( _.uuid ).extract( id ).result.headOption
     }
-    def findByIID( id: String ): Future[Option[Repository]] = {
-      db.run( repositories.findBy( _.iid ).extract( id ).result ).map( s => s.headOption.map( r => r.copy() ) )
+    def findByIID( id: String ): DBIO[Option[Repository]] = {
+      repositories.findBy( _.iid ).extract( id ).result.headOption
     }
-    def all(): Future[Seq[Repository]] = {
-
-      db.run( repositories.result )
+    def all(): DBIO[Seq[Repository]] = {
+      repositories.result
     }
-    def insert( r: Repository ): Future[Int] = {
-      db.run( repositories += r )
+    def insert( r: Repository ): DBIO[Int] = {
+      repositories += r
     }
-    def update( r: Repository ): Future[Int] = {
-      db.run( ( for { c <- repositories if c.uuid === r.uuid } yield c ).update( r ) )
+    def update( r: Repository ): DBIO[Int] = {
+      ( for { c <- repositories if c.uuid === r.uuid } yield c ).update( r )
     }
   }
 

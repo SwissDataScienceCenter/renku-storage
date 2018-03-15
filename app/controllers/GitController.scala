@@ -47,7 +47,7 @@ class GitController @Inject() (
     jwtVerifier:                JWTVerifierProvider,
     backends:                   Backends,
     implicit val wsclient:      WSClient,
-    protected val orchestrator: DatabaseLayer
+    protected val dal:          DatabaseLayer
 ) extends Controller with ControllerWithBodyParseTolerantJson {
 
   lazy val logger: Logger = Logger( "application.GitController" )
@@ -64,7 +64,7 @@ class GitController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        orchestrator.repositories.findByUUID( uuid ).flatMap {
+         (dal.repositories.findByUUID( uuid )).flatMap {
           case Some( repo ) =>
             val backend = repo.backend
             backends.getBackend( backend ) match {
@@ -84,7 +84,7 @@ class GitController @Inject() (
         val futur = json.validate[UUID] match {
           case JsError( e ) => Future( Accumulator.done( BadRequest( JsError.toJson( e ) ) ) )
           case JsSuccess( uuid, _ ) =>
-            orchestrator.repositories.findByUUID( uuid ).map {
+            dal.repositories.findByUUID( uuid ).map {
               case Some( repo ) =>
                 val backend = repo.backend
                 backends.getBackend( backend ) match {
@@ -107,7 +107,7 @@ class GitController @Inject() (
         val futur = json.validate[UUID] match {
           case JsError( e ) => Future( Accumulator.done( BadRequest( JsError.toJson( e ) ) ) )
           case JsSuccess( uuid, _ ) =>
-            orchestrator.repositories.findByUUID( uuid ).map {
+            dal.repositories.findByUUID( uuid ).map {
               case Some( repo ) =>
                 val backend = repo.backend
                 backends.getBackend( backend ) match {
@@ -131,14 +131,14 @@ class GitController @Inject() (
       case JsSuccess( uuid, _ ) =>
         if ( request.body.operation == "download" ) {
           val objects = request.body.objects.map( lfsObject => {
-            orchestrator.fileobjects.findByHash( lfsObject.oid ).flatMap( _.map( fo =>
-              orchestrator.fileobjectrepositories.listByFileObject( fo.uuid ).map( _.headOption.map( rep =>
+            dal.fileObjects.findByHash( lfsObject.oid ).flatMap( _.map(fo =>
+              dal.fileObjectRepositories.listByFileObject( fo.uuid ).map( _.headOption.map(rep =>
                 LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, lfsObject.oid, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
           } )
           Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
         }
         else {
-          orchestrator.repositories.findByUUID( uuid ).flatMap {
+          dal.repositories.findByUUID( uuid ).flatMap {
             case Some( repo ) => {
               val new_uuid = UUID.randomUUID()
               if ( repo.lfs_store.isEmpty ) {
@@ -148,8 +148,8 @@ class GitController @Inject() (
                       i =>
                         i.map( iid => {
                           val rep = Repository( new_uuid, Some( iid ), "automatically created bucket for LFS of " + uuid.toString, "", default_backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), None )
-                          orchestrator.repositories.insert( rep )
-                          orchestrator.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
+                          dal.repositories.insert( rep )
+                          dal.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
                         } )
                     )
                   }
@@ -157,7 +157,7 @@ class GitController @Inject() (
                 }
               }
               val objects = request.body.objects.map( lfsObject =>
-                orchestrator.fileobjects.findByHash( lfsObject.oid ) map {
+                dal.fileObjects.findByHash( lfsObject.oid ) map {
                   case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
                   case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
                 } )

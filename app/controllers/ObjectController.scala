@@ -45,7 +45,7 @@ class ObjectController @Inject() (
     config:                     play.api.Configuration,
     jwtVerifier:                JWTVerifierProvider,
     backends:                   Backends,
-    protected val orchestrator: DatabaseLayer
+    protected val dal:          DatabaseLayer
 ) extends Controller with ControllerWithBodyParseJson {
 
   lazy val logger: Logger = Logger( "application.AuthorizeController" )
@@ -57,7 +57,7 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = orchestrator.fileobjectrepositories.listByRepository( uuid )
+        val future = dal.fileObjectRepositories.listByRepository( uuid )
         future.map( seq => Json.toJson( seq.map( _._2 ) ) ).map( json => Ok( json ) )
     }
   }
@@ -70,7 +70,7 @@ class ObjectController @Inject() (
           repo_id <- JsString( id ).validate[UUID].asOpt;
           obj_id <- JsString( oid ).validate[UUID].asOpt
         ) yield {
-          orchestrator.repositories.findByUUID( repo_id ).flatMap( f => {
+          dal.repositories.findByUUID( repo_id ).flatMap(f => {
             val upload = for (
               repo <- f;
               back <- backends.getBackend( repo.backend )
@@ -79,8 +79,8 @@ class ObjectController @Inject() (
               val fo = FileObject( obj_id, "", filename, reqh.headers.get( "Content-Hash" ).getOrElse( "" ), Some( Instant.now() ), UUID.fromString( profile.getId ) )
               val fr = FileObjectRepository( obj_id, repo.uuid, Some( filename + now.toString ), Some( Instant.now() ) )
               for (
-                ifo <- orchestrator.fileobjects.insert( fo );
-                ifr <- orchestrator.fileobjectrepositories.insert( fr )
+                ifo <- dal.fileObjects.insert( fo );
+                ifr <- dal.fileObjectRepositories.insert( fr )
               ) yield {
                 if ( ifo == 1 && ifr == 1 )
                   back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString )
@@ -102,7 +102,7 @@ class ObjectController @Inject() (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
     ) yield {
-      orchestrator.fileobjectrepositories.findByPk( repo_id, obj_id ).map( _.headOption.map( f =>
+      dal.fileObjectRepositories.findByPk( repo_id, obj_id ).map( _.headOption.map(f =>
         backends.getBackend( f._1.backend ) match {
           case Some( back ) =>
             (
@@ -124,7 +124,7 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = orchestrator.fileobjects.findByUUID( uuid )
+        val future = dal.fileObjects.findByUUID( uuid )
         future map {
           case Some( obj ) => Ok( Json.toJson( obj ) )
           case None        => NotFound
@@ -137,10 +137,10 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = orchestrator.fileobjects.findByUUID( uuid )
+        val future = dal.fileObjects.findByUUID( uuid )
         future flatMap {
           case Some( _ ) =>
-            orchestrator.fileobjects.update( request.body ).map( i => if ( i == 1 ) Ok else InternalServerError )
+            dal.fileObjects.update( request.body ).map(i => if ( i == 1 ) Ok else InternalServerError )
           case None => Future.successful( NotFound )
         }
     }
