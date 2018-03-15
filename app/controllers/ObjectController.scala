@@ -31,9 +31,12 @@ import controllers.storageBackends.{ Backends, ObjectBackend }
 import models.{ FileObject, FileObjectRepository }
 import models.persistence.DatabaseLayer
 import play.api.Logger
+import play.api.db.slick.HasDatabaseConfig
 import play.api.libs.json._
+
 import scala.concurrent.duration._
 import play.api.libs.streams.Accumulator
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ Await, Future }
 
@@ -42,13 +45,17 @@ import scala.concurrent.{ Await, Future }
  */
 @Singleton
 class ObjectController @Inject() (
-    config:                     play.api.Configuration,
-    jwtVerifier:                JWTVerifierProvider,
-    backends:                   Backends,
-    protected val dal:          DatabaseLayer
-) extends Controller with ControllerWithBodyParseJson {
+    config:            play.api.Configuration,
+    jwtVerifier:       JWTVerifierProvider,
+    backends:          Backends,
+    protected val dal: DatabaseLayer
+) extends Controller with ControllerWithBodyParseJson with HasDatabaseConfig[JdbcProfile] {
+
+  override protected val dbConfig = dal.dbConfig
+  import profile.api._
 
   lazy val logger: Logger = Logger( "application.AuthorizeController" )
+  val default_backend: String = config.getString( "lfs_default_backend" ).get
 
   implicit lazy val FileObjectFormat: OFormat[FileObject] = FileObject.format
 
@@ -57,7 +64,7 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = dal.fileObjectRepositories.listByRepository( uuid )
+        val future = db.run( dal.fileObjectRepositories.listByRepository( uuid ) )
         future.map( seq => Json.toJson( seq.map( _._2 ) ) ).map( json => Ok( json ) )
     }
   }
@@ -70,23 +77,23 @@ class ObjectController @Inject() (
           repo_id <- JsString( id ).validate[UUID].asOpt;
           obj_id <- JsString( oid ).validate[UUID].asOpt
         ) yield {
-          dal.repositories.findByUUID( repo_id ).flatMap(f => {
+          db.run( dal.repositories.findByUUID( repo_id ) ).flatMap( f => {
             val upload = for (
               repo <- f;
-              back <- backends.getBackend( repo.backend )
+              back <- backends.getBackend( repo.backend.getOrElse( default_backend ) )
             ) yield {
               val filename = reqh.headers.get( "Content-Filename" ).getOrElse( oid )
               val fo = FileObject( obj_id, "", filename, reqh.headers.get( "Content-Hash" ).getOrElse( "" ), Some( Instant.now() ), UUID.fromString( profile.getId ) )
               val fr = FileObjectRepository( obj_id, repo.uuid, Some( filename + now.toString ), Some( Instant.now() ) )
-              for (
-                ifo <- dal.fileObjects.insert( fo );
+              val action = for {
+                ifo <- dal.fileObjects.insert( fo )
                 ifr <- dal.fileObjectRepositories.insert( fr )
-              ) yield {
-                if ( ifo == 1 && ifr == 1 )
+              } yield ( ifo, ifr )
+              db.run( action.transactionally ).map( inserts =>
+                if ( inserts._1 == 1 && inserts._2 == 1 )
                   back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString )
                 else
-                  Accumulator.done( BadRequest )
-              }
+                  Accumulator.done( BadRequest ) )
             }
             upload.getOrElse( Future.successful( Accumulator.done( NotFound ) ) )
           } )
@@ -102,8 +109,8 @@ class ObjectController @Inject() (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
     ) yield {
-      dal.fileObjectRepositories.findByPk( repo_id, obj_id ).map( _.headOption.map(f =>
-        backends.getBackend( f._1.backend ) match {
+      db.run( dal.fileObjectRepositories.findByPk( repo_id, obj_id ) ).map( _.headOption.map( f =>
+        backends.getBackend( f._1.backend.getOrElse( default_backend ) ) match {
           case Some( back ) =>
             (
               for ( repo_name <- f._1.iid; obj_name <- f._2._1.iid ) yield {
@@ -124,7 +131,7 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = dal.fileObjects.findByUUID( uuid )
+        val future = db.run( dal.fileObjects.findByUUID( uuid ) )
         future map {
           case Some( obj ) => Ok( Json.toJson( obj ) )
           case None        => NotFound
@@ -137,10 +144,10 @@ class ObjectController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = dal.fileObjects.findByUUID( uuid )
+        val future = db.run( dal.fileObjects.findByUUID( uuid ) )
         future flatMap {
           case Some( _ ) =>
-            dal.fileObjects.update( request.body ).map(i => if ( i == 1 ) Ok else InternalServerError )
+            db.run( dal.fileObjects.update( request.body ) ).map( i => if ( i == 1 ) Ok else InternalServerError )
           case None => Future.successful( NotFound )
         }
     }

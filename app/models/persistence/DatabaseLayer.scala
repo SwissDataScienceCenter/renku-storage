@@ -23,6 +23,7 @@ import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import slick.jdbc.meta.MTable
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
@@ -44,12 +45,23 @@ class DatabaseLayer @Inject() (
 
   lazy val logger: Logger = Logger( "application.DatabaseLayer" )
 
-  val run = db.run( schemas.reduce( _ ++ _ ).create )
-  Await.ready( run, Duration.Inf )
-  run.onFailure {
+  val runner = db.run( DBIO.seq(
+    MTable.getTables.map( tables => {
+      if ( !tables.exists( _.name.name == repositories.baseTableRow.tableName ) ) {
+        repositories.schema.create
+      }
+      if ( !tables.exists( _.name.name == fileObjects.baseTableRow.tableName ) ) {
+        fileObjects.schema.create
+      }
+      if ( !tables.exists( _.name.name == fileObjectRepositories.baseTableRow.tableName ) ) {
+        fileObjectRepositories.schema.create
+      }
+    } )
+  ) )
+  Await.ready( runner, Duration.Inf )
+  runner.onFailure {
     case NonFatal( t ) => {
       logger.error( t.getMessage )
-      System.exit( -1 )
     }
   }
 }

@@ -3,7 +3,7 @@ package models.persistence
 import java.time.Instant
 import java.util.UUID
 
-import models.FileObjectRepository
+import models.{ FileObject, FileObjectRepository, Repository }
 import slick.lifted._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,26 +37,26 @@ trait FileObjectRepositoryComponent {
   }
 
   object fileObjectRepositories extends TableQuery( new FileObjectRepositories( _ ) ) {
-    def listByRepository( id: UUID ): DBIO[Option[FileObjectRepository]] = {
+    def listByRepository( id: UUID ): DBIO[Seq[( FileObjectRepository, FileObject )]] = {
       val query = for {
         ( fileObjectRepository, fileObject ) <- fileObjectRepositories join fileObjects on ( _.fileObject === _.uuid )
         if fileObjectRepository.repository === id
       } yield ( fileObjectRepository, fileObject )
       query.result
     }
-    def listByFileObject( id: UUID ): DBIO[Option[FileObjectRepository]] = {
+    def listByFileObject( id: UUID ): DBIO[Seq[( FileObjectRepository, Repository )]] = {
       val query = for {
         ( fileObjectRepository, repository ) <- fileObjectRepositories join repositories on ( _.repository === _.uuid )
         if fileObjectRepository.fileObject === id
       } yield ( fileObjectRepository, repository )
       query.result
     }
-    def findByPk( rid: UUID, oid: UUID ): DBIO[Option[FileObjectRepository]] = {
+    def findByPk( rid: UUID, oid: UUID ): DBIO[Seq[( Repository, ( FileObjectRepository, FileObject ) )]] = {
       val query = for {
         ( fileObjects, repository ) <- repositories join ( fileObjectRepositories join fileObjects on ( _.fileObject === _.uuid ) ) on ( _.uuid === _._1.repository )
         if repository._1.repository === rid && fileObjects.uuid === oid
       } yield ( fileObjects, repository )
-     query.result
+      query.result
     }
     def all(): DBIO[Seq[FileObjectRepository]] = {
       fileObjectRepositories.result

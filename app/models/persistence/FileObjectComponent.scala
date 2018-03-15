@@ -42,7 +42,7 @@ trait FileObjectComponent {
     def findByUUID( id: UUID ): DBIO[Option[FileObject]] = {
       fileObjects.findBy( _.uuid ).extract( id ).result.headOption
     }
-    def findByHash( id: String ) = {
+    def findByHash( id: String ): DBIO[Option[FileObject]] = {
       fileObjects.findBy( _.hash ).extract( id ).result.headOption
     }
     def all(): DBIO[Seq[FileObject]] = {
@@ -52,7 +52,7 @@ trait FileObjectComponent {
       fileObjects += r
     }
     def update( r: FileObject ): DBIO[Int] = {
-      ( for {c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
+      ( for { c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
     }
   }
 

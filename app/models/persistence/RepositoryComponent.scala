@@ -39,7 +39,7 @@ trait RepositoryComponent {
     def idx1: Index = index( "IDX_REPOSITORIES_OWNER", owner, unique = false )
 
     // *
-    def * : ProvenShape[Repository] = ( uuid, iid.?, path, description, backend, created.?, owner.?, lfs_store ) <> ( ( Repository.apply _ ).tupled, Repository.unapply )
+    def * : ProvenShape[Repository] = ( uuid, iid.?, path, description, backend.?, created.?, owner.?, lfs_store ) <> ( ( Repository.apply _ ).tupled, Repository.unapply )
 
   }
 

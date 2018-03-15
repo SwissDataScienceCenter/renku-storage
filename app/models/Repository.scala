@@ -29,7 +29,7 @@ case class Repository(
     iid:         Option[String],
     description: String,
     path:        String,
-    backend:     String,
+    backend:     Option[String],
     created:     Option[Instant],
     owner:       Option[UUID],
     lfs_store:   Option[UUID]
@@ -42,7 +42,7 @@ object Repository {
     ( JsPath \ "iid" ).formatNullable[String] and
     ( JsPath \ "description" ).format[String] and
     ( JsPath \ "path" ).format[String] and
-    ( JsPath \ "backend" \ "name" ).format[String] and
+    ( JsPath \ "backend" \ "name" ).formatNullable[String] and
     ( JsPath \ "created" ).formatNullable[Instant] and
     ( JsPath \ "owner" ).formatNullable[UUID] and
     ( JsPath \ "lfs_store" ).formatNullable[UUID]
@@ -53,7 +53,7 @@ object Repository {
       iid:         Option[String],
       description: String,
       path:        String,
-      backend:     String,
+      backend:     Option[String],
       created:     Option[Instant],
       owner:       Option[UUID],
       lfs_store:   Option[UUID]
@@ -63,7 +63,7 @@ object Repository {
     )
   }
 
-  private[this] def write( request: Repository ): ( UUID, Option[String], String, String, String, Option[Instant], Option[UUID], Option[UUID] ) = {
+  private[this] def write( request: Repository ): ( UUID, Option[String], String, String, Option[String], Option[Instant], Option[UUID], Option[UUID] ) = {
     ( request.uuid, request.iid, request.description, request.path, request.backend, request.created, request.owner, request.lfs_store )
   }
 

@@ -29,9 +29,11 @@ import controllers.storageBackends.Backends
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
+import play.api.db.slick.HasDatabaseConfig
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.Future
 
@@ -40,30 +42,33 @@ import scala.concurrent.Future
  */
 @Singleton
 class RepositoryController @Inject() (
-    config:                     play.api.Configuration,
-    jwtVerifier:                JWTVerifierProvider,
-    backends:                   Backends,
-    protected val dal:          DatabaseLayer
+    config:            play.api.Configuration,
+    jwtVerifier:       JWTVerifierProvider,
+    backends:          Backends,
+    protected val dal: DatabaseLayer
 
-) extends Controller with ControllerWithBodyParseTolerantJson {
+) extends Controller with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
+
+  override protected val dbConfig = dal.dbConfig
 
   lazy val logger: Logger = Logger( "application.RepositoryController" )
+  val default_backend: String = config.getString( "lfs_default_backend" ).get
 
   implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
 
   def listRepo() = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
-    val all = dal.repositories.all()
+    val all = db.run( dal.repositories.all() )
     all.map( seq => Json.toJson( seq ) ).map( json => Ok( json ) )
   }
 
   def createRepo() = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
-    backends.getBackend( request.body.backend ) match {
+    backends.getBackend( request.body.backend.getOrElse( default_backend ) ) match {
       case Some( back ) => {
         back.createRepo( request.body ).flatMap(
           i =>
             i.map( iid => {
-              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, request.body.backend, Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), request.body.lfs_store )
-              dal.repositories.insert( rep ).map(i => if ( i == 1 ) Created else InternalServerError )
+              val rep = Repository( request.body.uuid, Some( iid ), request.body.description, request.body.path, Some( request.body.backend.getOrElse( default_backend ) ), Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), request.body.lfs_store )
+              db.run( dal.repositories.insert( rep ) ).map( i => if ( i == 1 ) Created else InternalServerError )
             } ).getOrElse( Future.successful( BadRequest ) )
         )
       }
@@ -76,7 +81,7 @@ class RepositoryController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = dal.repositories.findByUUID( uuid )
+        val future = db.run( dal.repositories.findByUUID( uuid ) )
         future map {
           case Some( repo ) => Ok( Json.toJson( repo ) )
           case None         => NotFound
@@ -89,10 +94,10 @@ class RepositoryController @Inject() (
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
-        val future = dal.repositories.findByUUID( uuid )
+        val future = db.run( dal.repositories.findByUUID( uuid ) )
         future flatMap {
           case Some( _ ) => {
-            dal.repositories.update( request.body ).map(i => if ( i == 1 ) Ok else InternalServerError )
+            db.run( dal.repositories.update( request.body ) ).map( i => if ( i == 1 ) Ok else InternalServerError )
           }
           case None => Future.successful( NotFound )
         }
@@ -102,6 +107,5 @@ class RepositoryController @Inject() (
   def repoBackends = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
     Future( Ok( Json.toJson( backends.map.keys ) ) )
   }
-
 }
 
