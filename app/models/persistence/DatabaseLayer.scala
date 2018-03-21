@@ -25,9 +25,8 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.jdbc.meta.MTable
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -45,23 +44,22 @@ class DatabaseLayer @Inject() (
 
   lazy val logger: Logger = Logger( "application.DatabaseLayer" )
 
-  val runner = db.run( DBIO.seq(
-    MTable.getTables.map( tables => {
-      if ( !tables.exists( _.name.name == repositories.baseTableRow.tableName ) ) {
-        repositories.schema.create
-      }
-      if ( !tables.exists( _.name.name == fileObjects.baseTableRow.tableName ) ) {
-        fileObjects.schema.create
-      }
-      if ( !tables.exists( _.name.name == fileObjectRepositories.baseTableRow.tableName ) ) {
-        fileObjectRepositories.schema.create
-      }
-    } )
-  ) )
-  Await.ready( runner, Duration.Inf )
-  runner.onFailure {
-    case NonFatal( t ) => {
+  val tables = List(
+    TableQuery[Repositories],
+    TableQuery[FileObjects],
+    TableQuery[FileObjectRepositories]
+  )
+
+  val f = db.run( MTable.getTables ).flatMap( v => {
+    val names = v.map( mt => mt.name.name )
+    val createIfNotExist = tables.filter( table =>
+      !names.contains( table.baseTableRow.tableName ) ).map( _.schema.create )
+    db.run( DBIO.sequence( createIfNotExist ) )
+  } )
+  Await.result( f, Duration.Inf )
+
+  f.onFailure {
+    case NonFatal( t ) =>
       logger.error( t.getMessage )
-    }
   }
 }

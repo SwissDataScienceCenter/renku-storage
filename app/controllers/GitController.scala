@@ -134,9 +134,8 @@ class GitController @Inject() (
       case JsSuccess( uuid, _ ) =>
         if ( request.body.operation == "download" ) {
           val objects = request.body.objects.map( lfsObject => {
-            db.run( dal.fileObjects.findByHash( lfsObject.oid ) ).flatMap( _.map( fo =>
-              db.run( dal.fileObjectRepositories.listByFileObject( fo.uuid ) ).map( _.headOption.map( rep =>
-                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._2.uuid + "/object/" + fo.uuid, token, lfsObject.oid, 600 ) ) ) ) ) ).getOrElse( Future.successful( None ) ) )
+            db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map( rep =>
+              LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._1.uuid + "/object/" + rep._2._2.uuid, token, lfsObject.oid, 600 ) ) ) ) )
           } )
           Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
         }
