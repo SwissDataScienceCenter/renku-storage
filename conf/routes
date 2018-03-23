@@ -4,21 +4,9 @@
 # ~~~~
 
 # Api spec
-GET     /swagger.json                             controllers.SwaggerController.getSwagger
+GET     /swagger.json                            controllers.SwaggerController.getSwagger
 
-GET     /io/read                                  controllers.IOController.objectRead
-POST    /io/write                                 controllers.IOController.objectWrite
-PUT     /io/write                                 controllers.IOController.objectWrite
-GET     /io/backends                              controllers.IOController.bucketBackends
-
-POST    /authorize/read                           controllers.AuthorizeController.objectRead
-POST    /authorize/write                          controllers.AuthorizeController.objectWrite
-POST    /authorize/create_file                    controllers.AuthorizeController.objectCreate
-POST    /authorize/create_bucket                  controllers.AuthorizeController.bucketCreate
-POST    /authorize/copy_file                      controllers.AuthorizeController.objectDuplicate
-
-PUT     /file/:id                                 controllers.FileController.fileUpdate(id: Long)
-PUT     /bucket/:id                               controllers.FileController.bucketUpdate(id: Long)
+GET     /backends                                controllers.RepositoryController.repoBackends
 
 # Git
 GET     /repo/:id.git/info/refs                  controllers.GitController.getRefs(id: String)
@@ -33,3 +21,11 @@ GET    /repo                                     controllers.RepositoryControlle
 POST   /repo                                     controllers.RepositoryController.createRepo
 GET    /repo/:id                                 controllers.RepositoryController.detailRepo(id: String)
 PUT    /repo/:id                                 controllers.RepositoryController.updateRepo(id: String)
+
+# Objects
+GET    /repo/:id/object                          controllers.ObjectController.listObject(id: String)
+POST   /repo/:id/object/:oid                     controllers.ObjectController.createObject(id: String, oid: String)
+PUT    /repo/:id/object/:oid                     controllers.ObjectController.createObject(id: String, oid: String)
+GET    /repo/:id/object/:oid                     controllers.ObjectController.downloadObject(id: String, oid: String)
+GET    /object/:id                               controllers.ObjectController.detailObject(id: String)
+PUT    /object/:id                               controllers.ObjectController.updateObject(id: String)

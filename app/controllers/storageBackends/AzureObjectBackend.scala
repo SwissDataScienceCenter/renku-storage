@@ -26,8 +26,10 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import ch.datascience.service.security.RequestWithProfile
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.blob.CloudBlobClient
+import models.Repository
 import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
@@ -37,6 +39,7 @@ import play.api.mvc._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
@@ -120,10 +123,12 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.done( NotFound )
   }
 
-  def createBucket( request: RequestHeader, bucket: String ): String = {
-    val uuid = java.util.UUID.randomUUID.toString
-    serviceClient.getContainerReference( uuid ).createIfNotExists()
-    uuid
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
+    Try {
+      val uuid = request.uuid.toString
+      serviceClient.getContainerReference( uuid ).createIfNotExists()
+      uuid
+    }.toOption
   }
 
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = false

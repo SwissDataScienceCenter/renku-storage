@@ -24,47 +24,41 @@ import java.util.UUID
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, OFormat }
 
-case class Repository(
+case class FileObject(
     uuid:        UUID,
-    iid:         Option[String],
     description: String,
-    path:        String,
-    backend:     Option[String],
+    name:        String,
+    hash:        String,
     created:     Option[Instant],
-    owner:       Option[UUID],
-    lfs_store:   Option[UUID]
+    owner:       UUID
 )
 
-object Repository {
+object FileObject {
 
-  def format: OFormat[Repository] = (
+  def format: OFormat[FileObject] = (
     ( JsPath \ "uuid" ).format[UUID] and
-    ( JsPath \ "iid" ).formatNullable[String] and
     ( JsPath \ "description" ).format[String] and
-    ( JsPath \ "path" ).format[String] and
-    ( JsPath \ "backend" \ "name" ).formatNullable[String] and
+    ( JsPath \ "name" ).format[String] and
+    ( JsPath \ "hash" ).format[String] and
     ( JsPath \ "created" ).formatNullable[Instant] and
-    ( JsPath \ "owner" ).formatNullable[UUID] and
-    ( JsPath \ "lfs_store" ).formatNullable[UUID]
+    ( JsPath \ "owner" ).format[UUID]
   )( read, write )
 
   private[this] def read(
       uuid:        UUID,
-      iid:         Option[String],
       description: String,
-      path:        String,
-      backend:     Option[String],
+      name:        String,
+      hash:        String,
       created:     Option[Instant],
-      owner:       Option[UUID],
-      lfs_store:   Option[UUID]
-  ): Repository = {
-    Repository(
-      uuid, iid, description, path, backend, created, owner, lfs_store
+      owner:       UUID
+  ): FileObject = {
+    FileObject(
+      uuid, description, name, hash, created, owner
     )
   }
 
-  private[this] def write( request: Repository ): ( UUID, Option[String], String, String, Option[String], Option[Instant], Option[UUID], Option[UUID] ) = {
-    ( request.uuid, request.iid, request.description, request.path, request.backend, request.created, request.owner, request.lfs_store )
+  private[this] def write( request: FileObject ): ( UUID, String, String, String, Option[Instant], UUID ) = {
+    ( request.uuid, request.description, request.name, request.hash, request.created, request.owner )
   }
 
 }
