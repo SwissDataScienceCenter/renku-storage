@@ -13,15 +13,17 @@ produces:
 consumes:
   - application/json
 tags:
-- name: 'Storage-Authorize'
-  description: 'Request access to file resources'
-- name: 'Storage-IO'
-  description: 'Perform I/O operations'
+- name: 'Storage-Backend'
+  description: 'Information about the storage backends'
+- name: 'Storage-Object'
+  description: 'Manipulating file objects'
+- name: 'Storage-Repository'
+  description: 'Repositories can be for objects or git'
 paths:
-  /io/backends:
+  /backends:
     get:
       tags:
-      - 'Storage-IO'
+      - 'Storage-Backend'
       summary: 'Backend list'
       description: 'List all available backends'
       responses:
@@ -31,42 +33,56 @@ paths:
       - token_auth:
         - 'profile'
 
-  /io/read:
+  /repo/{uuid}/object/{oid}:
     get:
       tags:
-      - 'Storage-IO'
-      summary: 'Read file'
-      description: 'Read file specified in authorization bearer token'
+      - 'Storage-Object'
+      summary: 'Download object'
+      description: 'Download the given object, support for Range header'
       parameters:
-      - name: Authorization
-        in: header
-        description: 'Bearer token (from authorization request)'
+      - description: uuid of the repository
+        in: path
+        name: uuid
         required: true
         type: string
-        example: "Bearer "
+      - description: object uuid
+        in: path
+        name: oid
+        required: true
+        type: string
       responses:
         200:
-          description: 'Successful read'
-
-  /io/write:
-    post:
+          description: 'Successful download'
+      security:
+      - token_auth:
+        - 'profile'
+    put:
       tags:
-      - 'Storage-IO'
-      summary: 'Write file'
-      description: 'Read file specified in authorization bearer token'
+      - 'Storage-Object'
+      summary: 'Upload object'
+      description: 'Upload the given object'
       consumes:
       - application/octet-stream
       - text/plain
       parameters:
-      - name: Authorization
-        in: header
-        description: |
-          Bearer token (from authorization request)
-
-          Note: any MIME type can be used
+      - description: uuid of the repository
+        in: path
+        name: uuid
         required: true
         type: string
-        example: "Bearer "
+      - description: object uuid
+        in: path
+        name: oid
+        required: true
+        type: string
+      - name: Content-Filename
+        in: header
+        description: 'Friendly name for the file, otherwise uses the oid'
+        type: string
+      - name: Content-Hash
+        in: header
+        description: 'sha256 as given by git LFS oid, used for verifying the uploaded content'
+        type: string
       - name: body
         in: body
         description: 'File content'
@@ -76,178 +92,114 @@ paths:
           format: binary
       responses:
         201:
-          description: 'Successful write'
-
-  /authorize/read:
+          description: 'Successful upload'
+      security:
+      - token_auth:
+        - 'profile'
     post:
       tags:
-      - 'Storage-Authorize'
-      summary: 'Request read access to a file'
-      description: 'Request read access to a file and retrieve access token for I/O calls'
+      - 'Storage-Object'
+      summary: 'Upload object'
+      description: 'Upload the given object'
+      consumes:
+      - application/octet-stream
+      - text/plain
       parameters:
+      - description: uuid of the repository
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: object uuid
+        in: path
+        name: oid
+        required: true
+        type: string
+      - name: Content-Filename
+        in: header
+        description: 'Friendly name for the file, otherwise uses the oid'
+        type: string
+      - name: Content-Hash
+        in: header
+        description: 'sha256 as given by git LFS oid, used for verifying the uploaded content'
+        type: string
       - name: body
         in: body
-        description: 'Read file request object'
+        description: 'File content'
         required: true
         schema:
-          $ref: '#/definitions/ReadFileRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
+          type: string
+          format: binary
+      responses:
+        201:
+          description: 'Successful upload'
+      security:
+      - token_auth:
+        - 'profile'
+
+  /repo/{uuid}/object:
+    get:
+      tags:
+      - 'Storage-Object'
+      summary: 'Get the list of objects'
+      description: 'Get the list of objects in the given repository'
+      parameters:
+      - description: uuid of the repository
+        in: path
+        name: uuid
+        required: true
+        type: string
       responses:
         200:
           description: ok
           schema:
-            $ref: '#/definitions/AccessGrant'
+            type: array
+            items:
+              $ref: '#/definitions/FileObject'
       security:
       - token_auth:
         - 'profile'
 
-  /authorize/write:
-    post:
+  /object/{uuid}:
+    get:
       tags:
-      - 'Storage-Authorize'
-      summary: 'Request write access to a file'
-      description: 'Request write access to a file and retrieve access token for I/O calls'
+      - 'Storage-Object'
+      summary: 'Get the object'
+      description: 'Get the object metadata'
       parameters:
-      - name: body
-        in: body
-        description: 'Write file request object'
+      - description: uuid of the object
+        in: path
+        name: uuid
         required: true
-        schema:
-          $ref: '#/definitions/WriteFileRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
+        type: string
       responses:
         200:
           description: ok
           schema:
-            $ref: '#/definitions/AccessGrant'
+            $ref: '#/definitions/FileObject'
       security:
       - token_auth:
         - 'profile'
-
-  /authorize/create_bucket:
-    post:
+    put:
       tags:
-      - 'Storage-Authorize'
-      summary: 'Request creation of a bucket'
-      description: 'Request the creation of a new bucket on the given backend'
+      - 'Storage-Object'
+      summary: 'Update object'
+      description: 'Update object metadata'
       parameters:
+      - description: uuid of the object
+        in: path
+        name: uuid
+        required: true
+        type: string
       - name: body
         in: body
-        description: 'Create bucket request object'
+        description: 'FileObject object'
         required: true
         schema:
-          $ref: '#/definitions/CreateBucketRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
-      - name: Renga-Projects-Project
-        in: header
-        description: 'Project id, passed to make this bucket part of a project'
-        type: integer
-        format: int64
+          $ref: '#/definitions/FileObject'
       responses:
-        201:
+        200:
           description: ok
-          schema:
-            type: object
-            required:
-            - id
-            properties:
-              id:
-                type: integer
-                format: int64
-                description: 'Id of the created bucket'
-      security:
-      - token_auth:
-        - 'profile'
-
-  /authorize/create_file:
-    post:
-      tags:
-      - 'Storage-Authorize'
-      summary: 'Request creation of a new file'
-      description: 'Request the creation of a new file in the given bucket and retrieve access token for I/O calls'
-      parameters:
-      - name: body
-        in: body
-        description: 'Create file request object'
-        required: true
-        schema:
-          $ref: '#/definitions/CreateFileRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
-      - name: Renga-Projects-Project
-        in: header
-        description: 'Project id, passed to make this file explicitly part of a project'
-        type: integer
-        format: int64
-      responses:
-        201:
-          description: ok
-          schema:
-            type: object
-            allOf:
-            - $ref: '#/definitions/AccessGrant'
-            - type: object
-              required:
-              - id
-              properties:
-                id:
-                  type: integer
-                  format: int64
-                  description: 'Id of the created bucket'
-      security:
-      - token_auth:
-        - 'profile'
-
-  /authorize/copy_file:
-    post:
-      tags:
-      - 'Storage-Authorize'
-      summary: 'Request creation of a copy of the given file'
-      description: 'Request the creation of a copy of the given file in the given bucket (or same bucket if not provided)'
-      parameters:
-      - name: body
-        in: body
-        description: 'Copy file request object'
-        required: true
-        schema:
-          $ref: '#/definitions/CopyFileRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
-      - name: Renga-Projects-Project
-        in: header
-        description: 'Project id, passed to make this file explicitly part of a project'
-        type: integer
-        format: int64
-      responses:
-        201:
-          description: ok
-          schema:
-            type: object
-            required:
-            - id
-            properties:
-              id:
-                type: integer
-                format: int64
-                description: 'Id of the created file'
       security:
       - token_auth:
         - 'profile'
@@ -291,8 +243,8 @@ paths:
     get:
       tags:
       - 'Storage-Repository'
-      summary: 'Get the list of repositories'
-      description: 'Get the list of repositories'
+      summary: 'Get a repository'
+      description: 'Get a repository'
       parameters:
       - description: uuid of the repository
         in: path
@@ -310,8 +262,8 @@ paths:
     put:
       tags:
       - 'Storage-Repository'
-      summary: 'Create a new repositories'
-      description: 'Create a new repositories'
+      summary: 'Update a repository'
+      description: 'Update a repository'
       parameters:
       - description: uuid of the repository
         in: path
@@ -331,174 +283,8 @@ paths:
       - token_auth:
         - 'profile'
 
-  /file/{resource_id}:
-    put:
-      tags:
-      - 'Storage-Authorize'
-      summary: 'Request to modify file metadata'
-      description: 'Request the modification of `resource:file_name` and/or `annotation:label` metadata descriptors'
-      parameters:
-      - description: ID of file to modify
-        in: path
-        name: resource_id
-        required: true
-        type: string
-      - name: body
-        in: body
-        description: 'File update request object'
-        required: true
-        schema:
-          $ref: '#/definitions/FileUpdateRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
-      - name: Renga-Projects-Project
-        in: header
-        description: 'Project id, passed to make this file explicitly part of a project'
-        type: integer
-        format: int64
-      responses:
-        200:
-          description: ok
-          schema:
-            type: object
-        404:
-          description: File not found
-      security:
-      - token_auth:
-        - 'profile'
-  /bucket/{resource_id}:
-    put:
-      tags:
-      - 'Storage-Authorize'
-      summary: 'Request to modify bucket metadata'
-      description: 'Request the modification of `resource:bucket_name` and/or `annotation:label` metadata descriptors'
-      parameters:
-      - description: ID of bucket to modify
-        in: path
-        name: resource_id
-        required: true
-        type: string
-      - name: body
-        in: body
-        description: 'File update request object'
-        required: true
-        schema:
-          $ref: '#/definitions/FileUpdateRequest'
-      - name: Renga-Deployer-Execution
-        in: header
-        description: 'Deployment id, passed if request made from deployed application'
-        type: integer
-        format: int64
-      - name: Renga-Projects-Project
-        in: header
-        description: 'Project id, passed to make this file explicitly part of a project'
-        type: integer
-        format: int64
-      responses:
-        200:
-          description: ok
-          schema:
-            type: object
-        404:
-          description: Bucket not found
-      security:
-      - token_auth:
-        - 'profile'
 definitions:
-  ReadFileRequest:
-    type: object
-    required:
-      - resource_id
-      - request_type
-    properties:
-      resource_id:
-        type: integer
-        format: int64
-      request_type:
-        type: string
-        enum:
-          - "read_file"
-  WriteFileRequest:
-    type: object
-    required:
-      - resource_id
-      - request_type
-    properties:
-      resource_id:
-        type: integer
-        format: int64
-      request_type:
-        type: string
-        enum:
-          - "write_file"
-  CreateBucketRequest:
-    type: object
-    required:
-      - name
-      - backend
-      - request_type
-    properties:
-      name:
-        type: string
-      backend:
-        type: string
-        enum:
-          - "local"
-          - "swift"
-      request_type:
-        type: string
-        enum:
-          - "create_bucket"
-      labels:
-        type: array
-        items:
-          type: string
-  CreateFileRequest:
-    type: object
-    required:
-      - bucket_id
-      - file_name
-      - request_type
-    properties:
-      bucket_id:
-        type: integer
-        format: int64
-      file_name:
-        type: string
-      request_type:
-        type: string
-        enum:
-          - "create_file"
-      labels:
-        type: array
-        items:
-          type: string
-  CopyFileRequest:
-      type: object
-      required:
-        - resource_id
-        - file_name
-        - request_type
-      properties:
-        resource_id:
-          type: integer
-          format: int64
-        bucket_id:
-          type: integer
-          format: int64
-        file_name:
-          type: string
-        request_type:
-          type: string
-          enum:
-            - "copy_file"
-        labels:
-          type: array
-          items:
-            type: string
+
   Repository:
     type: object
     required:
@@ -522,23 +308,29 @@ definitions:
         properties:
           name:
             type: string
-  FileUpdateRequest:
-    type: object
-    properties:
-      file_name:
+      owner:
         type: string
-      labels:
-        type: array
-        items:
-          type: string
-  AccessGrant:
+      lfs_store:
+        type: string
+  FileObject:
     type: object
     required:
-    - access_token
+      - uuid
+      - description
+      - name
     properties:
-      access_token:
+      uuid:
         type: string
-        description: Authorization token
+      hash:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      created:
+        type: string
+      owner:
+        type: string
 securityDefinitions:
   token_auth:
     type: "oauth2"

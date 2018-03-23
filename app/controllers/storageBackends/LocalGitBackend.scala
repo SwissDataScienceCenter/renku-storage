@@ -208,15 +208,15 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
     }
   }
 
-  override def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = Future {
-    if ( request.body.path.contains( ".." ) ) {
+  override def createRepo( request: Repository ): Future[Option[String]] = Future {
+    if ( request.path.contains( ".." ) ) {
       None
     }
     else {
-      val f = new File( rootDir, request.body.path )
+      val f = new File( rootDir, request.path )
       f.mkdirs()
       FileRepositoryBuilder.create( f ).create( true )
-      Some( request.body.path )
+      Some( request.path )
     }
   }
 }

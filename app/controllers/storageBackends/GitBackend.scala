@@ -31,7 +31,6 @@ import scala.concurrent.Future
  */
 trait GitBackend extends StorageBackend {
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]]
   def getRefs( request: RequestHeader, url: String, user: String ): Future[Result]
   def upload( req: RequestHeader, url: String, user: String ): Accumulator[ByteString, Result]
   def receive( req: RequestHeader, url: String, user: String ): Accumulator[ByteString, Result]

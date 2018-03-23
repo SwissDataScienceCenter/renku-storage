@@ -26,6 +26,8 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import ch.datascience.service.security.RequestWithProfile
+import models.Repository
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
@@ -100,6 +102,13 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
   def createBucket( request: RequestHeader, bucket: String ): String = {
     new File( rootDir, bucket ).mkdirs()
     bucket
+  }
+
+  def createRepo( request: Repository ): Future[Option[String]] = Future {
+    Try {
+      new File( rootDir, request.path ).mkdirs()
+      request.path
+    }.toOption
   }
 
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = Try {
