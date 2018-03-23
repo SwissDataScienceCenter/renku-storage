@@ -50,15 +50,15 @@ class DatabaseLayer @Inject() (
     TableQuery[FileObjectRepositories]
   )
 
-  val f = db.run( MTable.getTables ).flatMap( v => {
+  val init = db.run( MTable.getTables ).flatMap( v => {
     val names = v.map( mt => mt.name.name )
     val createIfNotExist = tables.filter( table =>
       !names.contains( table.baseTableRow.tableName ) ).map( _.schema.create )
     db.run( DBIO.sequence( createIfNotExist ) )
   } )
-  Await.result( f, Duration.Inf )
+  Await.result( init, Duration.Inf )
 
-  f.onFailure {
+  init.onFailure {
     case NonFatal( t ) =>
       logger.error( t.getMessage )
   }
