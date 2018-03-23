@@ -106,9 +106,9 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
     }
   }
 
-  def createRepo( request: RequestWithProfile[Repository] ): Future[Option[String]] = {
+  def createRepo( request: Repository ): Future[Option[String]] = {
     val client = wsclient.url( repo_URL + "/api/v4/projects" ).withHeaders( "Private-Token" -> pass, "Content-Type" -> "application/json" ).withRequestTimeout( 10000.millis )
-    client.post( Json.stringify( Json.obj( "path" -> request.body.path, "description" -> request.body.description ) ) ).map(
+    client.post( Json.stringify( Json.obj( "path" -> request.path, "description" -> request.description, "lfs_enabled" -> false ) ) ).map(
       result => {
         ( result.json \ "id" ).toOption.map( i => i.toString() )
       }

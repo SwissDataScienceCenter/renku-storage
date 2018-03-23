@@ -50,3 +50,4 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 | GITLAB_USER |  | the gitlab user |
 | GITLAB_PASS |  | the gitlab user's private token |
 | RENGA_ENDPOINT | http://localhost | the url to reach renga from the users perspective |
+| RENGA_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |
