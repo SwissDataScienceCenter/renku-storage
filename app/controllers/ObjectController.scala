@@ -113,7 +113,7 @@ class ObjectController @Inject() (
         backends.getBackend( f._1.backend.getOrElse( default_backend ) ) match {
           case Some( back ) =>
             (
-              for ( repo_name <- f._1.iid; obj_name <- f._2._1.iid ) yield {
+              for ( repo_name <- f._1.iid; obj_name <- f._2.iid ) yield {
                 back.asInstanceOf[ObjectBackend].read( request, repo_name, obj_name ) match {
                   case Some( dataContent ) => Ok.chunked( dataContent )
                   case None                => NotFound

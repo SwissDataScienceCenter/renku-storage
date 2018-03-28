@@ -23,7 +23,7 @@ import play.api.libs.json.{ JsPath, OFormat }
 
 case class LFSUpload(
     href:       String,
-    token:      Map[String, String],
+    headers:    Map[String, String],
     expiration: Long
 )
 
@@ -37,16 +37,16 @@ object LFSUpload {
 
   private[this] def read(
       href:       String,
-      token:      Map[String, String],
+      headers:    Map[String, String],
       expiration: Long
   ): LFSUpload = {
     LFSUpload(
-      href, token, expiration
+      href, headers, expiration
     )
   }
 
   private[this] def write( request: LFSUpload ): ( String, Map[String, String], Long ) = {
-    ( request.href, request.token, request.expiration )
+    ( request.href, request.headers, request.expiration )
   }
 
 }
