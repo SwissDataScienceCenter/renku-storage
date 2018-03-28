@@ -109,19 +109,22 @@ class ObjectController @Inject() (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
     ) yield {
-      db.run( dal.fileObjectRepositories.findByPk( repo_id, obj_id ) ).map( _.headOption.map( f =>
-        backends.getBackend( f._1.backend.getOrElse( default_backend ) ) match {
-          case Some( back ) =>
-            (
-              for ( repo_name <- f._1.iid; obj_name <- f._2.iid ) yield {
-                back.asInstanceOf[ObjectBackend].read( request, repo_name, obj_name ) match {
-                  case Some( dataContent ) => Ok.chunked( dataContent )
-                  case None                => NotFound
+      db.run( dal.fileObjectRepositories.findByPk( repo_id, obj_id ) ).map( _.headOption.map {
+        case ( repository, fileObject, _ ) => {
+          backends.getBackend( repository.backend.getOrElse( default_backend ) ) match {
+            case Some( back ) =>
+              (
+                for ( repo_name <- repository.iid; obj_name <- fileObject.iid ) yield {
+                  back.asInstanceOf[ObjectBackend].read( request, repo_name, obj_name ) match {
+                    case Some( dataContent ) => Ok.chunked( dataContent )
+                    case None                => NotFound
+                  }
                 }
-              }
-            ).getOrElse( NotFound )
-          case None => BadRequest( s"The backend ${f._1.backend} is not enabled." )
-        } ).getOrElse( NotFound ) )
+              ).getOrElse( NotFound )
+            case None => BadRequest( s"The backend ${repository.backend} is not enabled." )
+          }
+        }
+      }.getOrElse( NotFound ) )
     }
     valid.getOrElse( Future.successful( BadRequest ) )
   }
