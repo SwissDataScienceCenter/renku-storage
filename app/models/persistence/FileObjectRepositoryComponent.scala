@@ -61,7 +61,7 @@ trait FileObjectRepositoryComponent {
     def findByPk( rid: UUID, oid: UUID ): DBIO[Seq[( Repository, ( FileObjectRepository, FileObject ) )]] = {
       val query = for {
         ( fileObjects, repository ) <- repositories join ( fileObjectRepositories join fileObjects on ( _.fileObject === _.uuid ) ) on ( _.uuid === _._1.repository )
-        if repository._1.repository === rid && fileObjects.uuid === oid
+        if repository._1.repository === rid && repository._2.uuid === oid
       } yield ( fileObjects, repository )
       query.result
     }

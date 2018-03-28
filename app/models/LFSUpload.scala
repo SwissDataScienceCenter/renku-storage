@@ -23,7 +23,7 @@ import play.api.libs.json.{ JsPath, OFormat }
 
 case class LFSUpload(
     href:       String,
-    token:      String,
+    token:      Map[String, String],
     expiration: Long
 )
 
@@ -31,13 +31,13 @@ object LFSUpload {
 
   def format: OFormat[LFSUpload] = (
     ( JsPath \ "upload" \ "href" ).format[String] and
-    ( JsPath \ "upload" \ "header" \ "Authorization" ).format[String] and
+    ( JsPath \ "upload" \ "header" ).format[Map[String, String]] and
     ( JsPath \ "upload" \ "expires_in" ).format[Long]
   )( read, write )
 
   private[this] def read(
       href:       String,
-      token:      String,
+      token:      Map[String, String],
       expiration: Long
   ): LFSUpload = {
     LFSUpload(
@@ -45,7 +45,7 @@ object LFSUpload {
     )
   }
 
-  private[this] def write( request: LFSUpload ): ( String, String, Long ) = {
+  private[this] def write( request: LFSUpload ): ( String, Map[String, String], Long ) = {
     ( request.href, request.token, request.expiration )
   }
 

@@ -161,7 +161,7 @@ class GitController @Inject() (
               val objects = request.body.objects.map( lfsObject =>
                 db.run( dal.fileObjects.findByHash( lfsObject.oid ) ) map {
                   case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
+                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> token, "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
                 } )
               Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
             }
