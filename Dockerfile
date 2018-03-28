@@ -1,0 +1,33 @@
+FROM openjdk:8 as builder
+
+RUN set -e \
+  ; echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list \
+  ; apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 \
+  ; apt-get update \
+  ; apt-get install sbt \
+  ;
+
+COPY . /work
+WORKDIR /work
+
+RUN set -e \
+  ; sbt "docker:stage" \
+  ;
+
+FROM openjdk:8-jre-alpine
+
+WORKDIR /opt/docker
+COPY --from=builder /work/target/docker/stage/opt/docker .
+
+RUN set -e \
+  ; apk add --no-cache bash \
+  ; chown -R daemon:daemon . \
+  ; mkdir -p /data \
+  ; chown -R daemon:daemon /data \
+  ; chmod +x bin/docker-entrypoint.sh \
+  ;
+
+VOLUME ["/data"]
+
+ENTRYPOINT ["bin/docker-entrypoint.sh", "bin/renga-storage"]
+CMD []
