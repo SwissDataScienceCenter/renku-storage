@@ -72,8 +72,26 @@ trait FileObjectRepositoryComponent {
       } yield ( re, fr, fo ) )
     def findByPk( rid: UUID, oid: UUID ): DBIO[Seq[( Repository, FileObjectRepository, FileObject )]] = compiledFindByPk( rid, oid ).result
 
-    def all(): DBIO[Seq[FileObjectRepository]] = {
-      fileObjectRepositories.result
+    /*private val compiledAll = Compiled(
+      for {
+        fo <- fileObjects
+        fr <- fileObjectRepositories
+        re <- repositories
+        if fr.fileObject === fo.uuid && fr.repository === re.uuid
+      } yield ( re, fr, fo )
+    )
+
+    def all(): DBIO[Seq[( Repository, FileObjectRepository, FileObject )]] = compiledAll.result
+    */
+
+    def all(): DBIO[Seq[( Repository, FileObjectRepository, FileObject )]] = {
+      val query = for {
+        fo <- fileObjects
+        fr <- fileObjectRepositories
+        re <- repositories
+        if fr.fileObject === fo.uuid && fr.repository === re.uuid
+      } yield ( re, fr, fo )
+      query.result
     }
 
     def insert( r: FileObjectRepository ): DBIO[Int] = {

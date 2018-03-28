@@ -20,15 +20,15 @@ package controllers
 
 import java.time.Instant
 import java.util.UUID
-import javax.inject.{ Inject, Singleton }
 
+import javax.inject.{ Inject, Singleton }
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import ch.datascience.service.utils.ControllerWithBodyParseJson
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{ BodyParsers, Controller, EssentialAction }
 import controllers.storageBackends.{ Backends, ObjectBackend }
-import models.{ FileObject, FileObjectRepository }
+import models.{ FileObject, FileObjectRepository, Repository }
 import models.persistence.DatabaseLayer
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
@@ -58,6 +58,8 @@ class ObjectController @Inject() (
   val default_backend: String = config.getString( "lfs_default_backend" ).get
 
   implicit lazy val FileObjectFormat: OFormat[FileObject] = FileObject.format
+  implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
+  implicit lazy val FileObjectRepositoryFormat: OFormat[FileObjectRepository] = FileObjectRepository.format
 
   def listObject( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
     val json = JsString( id )
@@ -67,6 +69,22 @@ class ObjectController @Inject() (
         val future = db.run( dal.fileObjectRepositories.listByRepository( uuid ) )
         future.map( seq => Json.toJson( seq.map( _._2 ) ) ).map( json => Ok( json ) )
     }
+  }
+
+  def listAllObject( hash: Option[String] ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+    db.run( hash match {
+      case Some( hashValue ) =>
+        dal.fileObjectRepositories.listByFileObjectHash( hashValue )
+      case None =>
+        dal.fileObjectRepositories.all()
+    } ).map( seq => Json.toJson( seq.map {
+      case ( repository, fileObjectrepository, fielObject ) =>
+        Map(
+          "repository" -> Json.toJson( repository ),
+          "file_object_repository" -> Json.toJson( fileObjectrepository ),
+          "file_object" -> Json.toJson( fielObject )
+        )
+    } ) ).map( json => Ok( json ) )
   }
 
   def createObject( id: String, oid: String ) = EssentialAction { reqh =>
