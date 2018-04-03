@@ -29,3 +29,6 @@ PUT    /repo/:id/object/:oid                     controllers.ObjectController.cr
 GET    /repo/:id/object/:oid                     controllers.ObjectController.downloadObject(id: String, oid: String)
 GET    /object/:id                               controllers.ObjectController.detailObject(id: String)
 PUT    /object/:id                               controllers.ObjectController.updateObject(id: String)
+
+# Health Check
+GET    /ping                                     controllers.HealthCheckController.ping

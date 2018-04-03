@@ -7,12 +7,19 @@ RUN set -e \
   ; apt-get install sbt \
   ;
 
-COPY . /work
 WORKDIR /work
 
+COPY project project
+COPY build.sbt .
 RUN set -e \
   ; sbt "docker:stage" \
   ;
+
+COPY . .
+RUN set -e \
+  ; sbt "docker:stage" \
+  ;
+
 
 FROM openjdk:8-jre-alpine
 
@@ -31,3 +38,5 @@ VOLUME ["/data"]
 
 ENTRYPOINT ["bin/docker-entrypoint.sh", "bin/renga-storage"]
 CMD []
+
+HEALTHCHECK CMD ["bin/renga-storage", "-main", "controllers.HealthCheckController"]
