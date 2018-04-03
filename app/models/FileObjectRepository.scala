@@ -21,9 +21,38 @@ package models
 import java.time.Instant
 import java.util.UUID
 
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{ JsPath, OFormat }
+
 case class FileObjectRepository(
     fileObject: UUID,
     repository: UUID,
     iid:        Option[String],
     created:    Option[Instant]
 )
+
+object FileObjectRepository {
+
+  def format: OFormat[FileObjectRepository] = (
+    ( JsPath \ "object_uuid" ).format[UUID] and
+    ( JsPath \ "repo_uuid" ).format[UUID] and
+    ( JsPath \ "backend" ).formatNullable[String] and
+    ( JsPath \ "created" ).formatNullable[Instant]
+  )( read, write )
+
+  private[this] def read(
+      fileObject: UUID,
+      repository: UUID,
+      iid:        Option[String],
+      created:    Option[Instant]
+  ): FileObjectRepository = {
+    FileObjectRepository(
+      fileObject, repository, iid, created
+    )
+  }
+
+  private[this] def write( request: FileObjectRepository ): ( UUID, UUID, Option[String], Option[Instant] ) = {
+    ( request.fileObject, request.repository, request.iid, request.created )
+  }
+
+}
