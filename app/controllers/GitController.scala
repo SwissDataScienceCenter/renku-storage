@@ -134,8 +134,10 @@ class GitController @Inject() (
       case JsSuccess( uuid, _ ) =>
         if ( request.body.operation == "download" ) {
           val objects = request.body.objects.map( lfsObject => {
-            db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map( rep =>
-              LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + rep._1.uuid + "/object/" + rep._2._2.uuid, token, lfsObject.oid, 600 ) ) ) ) )
+            db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map {
+              case ( repository, _, fileObject ) =>
+                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + repository.uuid + "/object/" + fileObject.uuid, token, lfsObject.oid, 600 ) ) )
+            } )
           } )
           Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
         }
@@ -161,7 +163,7 @@ class GitController @Inject() (
               val objects = request.body.objects.map( lfsObject =>
                 db.run( dal.fileObjects.findByHash( lfsObject.oid ) ) map {
                   case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), token, 600 ) ) ) )
+                  case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> token, "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
                 } )
               Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
             }
