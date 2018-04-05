@@ -83,7 +83,10 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
           val obj = container.getObject( name )
-          val inputStream = source.runWith(
+          val inputStream = source.alsoToMat(new ChecksumSink())( (n, checksum) => {
+            checksum.map(println(_))
+          }
+          ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           obj.uploadObject( inputStream )
