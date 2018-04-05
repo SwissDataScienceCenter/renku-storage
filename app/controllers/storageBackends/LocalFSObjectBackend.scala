@@ -72,7 +72,7 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
     }.get
   }
 
-  def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
@@ -80,10 +80,7 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
       new File( fullPath ).getParentFile.mkdirs()
       val os = new FileOutputStream( fullPath )
       val sink = StreamConverters.fromOutputStream( () => os )
-      val r = source.alsoToMat(new ChecksumSink())( (n, checksum) => {
-        checksum.map(println(_))
-      }
-      ).runWith( sink )
+      val r = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith( sink )
       r.map( _ => Created )
     }
   }
