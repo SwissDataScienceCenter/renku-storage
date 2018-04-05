@@ -73,7 +73,10 @@ class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemPro
     if ( minioClient.bucketExists( bucket ) )
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
-          val inputStream = source.runWith(
+          val inputStream = source.alsoToMat(new ChecksumSink())( (n, checksum) => {
+            checksum.map(println(_))
+          }
+          ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           minioClient.putObject( bucket, name, inputStream, size.get.toLong, "application/octet-stream" )

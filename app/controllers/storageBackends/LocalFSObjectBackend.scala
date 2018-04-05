@@ -80,7 +80,10 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
       new File( fullPath ).getParentFile.mkdirs()
       val os = new FileOutputStream( fullPath )
       val sink = StreamConverters.fromOutputStream( () => os )
-      val r = source.runWith( sink )
+      val r = source.alsoToMat(new ChecksumSink())( (n, checksum) => {
+        checksum.map(println(_))
+      }
+      ).runWith( sink )
       r.map( _ => Created )
     }
   }
