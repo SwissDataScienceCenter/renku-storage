@@ -18,14 +18,14 @@
 
 package controllers.storageBackends
 
-import java.io.{PipedInputStream, PipedOutputStream}
+import java.io.{ PipedInputStream, PipedOutputStream }
 import java.util.concurrent.TimeUnit
 
 import javax.inject._
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.javadsl.Keep
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import ch.datascience.service.security.RequestWithProfile
 import com.microsoft.azure.storage._
@@ -103,7 +103,7 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
     }
   }
 
-  def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     val container = serviceClient.getContainerReference( bucket )
@@ -111,15 +111,12 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
     if ( container.exists() ) {
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
-          val inputStream = source.alsoToMat(new ChecksumSink())( (n, checksum) => {
-                checksum.map(println(_))
-            }
-          ).runWith(
-            StreamConverters.asInputStream(FiniteDuration(3, TimeUnit.SECONDS))
+          val inputStream = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith(
+            StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
-          val blob = container.getBlockBlobReference(name)
+          val blob = container.getBlockBlobReference( name )
           // for some reason the declared size cannot be exactly the size of the input !!
-          blob.upload(inputStream, size.map(_.toLong.+(1)).getOrElse(-1))
+          blob.upload( inputStream, size.map( _.toLong.+( 1 ) ).getOrElse( -1 ) )
           inputStream.close()
           Created
         }

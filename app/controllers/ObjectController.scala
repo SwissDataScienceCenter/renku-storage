@@ -109,7 +109,7 @@ class ObjectController @Inject() (
               } yield ( ifo, ifr )
               db.run( action.transactionally ).map( inserts =>
                 if ( inserts._1 == 1 && inserts._2 == 1 )
-                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString )
+                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, reqh.headers.get( "Content-Hash" ) )
                 else
                   Accumulator.done( BadRequest ) )
             }
