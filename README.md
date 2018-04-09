@@ -8,19 +8,29 @@ Documentation: https://renga.readthedocs.io/en/latest/developer/services/storage
 
 Support for git backends has been added. LFS is managed by the service and delegated to the given object store backend.
 
+## Building the Docker image
+The Dockerfile is self sufficient to build the Docker image. You can simply run:
+```bash
+docker build -t <tag> .
+```
+The first build can take more than 5 minutes as maven artefacts are downloaded but subsequent builds should use cached layers.
+
+Alternatively, you can use the Makefile to get git branch and commit based tags:
+```bash
+make
+> Successfully built cb53b5cd36eb
+> Successfully tagged rengahub/renga-storage:08a076cf5c49
+> docker tag rengahub/renga-storage:08a076cf5c49 rengahub/renga-storage:development
+```
+Two tags were defined: `rengahub/renga-storage:08a076cf5c49` and `rengahub/renga-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
+
 ## Development
 Building is done using [sbt](http://www.scala-sbt.org/).
 
-To create a docker image:
+To run tests:
 ```bash
-sbt docker:publishLocal
-[...]
-[info] Successfully tagged renga-storage:<version>
-[info] Built image renga-storage:<version>
+sbt test
 ```
-
-Image name and tag can be manipulated with sbt settings, see
-[sbt-native-packager](https://sbt-native-packager.readthedocs.io/en/v1.2.2/formats/docker.html).
 
 For local development, it is recommended to use the local storage backend
 by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
