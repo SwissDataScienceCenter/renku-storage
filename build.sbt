@@ -58,22 +58,6 @@ javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 import com.typesafe.sbt.packager.docker._
 lazy val newEntrypoint = "bin/docker-entrypoint.sh"
 mappings in Docker += (file(".") / "docker-entrypoint.sh") -> ((defaultLinuxInstallLocation in Docker).value + s"/$newEntrypoint")
-dockerBaseImage := "openjdk:8-jre-alpine"
-dockerExposedVolumes += "/data"
-dockerCommands := Seq(
-  Cmd("FROM", dockerBaseImage.value),
-  ExecCmd("RUN", "apk", "add", "--no-cache", "bash"),
-  Cmd("WORKDIR", (defaultLinuxInstallLocation in Docker).value),
-  Cmd("ADD", "opt", "/opt"),
-  ExecCmd("RUN", "chown", "-R", "daemon:daemon", "."),
-  ExecCmd("RUN", "mkdir" +: "-p" +: dockerExposedVolumes.value: _*),
-  ExecCmd("RUN", "chown" +: "-R" +: "daemon:daemon" +: dockerExposedVolumes.value: _*),
-  ExecCmd("VOLUME", dockerExposedVolumes.value: _*),
-  ExecCmd("RUN", "chmod", "+x", newEntrypoint),
-  ExecCmd("ENTRYPOINT", newEntrypoint +: dockerEntrypoint.value: _*),
-  ExecCmd("CMD")
-)
-
 
 // Source code formatting
 import scalariform.formatter.preferences._
