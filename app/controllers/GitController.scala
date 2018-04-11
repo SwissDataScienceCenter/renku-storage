@@ -53,6 +53,8 @@ class GitController @Inject() (
 ) extends Controller with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
 
   override protected val dbConfig = dal.dbConfig
+  import profile.api._
+
   lazy val logger: Logger = Logger( "application.GitController" )
 
   val host: String = config.getString( "renga_host" ).get
@@ -152,8 +154,11 @@ class GitController @Inject() (
                       i =>
                         i.map( iid => {
                           val rep = Repository( new_uuid, Some( iid ), "automatically created bucket for LFS of " + uuid.toString, "", Some( default_backend ), Some( Instant.now() ), Some( UUID.fromString( request.userId ) ), None )
-                          dal.repositories.insert( rep )
-                          dal.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
+                          val action = for {
+                            ire <- dal.repositories.insert( rep )
+                            ure <- dal.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
+                          } yield ( ire, ure )
+                          db.run( action.transactionally )
                         } )
                     )
                   }

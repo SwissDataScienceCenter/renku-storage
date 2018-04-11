@@ -30,3 +30,6 @@ GET    /repo/:id/object/:oid                     controllers.ObjectController.do
 GET    /object                                   controllers.ObjectController.listAllObject(hash: Option[String])
 GET    /object/:id                               controllers.ObjectController.detailObject(id: String)
 PUT    /object/:id                               controllers.ObjectController.updateObject(id: String)
+
+# Health Check
+GET    /ping                                     controllers.HealthCheckController.ping
