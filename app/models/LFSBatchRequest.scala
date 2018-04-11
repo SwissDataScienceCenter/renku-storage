@@ -24,7 +24,6 @@ import play.api.libs.json.{ JsPath, OFormat }
 case class LFSBatchRequest(
     operation: String,
     transfers: Option[Seq[String]],
-    ref:       Option[Seq[String]],
     objects:   Seq[LFSObject]
 )
 
@@ -35,8 +34,7 @@ object LFSBatchRequest {
   def format: OFormat[LFSBatchRequest] = (
     ( JsPath \ "operation" ).format[String] and
     ( JsPath \ "transfers" ).formatNullable[Seq[String]] and
-    ( JsPath \ "ref" ).formatNullable[Seq[String]] and
     ( JsPath \ "objects" ).format[Seq[LFSObject]]
-  )( { ( o, t, r, b ) => LFSBatchRequest( o, t, r, b ) }, { req => ( req.operation, req.transfers, req.ref, req.objects ) } )
+  )( { ( o, t, b ) => LFSBatchRequest( o, t, b ) }, { req => ( req.operation, req.transfers, req.objects ) } )
 
 }
