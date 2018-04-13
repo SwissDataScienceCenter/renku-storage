@@ -37,7 +37,7 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 
 | Variable name  |  default  |  description  |
 |---|---|---|
-| STORAGE_BACKEND_DB_URL  |  jdbc:postgres://db:5432/storage  |  the url for the postgres database  |
+| STORAGE_BACKEND_DB_URL  |  jdbc:postgresql://db:5432/storage  |  the url for the postgres database  |
 | STORAGE_BACKEND_DB_USER  |  storage  |  the user for the postgres database  |
 | STORAGE_BACKEND_DB_PASSWORD  |  storage  |  the password for the postgres database  |
 | STORAGE_BACKEND_LOCAL_ENABLED  |  false  |  set to `true` to enable the local storage backend |
