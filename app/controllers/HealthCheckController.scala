@@ -24,11 +24,11 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import play.api.{ Configuration, Logger }
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClient
 import play.api.mvc._
+import play.api.{ Configuration, Logger }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }

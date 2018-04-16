@@ -31,8 +31,6 @@ import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
-
-import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
@@ -40,6 +38,7 @@ import play.api.libs.ws._
 import play.api.mvc._
 import slick.jdbc.JdbcProfile
 
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 /**
  * Created by jeberle on 25.04.17.
