@@ -20,18 +20,15 @@ package controllers.storageBackends
 
 import java.io.{ PipedInputStream, PipedOutputStream }
 import java.util.concurrent.TimeUnit
-
 import javax.inject._
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.javadsl.Keep
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.blob.CloudBlobClient
 import models.Repository
-import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._

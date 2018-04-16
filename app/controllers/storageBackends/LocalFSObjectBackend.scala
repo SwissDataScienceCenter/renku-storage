@@ -26,14 +26,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{ RequestHeader, Result }
 import play.api.mvc.Results.Created
+import play.api.mvc.{ RequestHeader, Result }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try

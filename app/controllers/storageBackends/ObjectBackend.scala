@@ -18,20 +18,17 @@
 
 package controllers.storageBackends
 
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.Base64
 
-import akka.{ Done, NotUsed }
-import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.stream.scaladsl._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.util.ByteString
 import org.apache.commons.codec.binary.Hex
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{ RequestHeader, Result }
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ Future, Promise }
 
 /**
