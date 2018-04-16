@@ -26,11 +26,9 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.blob.CloudBlobClient
 import models.Repository
-import play.api.Logger
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
@@ -101,15 +99,15 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
     }
   }
 
-  def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     val container = serviceClient.getContainerReference( bucket )
     val size = req.headers.get( "Content-Length" )
-    if ( container.exists() )
+    if ( container.exists() ) {
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
-          val inputStream = source.runWith(
+          val inputStream = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           val blob = container.getBlockBlobReference( name )
@@ -119,6 +117,7 @@ class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
           Created
         }
       }
+    }
     else
       Accumulator.done( NotFound )
   }

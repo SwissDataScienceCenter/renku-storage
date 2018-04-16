@@ -26,14 +26,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{ RequestHeader, Result }
 import play.api.mvc.Results.Created
+import play.api.mvc.{ RequestHeader, Result }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -72,7 +71,7 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
     }.get
   }
 
-  def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
@@ -80,7 +79,7 @@ class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystem
       new File( fullPath ).getParentFile.mkdirs()
       val os = new FileOutputStream( fullPath )
       val sink = StreamConverters.fromOutputStream( () => os )
-      val r = source.runWith( sink )
+      val r = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith( sink )
       r.map( _ => Created )
     }
   }
