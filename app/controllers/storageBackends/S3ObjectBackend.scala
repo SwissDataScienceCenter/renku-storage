@@ -25,7 +25,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import io.minio.MinioClient
 import models.Repository
 import play.api.libs.concurrent.ActorSystemProvider

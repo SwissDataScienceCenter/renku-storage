@@ -20,24 +20,23 @@ package controllers
 
 import java.time.Instant
 import java.util.UUID
-
 import javax.inject.{ Inject, Singleton }
+
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import ch.datascience.service.utils.ControllerWithBodyParseJson
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.mvc.{ BodyParsers, Controller, EssentialAction }
 import controllers.storageBackends.{ Backends, ObjectBackend }
-import models.{ FileObject, FileObjectRepository, Repository }
 import models.persistence.DatabaseLayer
+import models.{ FileObject, FileObjectRepository, Repository }
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
-
-import scala.concurrent.duration._
 import play.api.libs.streams.Accumulator
+import play.api.mvc.{ BodyParsers, Controller, EssentialAction }
 import slick.jdbc.JdbcProfile
 
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 /**
@@ -107,11 +106,9 @@ class ObjectController @Inject() (
                 ifo <- dal.fileObjects.insert( fo )
                 ifr <- dal.fileObjectRepositories.insert( fr )
               } yield ( ifo, ifr )
-              db.run( action.transactionally ).map( inserts =>
-                if ( inserts._1 == 1 && inserts._2 == 1 )
-                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, reqh.headers.get( "Content-Hash" ) )
-                else
-                  Accumulator.done( BadRequest ) )
+              db.run( action.transactionally ).map { inserts =>
+                back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, reqh.headers.get( "Content-Hash" ) )
+              }
             }
             upload.getOrElse( Future.successful( Accumulator.done( NotFound ) ) )
           } )

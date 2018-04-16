@@ -25,19 +25,17 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import org.javaswift.joss.client.factory.{ AccountConfig, AccountFactory }
 import org.javaswift.joss.headers.`object`.range.{ FirstPartRange, LastPartRange, MidPartRange }
 import org.javaswift.joss.instructions.DownloadInstructions
 import org.javaswift.joss.model.Account
 import play.api.libs.concurrent.ActorSystemProvider
+import play.api.libs.streams.Accumulator
+import play.api.mvc.Results._
+import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.streams.Accumulator
-import play.api.mvc._
-import play.api.mvc.Results._
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex

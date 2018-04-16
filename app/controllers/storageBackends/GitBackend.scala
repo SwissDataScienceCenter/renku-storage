@@ -19,8 +19,6 @@
 package controllers.storageBackends
 
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
-import models.Repository
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{ RequestHeader, Result }
 

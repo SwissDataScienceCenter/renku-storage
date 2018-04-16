@@ -24,19 +24,17 @@ import javax.inject.{ Inject, Singleton }
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import play.api.Configuration
 import play.api.http.HttpEntity.Strict
 import play.api.http.{ HttpChunk, HttpEntity, Writeable }
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.concurrent.Execution.defaultContext
+import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
 import play.api.mvc._
-import play.api.libs.json._
 
-import scala.util.matching.Regex
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
