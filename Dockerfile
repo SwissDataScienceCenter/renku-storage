@@ -43,8 +43,8 @@ RUN set -e \
 
 VOLUME ["/data"]
 
-ENTRYPOINT ["bin/docker-entrypoint.sh", "bin/renga-storage"]
+ENTRYPOINT ["bin/docker-entrypoint.sh", "bin/renku-storage"]
 CMD []
 
 # In-container health check
-HEALTHCHECK CMD ["bin/renga-storage", "-main", "controllers.HealthCheckController"]
+HEALTHCHECK CMD ["bin/renku-storage", "-main", "controllers.HealthCheckController"]
