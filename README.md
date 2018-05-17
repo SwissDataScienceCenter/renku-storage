@@ -1,10 +1,7 @@
 # renku-storage
 Renku Storage Service
 
-**Renku is currently undergoing a major restructuring effort. For a preview, you can look
-at the development branch, but keep in mind it is highly volatile.**
-
-Documentation: https://renku.readthedocs.io/en/latest/developer/services/storage_service.html
+Documentation: https://renga.readthedocs.io/en/latest/developer/services/storage_service.html
 
 Support for git backends has been added. LFS is managed by the service and delegated to the given object store backend.
 
@@ -59,5 +56,5 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 | GITLAB_URL |  | the root url of gitlab |
 | GITLAB_USER |  | the gitlab user |
 | GITLAB_PASS |  | the gitlab user's private token |
-| Renku_ENDPOINT | http://localhost | the url to reach renku from the users perspective |
-| Renku_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |
+| RENKU_ENDPOINT | http://localhost | the url to reach renku from the users perspective |
+| RENKU_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |
