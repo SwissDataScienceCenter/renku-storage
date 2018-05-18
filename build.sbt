@@ -17,7 +17,7 @@
  */
 
 organization := "ch.datascience"
-version := "0.1.0"
+version := "0.1.1"
 scalaVersion := "2.11.8"
 name := "renga-storage"
 
@@ -28,18 +28,21 @@ lazy val root = (project in file("."))
 
 resolvers += "jitpack" at "https://jitpack.io"
 resolvers += "Oracle Released Java Packages" at "http://download.oracle.com/maven"
-resolvers += "SDSC Snapshots" at "https://testing.datascience.ch:18081/repository/maven-snapshots/"
+resolvers += Resolver.sonatypeRepo("snapshots")
 
-lazy val renga_version = "0.1.0-SNAPSHOT"
+lazy val renga_version = "0.1.1-SNAPSHOT"
 libraryDependencies += "ch.datascience" %% "renga-graph-core" % renga_version
 libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
 
-lazy val janusgraph_version = "0.1.0"
+libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
+
+lazy val janusgraph_version = "0.2.0"
 
 libraryDependencies += filters
 libraryDependencies += "org.janusgraph" % "janusgraph-cassandra" % janusgraph_version //% Runtime
-libraryDependencies += "io.minio" % "minio" % "3.0.3"
+libraryDependencies += "io.minio" % "minio" % "3.0.4"
 libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
+libraryDependencies += "com.microsoft.azure" % "azure-storage" % "6.1.0"
 libraryDependencies += cache
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
@@ -100,13 +103,3 @@ val preferences =
     .setPreference( SpacesWithinPatternBinders,                   false )
 
 SbtScalariform.scalariformSettings ++ Seq(preferences)
-
-// Publishing
-publishTo := {
-  val nexus = "https://testing.datascience.ch:18081/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "repository/maven-snapshots/")
-  else
-    None //TODO
-}
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")

@@ -3,30 +3,26 @@ branches:
   - master
 language: scala
 scala:
-- '2.11.8'
+- 2.11.8
 sudo: true
-env: DOCKER_PUSH_LATEST=true
-before_script: bash ./.travis/make-nexus-credentials.sh
+env:
+  global:
+  - DOCKER_PUSH_LATEST=true
+  - DOCKER_REPOSITORY=rengahub
+  - secure: uOFHVT5V2ebNIRvCw5nlIo0rmqPc3FRjZ3lLsFX7IZKCdJDYM4aY/uRe4W5mR5QOBNVRC0YNUuXz93RYk3DDzlBsDpuFLGRRzzMdNSC+fPqgUO3Bn7L1e1b/NtBc9BE7YvDwUj5Fs9/AMWCYaRgIMaJSWp7lKc3CUCDzoMS0omfjo+fHAen8t3/tKOCmzD0YuR9ntp2l4vwyLkXD5Y6EEplFiC0p5IdaBQ8UfAJh/79cSsLZn/YDd3g81Ufudc3qvxvTDb0SM2CB4+su7tZm+uJIYki7vcx4vjqTEzQn/E1YovHSUmjon7V8FhjjR7V8Kn2Dyh9MQepeYVDcS9Ky14KFwLx6GsSU0n86Hctr/Q7EoebbwV1QEuwdm71w1//t9zIXTDDH9deVQYHRcYpFdHvpMOoTHyyiR91jERBvroD7h6hD7GmgQ/1mX9GZdhBwyrG+EuWzgBTmIHIhrscRak2D8bmfrKMmqxxW7XFXaxQJP9Sh/BsCDpmikdaxBYwT3pHhvdAbG0GWARf0YMQpNUZd/3hSK7kSA/NFWA8RKIbVoKalsJGitbenAakmdOxLuvf9gJ5CpmED6FONkbHWtqZ+0ilg/x7YyTau7VxreyAEFougdKpn8X7pzjnDDctY96Y+N9+qMZnMEkpOqRcsiqM/Io1ZyJMDhWzFWlEomRI=
+  - secure: Zxc1kVt1KdjHh6XkUlfuvUKioQg2biM9GdtUF9OGKI5YmpssPkLIHr4DDJT0w/VuZPTskQVy5aDSwSrccpZuRBjoE68/9sDJRp3zOtJevokuiCor3onHgXiY8hAZs60DjQPfNpqE95GNlxJOGKWmTn5PuPmuqYt9fmpVN5L8FiNc01S+jwdCY2B4psrwv0JxtxhBagLjtwca2cNxQVDeGXM9H3bBnlhi4CaWxZOv1L2Yhxg2Vw7/BJFqa3f8DCDCmf1RY5pHX11vVJuzI62ZU6udUbfCvY5b3WmCq1jJrgIoTl/XzvOPFmHnSlfnxJMJjYyw6bHTBL5ircO3JUDoFhAyswrZcRrliMEmS7upm0S66UtJV/3HKpXH1ITsXWFLsYBz7ur9X3URX38z23IVE0x9Pblgx3sTIdvsZhaFN6cyHXVkaHza+UjdlGXpZ+NKH/i1ezTXwD2qVhdiznT+weWFXeBMqHaVfyeSljt0pBbcznvSezA95WMPKsCd7cGrpQ+v+qJoO6NGuO/vUUjj9O5KQqO9SLf+LjFQ4VTu+Aqr9oEsAwNWZHgyUDA9rlG53PjQraLWtlaaNJeC5/h4gnZtJqQuA6AMlJ2QRbx+FJCSwbp9qnWfoOmADMMNdFnUgULDlug61jyYxpXQvPuBdo+DKyA0DlpGqfKqOFo1PWg=
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test && bash ./.travis/check-code-formatting.sh
 deploy:
 - provider: script
   skip_cleanup: true
-  script: bash ./.travis/deploy-artifacts.sh
-  on:
-    branch: master
-- provider: script
-  skip_cleanup: true
   script: bash ./.travis/deploy-docker.sh
   on:
     branch: master
-
-# caching suggestions from http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
 cache:
   directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
+  - "$HOME/.ivy2/cache"
+  - "$HOME/.sbt"
 before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
+- find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+- find $HOME/.sbt        -name "*.lock"               -print -delete

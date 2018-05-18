@@ -19,6 +19,7 @@
 package controllers.storageBackends
 
 import java.io.{ File, FileInputStream, FileNotFoundException, FileOutputStream }
+import java.nio.file.{ FileSystems, Files }
 import javax.inject.{ Inject, Singleton }
 
 import akka.actor.ActorSystem
@@ -102,6 +103,15 @@ class LocalFSBackend @Inject() ( configuration: Configuration, actorSystemProvid
     new File( rootDir, bucket ).mkdir()
     bucket
   }
+
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = Try {
+
+    val source = FileSystems.getDefault.getPath( s"$rootDir/$fromBucket/$fromName" )
+    val dest = FileSystems.getDefault.getPath( s"$rootDir/$toBucket/$toName" )
+
+    Files.copy( source, dest )
+
+  }.isSuccess
 
   private[this] def takeFromByteStringSource( source: Source[ByteString, _], n: Int, chunkSize: Int = 8192 ): Source[ByteString, _] = {
     source.mapConcat( identity ).take( n ).grouped( chunkSize ).map { bytes => ByteString( bytes: _* ) }

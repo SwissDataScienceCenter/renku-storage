@@ -25,46 +25,38 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import org.javaswift.joss.client.factory.{ AccountConfig, AccountFactory }
-import org.javaswift.joss.headers.`object`.range.{ FirstPartRange, LastPartRange, MidPartRange }
-import org.javaswift.joss.instructions.DownloadInstructions
-import org.javaswift.joss.model.Account
+import io.minio.MinioClient
 import play.api.libs.concurrent.ActorSystemProvider
+import play.api.libs.streams.Accumulator
+import play.api.mvc.Results._
+import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.streams.Accumulator
-import play.api.mvc._
-import play.api.mvc.Results._
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
-class SwiftBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
+class S3Backend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends Backend {
 
-  val swiftConfig = new AccountConfig()
-  private[this] val subConfig = config.getConfig( "storage.backend.swift" ).get
-  swiftConfig.setUsername( subConfig.getString( "username" ).get )
-  swiftConfig.setPassword( subConfig.getString( "password" ).get )
-  swiftConfig.setAuthUrl( subConfig.getString( "auth_url" ).get )
-  swiftConfig.setTenantId( subConfig.getString( "project" ).get )
-  lazy val swiftAccount: Account = new AccountFactory( swiftConfig ).createAccount()
+  private[this] val subConfig = config.getConfig( "storage.backend.s3" ).get
+  lazy val minioClient = new MinioClient(
+    subConfig.getString( "url" ).get,
+    subConfig.getString( "access_key" ).get,
+    subConfig.getString( "secret_key" ).get
+  )
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
 
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]] = {
-    val CHUNK_SIZE = 100
-    val container = swiftAccount.getContainer( bucket )
-    if ( container.exists() && container.getObject( name ).exists() ) {
-      val instructions = new DownloadInstructions()
-      request.headers.get( "Range" ).map {
-        case RangePattern( null, to )   => instructions.setRange( new FirstPartRange( to.toInt ) )
-        case RangePattern( from, null ) => instructions.setRange( new LastPartRange( from.toInt ) )
-        case RangePattern( from, to )   => instructions.setRange( new MidPartRange( from.toInt, to.toInt ) )
-        case _                          =>
-      }
-      val data = container.getObject( name ).downloadObjectAsInputStream( instructions )
+    val CHUNK_SIZE = 1048576
+    if ( minioClient.bucketExists( bucket ) && objectExists( bucket, name ) ) {
+      val data = request.headers.get( "Range" ).map {
+        case RangePattern( null, to )   => minioClient.getObject( bucket, name, 0, to.toLong )
+        case RangePattern( from, null ) => minioClient.getObject( bucket, name, from.toLong )
+        case RangePattern( from, to )   => minioClient.getObject( bucket, name, from.toLong, to.toLong )
+      }.getOrElse( minioClient.getObject( bucket, name ) )
       Some( StreamConverters.fromInputStream( () => data, CHUNK_SIZE ) )
     }
     else {
@@ -73,18 +65,16 @@ class SwiftBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
   }
 
   def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
-
+    val size = req.headers.get( "Content-Length" )
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
-    val container = swiftAccount.getContainer( bucket )
-    if ( container.exists() )
+    if ( minioClient.bucketExists( bucket ) )
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
-          val obj = container.getObject( name )
           val inputStream = source.runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
-          obj.uploadObject( inputStream )
+          minioClient.putObject( bucket, name, inputStream, size.get.toLong, "application/octet-stream" )
           inputStream.close()
           Created
         }
@@ -95,10 +85,22 @@ class SwiftBackend @Inject() ( config: play.api.Configuration, actorSystemProvid
 
   def createBucket( request: RequestHeader, bucket: String ): String = {
     val uuid = java.util.UUID.randomUUID.toString
-    val container = swiftAccount.getContainer( uuid )
-    container.create()
+    minioClient.makeBucket( uuid )
     uuid
   }
 
-  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean = false
+  def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean =
+    Try {
+      minioClient.copyObject( fromBucket, fromName, toBucket, toName )
+    }.isSuccess
+
+  def objectExists( bucket: String, name: String ): Boolean = {
+    try {
+      minioClient.statObject( bucket, name )
+      return true
+    }
+    catch {
+      case _: Throwable => return false
+    }
+  }
 }
