@@ -1,10 +1,7 @@
-# renga-storage
-Renga Storage Service
+# renku-storage
+Renku Storage Service
 
-**Renga is currently undergoing a major restructuring effort. For a preview, you can look
-at the development branch, but keep in mind it is highly volatile.**
-
-Documentation: https://renga.readthedocs.io/en/latest/developer/services/storage_service.html
+Documentation: https://renku.readthedocs.io/en/latest/developer/services/storage_service.html
 
 Support for git backends has been added. LFS is managed by the service and delegated to the given object store backend.
 
@@ -19,10 +16,10 @@ Alternatively, you can use the Makefile to get git branch and commit based tags:
 ```bash
 make
 > Successfully built cb53b5cd36eb
-> Successfully tagged rengahub/renga-storage:08a076cf5c49
-> docker tag rengahub/renga-storage:08a076cf5c49 rengahub/renga-storage:development
+> Successfully tagged renku/renku-storage:08a076cf5c49
+> docker tag renku/renku-storage:08a076cf5c49 renku/renku-storage:development
 ```
-Two tags were defined: `rengahub/renga-storage:08a076cf5c49` and `rengahub/renga-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
+Two tags were defined: `renku/renku-storage:08a076cf5c49` and `renku/renku-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
 
 ## Development
 Building is done using [sbt](http://www.scala-sbt.org/).
@@ -59,5 +56,5 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 | GITLAB_URL |  | the root url of gitlab |
 | GITLAB_USER |  | the gitlab user |
 | GITLAB_PASS |  | the gitlab user's private token |
-| RENGA_ENDPOINT | http://localhost | the url to reach renga from the users perspective |
-| RENGA_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |
+| RENKU_ENDPOINT | http://localhost | the url to reach renku from the users perspective |
+| RENKU_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |

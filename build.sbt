@@ -19,7 +19,7 @@
 organization := "ch.datascience"
 version := "1.0.1-SNAPSHOT"
 scalaVersion := "2.11.8"
-name := "renga-storage"
+name := "renku-storage"
 
 lazy val root = (project in file("."))
   .enablePlugins(
@@ -28,8 +28,8 @@ lazy val root = (project in file("."))
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-lazy val renga_version = "0.2.0-SNAPSHOT"
-libraryDependencies += "ch.datascience" %% "renga-commons" % renga_version
+lazy val renku_version = "0.2.0-SNAPSHOT"
+libraryDependencies += "ch.datascience" %% "renku-commons" % renku_version
 
 libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
 
