@@ -16,10 +16,10 @@ Alternatively, you can use the Makefile to get git branch and commit based tags:
 ```bash
 make
 > Successfully built cb53b5cd36eb
-> Successfully tagged renkuhub/renku-storage:08a076cf5c49
-> docker tag renku/renku-storage:08a076cf5c49 renkuhub/renku-storage:development
+> Successfully tagged renku/renku-storage:08a076cf5c49
+> docker tag renku/renku-storage:08a076cf5c49 renku/renku-storage:development
 ```
-Two tags were defined: `renku/renku-storage:08a076cf5c49` and `renkuhub/renku-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
+Two tags were defined: `renku/renku-storage:08a076cf5c49` and `renku/renku-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
 
 ## Development
 Building is done using [sbt](http://www.scala-sbt.org/).
