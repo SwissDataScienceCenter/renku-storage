@@ -1,7 +1,7 @@
 # renku-storage
 Renku Storage Service
 
-Documentation: https://renga.readthedocs.io/en/latest/developer/services/storage_service.html
+Documentation: https://renku.readthedocs.io/en/latest/developer/services/storage_service.html
 
 Support for git backends has been added. LFS is managed by the service and delegated to the given object store backend.
 
@@ -17,9 +17,9 @@ Alternatively, you can use the Makefile to get git branch and commit based tags:
 make
 > Successfully built cb53b5cd36eb
 > Successfully tagged renkuhub/renku-storage:08a076cf5c49
-> docker tag renkuhub/renku-storage:08a076cf5c49 renkuhub/renku-storage:development
+> docker tag renku/renku-storage:08a076cf5c49 renkuhub/renku-storage:development
 ```
-Two tags were defined: `renkuhub/renku-storage:08a076cf5c49` and `renkuhub/renku-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
+Two tags were defined: `renku/renku-storage:08a076cf5c49` and `renkuhub/renku-storage:development` where `08a076cf5c49` is the commit sha1 (truncated) and `development` is the git branch name.
 
 ## Development
 Building is done using [sbt](http://www.scala-sbt.org/).
