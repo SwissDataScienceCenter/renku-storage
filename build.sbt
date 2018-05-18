@@ -17,7 +17,7 @@
  */
 
 organization := "ch.datascience"
-version := "0.1.1"
+version := "1.0.1-SNAPSHOT"
 scalaVersion := "2.11.8"
 name := "renga-storage"
 
