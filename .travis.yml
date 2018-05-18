@@ -1,6 +1,5 @@
 branches:
   only:
-  - development
   - master
 language: scala
 scala:
@@ -18,7 +17,7 @@ deploy:
   skip_cleanup: true
   script: make push
   on:
-    branch: development
+    branch: master
 cache:
   directories:
   - "$HOME/.ivy2/cache"

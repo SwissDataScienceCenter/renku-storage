@@ -4,7 +4,7 @@ info:
   title: Storage API
   description: |
     Storage API specification
-  version: '0.1.0'
+  version: '1.0.1'
 # Host and schemes are injected by the service
 # will be prefixed to all paths
 basePath: /api/storage
