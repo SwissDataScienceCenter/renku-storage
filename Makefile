@@ -24,7 +24,7 @@ DOCKER_LABEL?=$(shell git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/^* //')
 # 	DOCKER_LABEL=latest
 # endif
 
-GIT_MASTER_HEAD_SHA:=$(shell git rev-parse --short=12 --verify HEAD)
+GIT_MASTER_HEAD_SHA:=$(shell git rev-parse --short=7 --verify HEAD)
 
 .PHONY: tag
 tag: build
