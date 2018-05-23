@@ -20,10 +20,6 @@ DOCKER_PREFIX:=${DOCKER_REGISTRY}$(DOCKER_REPOSITORY)
 DOCKER_IMAGE:=${DOCKER_PREFIX}renku-storage
 DOCKER_LABEL?=$(shell git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/^* //')
 
-# ifeq ($(DOCKER_LABEL), master)
-# 	DOCKER_LABEL=latest
-# endif
-
 GIT_MASTER_HEAD_SHA:=$(shell git rev-parse --short=7 --verify HEAD)
 
 .PHONY: tag
