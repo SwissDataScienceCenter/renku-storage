@@ -106,8 +106,16 @@ class ObjectController @Inject() (
                 ifo <- dal.fileObjects.insert( fo )
                 ifr <- dal.fileObjectRepositories.insert( fr )
               } yield ( ifo, ifr )
+
+              def processChecksum( o: FileObject ) =
+                ( _: Any, checksum: Future[String] ) =>
+                  checksum.map( s => {
+                    val nfo = FileObject( o.uuid, o.description, o.name, s, o.created, o.owner )
+                    db.run( dal.fileObjects.update( nfo ) )
+                  } )
+
               db.run( action.transactionally ).map { inserts =>
-                back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, reqh.headers.get( "Content-Hash" ) )
+                back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, processChecksum( fo ) )
               }
             }
             upload.getOrElse( Future.successful( Accumulator.done( NotFound ) ) )

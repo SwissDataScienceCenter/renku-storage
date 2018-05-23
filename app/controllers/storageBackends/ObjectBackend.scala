@@ -36,10 +36,8 @@ import scala.concurrent.{ Future, Promise }
  */
 trait ObjectBackend extends StorageBackend {
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]]
-  def write( request: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result]
+  def write( request: RequestHeader, bucket: String, name: String, callback: ( Any, Future[String] ) => Any ): Accumulator[ByteString, Result]
   def duplicateFile( request: RequestHeader, fromBucket: String, fromName: String, toBucket: String, toName: String ): Boolean
-
-  def processChecksum( ref: Option[String] ) = ( _: Any, checksum: Future[String] ) => checksum.map( s => println( s + " - " + ref.getOrElse( "no-hash" ) ) )
 
   class ChecksumSink extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[String]] {
     val in: Inlet[ByteString] = Inlet( "ChecksumSink" )
