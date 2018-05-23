@@ -136,52 +136,60 @@ class GitController @Inject() (
       case JsError( e ) => Future( BadRequest( JsError.toJson( e ) ) )
       case JsSuccess( uuid, _ ) =>
         if ( request.body.operation == "download" ) {
-          val objects = request.body.objects.map( lfsObject => {
-            db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map {
-              case ( repository, _, fileObject ) => {
-                val head = Map( "Content-Hash" -> lfsObject.oid ) ++ tokenOrError.fold( _ => Map.empty[String, String], t => Map( "Authorization" -> t.getToken ) )
-                LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + repository.uuid + "/object/" + fileObject.uuid, head, 600 ) ) )
-              }
-            } )
-          } )
-          Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+          lfsBatchDownload( uuid, request, tokenOrError )
         }
         else {
           tokenOrError match {
-            case Right( token ) =>
-              db.run( dal.repositories.findByUUID( uuid ) ).flatMap {
-                case Some( repo ) => {
-                  val new_uuid = UUID.randomUUID()
-                  if ( repo.lfs_store.isEmpty ) {
-                    backends.getBackend( default_backend ) match {
-                      case Some( back ) => {
-                        back.createRepo( Repository( new_uuid, None, "automatically created bucket for LFS of " + uuid.toString, "", Some( default_backend ), None, None, None ) ).map(
-                          i =>
-                            i.map( iid => {
-                              val rep = Repository( new_uuid, Some( iid ), "automatically created bucket for LFS of " + uuid.toString, "", Some( default_backend ), Some( Instant.now() ), Some( UUID.fromString( token.getId ) ), None )
-                              val action = for {
-                                ire <- dal.repositories.insert( rep )
-                                ure <- dal.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
-                              } yield ( ire, ure )
-                              db.run( action.transactionally )
-                            } )
-                        )
-                      }
-                      case None => {}
-                    }
-                  }
-                  val objects = request.body.objects.map( lfsObject =>
-                    db.run( dal.fileObjects.findByHash( lfsObject.oid ) ) map {
-                      case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-                      case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> token.getToken, "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
-                    } )
-                  Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
-                }
-                case None => Future.successful( NotFound )
-              }
-            case Left( error ) => Future.successful( error )
+            case Right( token ) => lfsBatchUpload( uuid, request, token )
+            case Left( error )  => Future.successful( error )
           }
         }
+    }
+  }
+
+  private def lfsBatchDownload( uuid: UUID, request: Request[LFSBatchRequest], tokenOrError: Either[Result, DecodedJWT] ) = {
+    val objects = request.body.objects.map( lfsObject => {
+      db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map {
+        case ( repository, _, fileObject ) => {
+          val head = Map( "Content-Hash" -> lfsObject.oid ) ++ tokenOrError.fold( _ => Map.empty[String, String], t => Map( "Authorization" -> t.getToken ) )
+          LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + repository.uuid + "/object/" + fileObject.uuid, head, 600 ) ) )
+        }
+      } )
+    } )
+    Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponse( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+  }
+
+  private def lfsBatchUpload( uuid: UUID, request: Request[LFSBatchRequest], token: DecodedJWT ) = {
+
+    db.run( dal.repositories.findByUUID( uuid ) ).flatMap {
+      case Some( repo ) => {
+        val new_uuid = UUID.randomUUID()
+        if ( repo.lfs_store.isEmpty ) {
+          backends.getBackend( default_backend ) match {
+            case Some( back ) => {
+              back.createRepo( Repository( new_uuid, None, "automatically created bucket for LFS of " + uuid.toString, "", Some( default_backend ), None, None, None ) ).map(
+                i =>
+                  i.map( iid => {
+                    val rep = Repository( new_uuid, Some( iid ), "automatically created bucket for LFS of " + uuid.toString, "", Some( default_backend ), Some( Instant.now() ), Some( UUID.fromString( token.getId ) ), None )
+                    val action = for {
+                      ire <- dal.repositories.insert( rep )
+                      ure <- dal.repositories.update( Repository( repo.uuid, repo.iid, repo.description, repo.path, repo.backend, repo.created, repo.owner, Some( new_uuid ) ) )
+                    } yield ( ire, ure )
+                    db.run( action.transactionally )
+                  } )
+              )
+            }
+            case None => {}
+          }
+        }
+        val objects = request.body.objects.map( lfsObject =>
+          db.run( dal.fileObjects.findByHash( lfsObject.oid ) ) map {
+            case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
+            case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> token.getToken, "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
+          } )
+        Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
+      }
+      case None => Future.successful( NotFound )
     }
   }
 

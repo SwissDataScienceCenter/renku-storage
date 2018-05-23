@@ -54,15 +54,13 @@ libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0
 libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
-
-import com.typesafe.sbt.packager.docker._
 lazy val newEntrypoint = "bin/docker-entrypoint.sh"
 mappings in Docker += (file(".") / "docker-entrypoint.sh") -> ((defaultLinuxInstallLocation in Docker).value + s"/$newEntrypoint")
 
 // Source code formatting
-import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import scalariform.formatter.preferences._
 
 val preferences =
   ScalariformKeys.preferences := ScalariformKeys.preferences.value
