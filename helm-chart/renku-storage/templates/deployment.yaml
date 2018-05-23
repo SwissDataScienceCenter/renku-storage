@@ -1,0 +1,89 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "renku-storage.fullname" . }}
+  labels:
+    app: {{ template "renku-storage.name" . }}
+    chart: {{ template "renku-storage.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "renku-storage.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "renku-storage.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 9000
+              protocol: TCP
+          env:
+            - name: IDENTITY_MANAGER_EXTERNAL_URL
+              value: "{{ template "http" . }}://{{ .Values.global.renga.domain }}/auth/realms/Renga"
+            - name: IDENTITY_MANAGER_INTERNAL_URL
+              value: "http://{{ template "keycloak.fullname" . }}/auth/realms/Renga"
+            - name: PLAY_APPLICATION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "storage.fullname" . }}
+                  key: application-secret
+            - name: RENKU_ENDPOINT
+              value: "{{ template "http" . }}://{{ .Values.global.renga.domain }}"
+            - name: GITLAB_URL
+              value: "{{ template "http" . }}://{{ .Values.global.renga.domain }}/gitlab"
+            - name: GITLAB_USER
+              value: "root"
+            - name: GITLAB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "renga.fullname" . }}
+                  key: gitlab-sudo-token
+            - name: STORAGE_BACKEND_DB_URL
+              value: "jdbc:postgresql://{{ template "postgresql.fullname" . }}:5432/{{ .Values.global.storage.postgresDatabase }}"
+            - name: STORAGE_BACKEND_DB_USER
+              value: {{ .Values.global.storage.postgresUser | quote }}
+            - name: STORAGE_BACKEND_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "storage.fullname" . }}
+                  key: postgres-password
+            {{- range $key, $value := .Values.env }}
+            - name: "{{ $key }}"
+              value: "{{ $value }}"
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/storage/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/storage/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
