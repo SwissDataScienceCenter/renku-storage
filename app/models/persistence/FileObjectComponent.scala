@@ -3,7 +3,8 @@ package models.persistence
 import java.time.Instant
 import java.util.UUID
 
-import models.FileObject
+import models.{ Event, FileObject }
+import play.api.libs.json.{ JsObject, JsString, Json, OFormat }
 import slick.lifted._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -11,9 +12,11 @@ import scala.concurrent.Future
 
 trait FileObjectComponent {
 
-  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent =>
+  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent with EventComponent =>
 
   import profile.api._
+
+  implicit lazy val FileObjectFormat: OFormat[FileObject] = FileObject.format
 
   class FileObjects( tag: Tag ) extends Table[FileObject]( tag, "FILEOBJECTS" ) {
 
@@ -49,10 +52,16 @@ trait FileObjectComponent {
       fileObjects.result
     }
     def insert( r: FileObject ): DBIO[Int] = {
-      fileObjects += r
+      ( for {
+        ins <- fileObjects += r
+        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "insert", Json.toJson( r ), Instant.now() )
+      } yield ins ).transactionally
     }
     def update( r: FileObject ): DBIO[Int] = {
-      ( for { c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
+      ( for {
+        up <- ( for { c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
+        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "update", Json.toJson( r ), Instant.now() )
+      } yield up ).transactionally
     }
   }
 

@@ -3,7 +3,8 @@ package models.persistence
 import java.time.Instant
 import java.util.UUID
 
-import models.Repository
+import models.{ Event, Repository }
+import play.api.libs.json._
 import slick.lifted._
 
 import scala.concurrent.Future
@@ -11,9 +12,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 trait RepositoryComponent {
 
-  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent =>
+  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent with EventComponent =>
 
   import profile.api._
+
+  implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
 
   class Repositories( tag: Tag ) extends Table[Repository]( tag, "REPOSITORIES" ) {
 
@@ -54,10 +57,16 @@ trait RepositoryComponent {
       repositories.result
     }
     def insert( r: Repository ): DBIO[Int] = {
-      repositories += r
+      ( for {
+        ins <- repositories += r
+        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "insert", Json.toJson( r ), Instant.now() )
+      } yield ins ).transactionally
     }
     def update( r: Repository ): DBIO[Int] = {
-      ( for { c <- repositories if c.uuid === r.uuid } yield c ).update( r )
+      ( for {
+        up <- ( for { c <- repositories if c.uuid === r.uuid } yield c ).update( r )
+        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "update", Json.toJson( r ), Instant.now() )
+      } yield up ).transactionally
     }
   }
 

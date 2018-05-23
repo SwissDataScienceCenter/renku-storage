@@ -16,22 +16,17 @@
  * limitations under the License.
  */
 
-package models.persistence
+package models
 
 import java.time.Instant
-import play.api.libs.json.{ JsValue, Json }
 
-/**
- * Created by johann on 13/04/17.
- */
-trait ImplicitsComponent { this: JdbcProfileComponent =>
+import play.api.libs.json.JsValue
 
-  import profile.api._
+case class Event(
+    id:      Long,
+    obj:     JsValue,
+    action:  String,
+    attr:    JsValue,
+    created: Instant
+)
 
-  implicit val customTimestampColumnType: BaseColumnType[Instant] =
-    MappedColumnType.base[Instant, Long]( _.toEpochMilli, Instant.ofEpochMilli )
-
-  implicit val jsonColumnType: BaseColumnType[JsValue] =
-    MappedColumnType.base[JsValue, String]( _.toString(), Json.parse )
-
-}

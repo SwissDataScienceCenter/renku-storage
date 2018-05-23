@@ -3,7 +3,8 @@ package models.persistence
 import java.time.Instant
 import java.util.UUID
 
-import models.{ FileObject, FileObjectRepository, Repository }
+import models.{ Event, FileObject, FileObjectRepository, Repository }
+import play.api.libs.json.{ JsObject, JsString, Json, OFormat }
 import slick.lifted._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -11,9 +12,11 @@ import scala.concurrent.Future
 
 trait FileObjectRepositoryComponent {
 
-  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent with RepositoryComponent with FileObjectComponent =>
+  this: JdbcProfileComponent with SchemasComponent with ImplicitsComponent with RepositoryComponent with FileObjectComponent with EventComponent =>
 
   import profile.api._
+
+  implicit lazy val FileObjectRepositoryFormat: OFormat[FileObjectRepository] = FileObjectRepository.format
 
   class FileObjectRepositories( tag: Tag ) extends Table[FileObjectRepository]( tag, "FILEOBJECTREPOSITORIES" ) {
 
@@ -95,7 +98,11 @@ trait FileObjectRepositoryComponent {
     }
 
     def insert( r: FileObjectRepository ): DBIO[Int] = {
-      fileObjectRepositories += r
+      ( for {
+        ins <- fileObjectRepositories += r
+        log <- events += Event( 0, JsObject( Map( "repository" -> JsString( r.repository.toString ), "fileObject" -> JsString( r.fileObject.toString ) ) ), "insert", Json.toJson( r ), Instant.now() )
+      } yield ins ).transactionally
+
     }
   }
 
