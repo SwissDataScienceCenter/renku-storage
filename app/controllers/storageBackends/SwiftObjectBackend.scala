@@ -72,7 +72,7 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
     }
   }
 
-  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, callback: ( Any, Future[String] ) => Any ): Accumulator[ByteString, Result] = {
 
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
@@ -81,7 +81,7 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
           val obj = container.getObject( name )
-          val inputStream = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith(
+          val inputStream = source.alsoToMat( new ChecksumSink() )( callback ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           obj.uploadObject( inputStream )

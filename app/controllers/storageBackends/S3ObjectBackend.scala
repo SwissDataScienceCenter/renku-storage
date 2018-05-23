@@ -65,14 +65,14 @@ class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemPro
     }
   }
 
-  def write( req: RequestHeader, bucket: String, name: String, hash: Option[String] ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, callback: ( Any, Future[String] ) => Any ): Accumulator[ByteString, Result] = {
     val size = req.headers.get( "Content-Length" )
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     if ( minioClient.bucketExists( bucket ) )
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
-          val inputStream = source.alsoToMat( new ChecksumSink() )( processChecksum( hash ) ).runWith(
+          val inputStream = source.alsoToMat( new ChecksumSink() )( callback ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           minioClient.putObject( bucket, name, inputStream, size.get.toLong, "application/octet-stream" )
