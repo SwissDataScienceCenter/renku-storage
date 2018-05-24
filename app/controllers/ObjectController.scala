@@ -18,10 +18,11 @@
 
 package controllers
 
+import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
-import javax.inject.{ Inject, Singleton }
 
+import javax.inject.{ Inject, Singleton }
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import ch.datascience.service.utils.ControllerWithBodyParseJson
@@ -33,7 +34,7 @@ import play.api.db.slick.HasDatabaseConfig
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{ BodyParsers, Controller, EssentialAction }
+import play.api.mvc.{ Action, BodyParsers, Controller, EssentialAction }
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
@@ -116,7 +117,7 @@ class ObjectController @Inject() (
 
               db.run( action.transactionally ).map { inserts =>
                 back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, processChecksum( fo ) )
-              }
+              }.recoverWith { case e: SQLException => Future.successful( Accumulator.done( Conflict ) ) }
             }
             upload.getOrElse( Future.successful( Accumulator.done( NotFound ) ) )
           } )
@@ -127,7 +128,7 @@ class ObjectController @Inject() (
     }
   }
 
-  def downloadObject( id: String, oid: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  def downloadObject( id: String, oid: String ) = Action.async( BodyParsers.parse.empty ) { implicit request =>
     val valid = for (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
