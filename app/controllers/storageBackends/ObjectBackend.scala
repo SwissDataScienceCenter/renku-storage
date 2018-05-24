@@ -57,7 +57,6 @@ trait ObjectBackend extends StorageBackend {
           override def onPush(): Unit = {
             val ii = grab( in )
             digest.update( ii.asByteBuffer )
-            println( ii )
             pull( in )
           }
 
