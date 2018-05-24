@@ -100,7 +100,7 @@ trait FileObjectRepositoryComponent {
     def insert( r: FileObjectRepository ): DBIO[Int] = {
       ( for {
         ins <- fileObjectRepositories += r
-        log <- events += Event( 0, JsObject( Map( "repository" -> JsString( r.repository.toString ), "fileObject" -> JsString( r.fileObject.toString ) ) ), "insert", Json.toJson( r ), Instant.now() )
+        _ <- events.insert( Event( None, JsObject( Map( "repository" -> JsString( r.repository.toString ), "fileObject" -> JsString( r.fileObject.toString ) ) ), "insert", Json.toJson( r ), Instant.now() ) )
       } yield ins ).transactionally
 
     }

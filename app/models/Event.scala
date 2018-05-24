@@ -23,7 +23,7 @@ import java.time.Instant
 import play.api.libs.json.JsValue
 
 case class Event(
-    id:      Long,
+    id:      Option[Long],
     obj:     JsValue,
     action:  String,
     attr:    JsValue,

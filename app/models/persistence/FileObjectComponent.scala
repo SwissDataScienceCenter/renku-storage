@@ -54,13 +54,13 @@ trait FileObjectComponent {
     def insert( r: FileObject ): DBIO[Int] = {
       ( for {
         ins <- fileObjects += r
-        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "insert", Json.toJson( r ), Instant.now() )
+        _ <- events.insert( Event( None, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "insert", Json.toJson( r ), Instant.now() ) )
       } yield ins ).transactionally
     }
     def update( r: FileObject ): DBIO[Int] = {
       ( for {
         up <- ( for { c <- fileObjects if c.uuid === r.uuid } yield c ).update( r )
-        log <- events += Event( 0, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "update", Json.toJson( r ), Instant.now() )
+        _ <- events.insert( Event( None, JsObject( Map( "uuid" -> JsString( r.uuid.toString ) ) ), "update", Json.toJson( r ), Instant.now() ) )
       } yield up ).transactionally
     }
   }

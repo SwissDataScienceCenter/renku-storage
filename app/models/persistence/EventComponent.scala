@@ -28,7 +28,7 @@ trait EventComponent {
     def created: Rep[Instant] = column[Instant]( "CREATED" )
 
     // *
-    def * : ProvenShape[Event] = ( id, obj, action, attr, created ) <> ( ( Event.apply _ ).tupled, Event.unapply _ )
+    def * : ProvenShape[Event] = ( id.?, obj, action, attr, created ) <> ( ( Event.apply _ ).tupled, Event.unapply _ )
 
   }
 
