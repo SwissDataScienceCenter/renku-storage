@@ -12,6 +12,7 @@ env:
   - secure: Zxc1kVt1KdjHh6XkUlfuvUKioQg2biM9GdtUF9OGKI5YmpssPkLIHr4DDJT0w/VuZPTskQVy5aDSwSrccpZuRBjoE68/9sDJRp3zOtJevokuiCor3onHgXiY8hAZs60DjQPfNpqE95GNlxJOGKWmTn5PuPmuqYt9fmpVN5L8FiNc01S+jwdCY2B4psrwv0JxtxhBagLjtwca2cNxQVDeGXM9H3bBnlhi4CaWxZOv1L2Yhxg2Vw7/BJFqa3f8DCDCmf1RY5pHX11vVJuzI62ZU6udUbfCvY5b3WmCq1jJrgIoTl/XzvOPFmHnSlfnxJMJjYyw6bHTBL5ircO3JUDoFhAyswrZcRrliMEmS7upm0S66UtJV/3HKpXH1ITsXWFLsYBz7ur9X3URX38z23IVE0x9Pblgx3sTIdvsZhaFN6cyHXVkaHza+UjdlGXpZ+NKH/i1ezTXwD2qVhdiznT+weWFXeBMqHaVfyeSljt0pBbcznvSezA95WMPKsCd7cGrpQ+v+qJoO6NGuO/vUUjj9O5KQqO9SLf+LjFQ4VTu+Aqr9oEsAwNWZHgyUDA9rlG53PjQraLWtlaaNJeC5/h4gnZtJqQuA6AMlJ2QRbx+FJCSwbp9qnWfoOmADMMNdFnUgULDlug61jyYxpXQvPuBdo+DKyA0DlpGqfKqOFo1PWg=
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test && bash ./.travis/check-code-formatting.sh
+- set-e; cd helm-chart; chartpress --commit-range "${TRAVIS_COMMIT_RANGE}" --skip-build --publish-chart; cd ..
 install:
   - travis_retry pyenv global 3.6.3
   - python --version
