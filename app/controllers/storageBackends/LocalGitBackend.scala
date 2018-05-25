@@ -26,27 +26,21 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
-import play.api.{ Configuration, Logger }
-import play.api.libs.concurrent.ActorSystemProvider
-import play.api.libs.streams.Accumulator
-import play.api.mvc.{ RequestHeader, Result }
-
-import scala.concurrent.Future
-import scala.util.Try
-import play.api.mvc.Results._
-import scala.concurrent.duration._
-import org.eclipse.jgit.util.TemporaryBuffer
-import org.eclipse.jgit.transport._
-import java.util.zip.GZIPOutputStream
-
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import org.eclipse.jgit.errors.{ CorruptObjectException, PackProtocolException, UnpackException }
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.RefAdvertiser.PacketLineOutRefAdvertiser
+import org.eclipse.jgit.transport._
+import play.api.libs.concurrent.ActorSystemProvider
+import play.api.libs.streams.Accumulator
+import play.api.mvc.Results._
+import play.api.mvc.{ RequestHeader, Result }
+import play.api.{ Configuration, Logger }
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Future
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.util.Try
 /**
  * Created by julien on 01/02/18.
  */

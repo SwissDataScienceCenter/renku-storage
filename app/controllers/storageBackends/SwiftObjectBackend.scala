@@ -25,19 +25,17 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
-import ch.datascience.service.security.RequestWithProfile
 import models.Repository
 import org.javaswift.joss.client.factory.{ AccountConfig, AccountFactory }
 import org.javaswift.joss.headers.`object`.range.{ FirstPartRange, LastPartRange, MidPartRange }
 import org.javaswift.joss.instructions.DownloadInstructions
 import org.javaswift.joss.model.Account
 import play.api.libs.concurrent.ActorSystemProvider
+import play.api.libs.streams.Accumulator
+import play.api.mvc.Results._
+import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.streams.Accumulator
-import play.api.mvc._
-import play.api.mvc.Results._
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.matching.Regex
@@ -74,7 +72,7 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
     }
   }
 
-  def write( req: RequestHeader, bucket: String, name: String ): Accumulator[ByteString, Result] = {
+  def write( req: RequestHeader, bucket: String, name: String, callback: ( Any, Future[String] ) => Any ): Accumulator[ByteString, Result] = {
 
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
@@ -83,7 +81,7 @@ class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystem
       Accumulator.source[ByteString].mapFuture { source =>
         Future {
           val obj = container.getObject( name )
-          val inputStream = source.runWith(
+          val inputStream = source.alsoToMat( new ChecksumSink() )( callback ).runWith(
             StreamConverters.asInputStream( FiniteDuration( 3, TimeUnit.SECONDS ) )
           )
           obj.uploadObject( inputStream )

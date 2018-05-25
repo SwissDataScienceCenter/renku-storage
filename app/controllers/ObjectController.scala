@@ -18,6 +18,7 @@
 
 package controllers
 
+import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 
@@ -25,19 +26,18 @@ import javax.inject.{ Inject, Singleton }
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
 import ch.datascience.service.utils.ControllerWithBodyParseJson
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.mvc.{ BodyParsers, Controller, EssentialAction }
 import controllers.storageBackends.{ Backends, ObjectBackend }
-import models.{ FileObject, FileObjectRepository, Repository }
 import models.persistence.DatabaseLayer
+import models.{ FileObject, FileObjectRepository, Repository }
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
-
-import scala.concurrent.duration._
 import play.api.libs.streams.Accumulator
+import play.api.mvc.{ Action, BodyParsers, Controller, EssentialAction }
 import slick.jdbc.JdbcProfile
 
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 /**
@@ -107,11 +107,17 @@ class ObjectController @Inject() (
                 ifo <- dal.fileObjects.insert( fo )
                 ifr <- dal.fileObjectRepositories.insert( fr )
               } yield ( ifo, ifr )
-              db.run( action.transactionally ).map( inserts =>
-                if ( inserts._1 == 1 && inserts._2 == 1 )
-                  back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString )
-                else
-                  Accumulator.done( BadRequest ) )
+
+              def processChecksum( o: FileObject ) =
+                ( _: Any, checksum: Future[String] ) =>
+                  checksum.map( s => {
+                    val nfo = FileObject( o.uuid, o.description, o.name, s, o.created, o.owner )
+                    db.run( dal.fileObjects.update( nfo ) )
+                  } )
+
+              db.run( action.transactionally ).map { inserts =>
+                back.asInstanceOf[ObjectBackend].write( reqh, repo.iid.getOrElse( "" ), filename + now.toString, processChecksum( fo ) )
+              }.recoverWith { case e: SQLException => Future.successful( Accumulator.done( Conflict ) ) }
             }
             upload.getOrElse( Future.successful( Accumulator.done( NotFound ) ) )
           } )
@@ -122,7 +128,7 @@ class ObjectController @Inject() (
     }
   }
 
-  def downloadObject( id: String, oid: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  def downloadObject( id: String, oid: String ) = Action.async( BodyParsers.parse.empty ) { implicit request =>
     val valid = for (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
