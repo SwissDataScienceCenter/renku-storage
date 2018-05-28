@@ -47,7 +47,8 @@ class DatabaseLayer @Inject() (
   val tables = List(
     TableQuery[Repositories],
     TableQuery[FileObjects],
-    TableQuery[FileObjectRepositories]
+    TableQuery[FileObjectRepositories],
+    TableQuery[Events]
   )
 
   val init = db.run( MTable.getTables ).flatMap( v => {

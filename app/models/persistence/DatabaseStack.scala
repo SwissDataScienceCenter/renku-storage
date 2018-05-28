@@ -31,3 +31,4 @@ class DatabaseStack( val dbConfig: DatabaseConfig[JdbcProfile] )
   with RepositoryComponent
   with FileObjectComponent
   with FileObjectRepositoryComponent
+  with EventComponent
