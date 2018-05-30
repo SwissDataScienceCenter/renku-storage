@@ -49,6 +49,9 @@ libraryDependencies += "com.microsoft.azure" % "azure-storage" % "6.1.0"
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % "4.9.2.201712150930-r"
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % "4.9.2.201712150930-r"
 
+// The Kafka producer API
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+
 libraryDependencies += cache
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
 libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
