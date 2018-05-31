@@ -1,4 +1,4 @@
-package modules.eventPublisher.kafka
+package tasks.publish_events.kafka
 
 trait HasKafkaTopicsConfigProvider {
   protected def kafkaTopicsConfigProvider: KafkaTopicsConfigProvider

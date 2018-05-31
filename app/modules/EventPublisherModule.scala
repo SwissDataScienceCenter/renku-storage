@@ -3,38 +3,23 @@ package modules
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Keep
 import akka.stream.{ ActorMaterializer, Materializer }
-import javax.inject.{ Inject, Singleton }
-import modules.eventPublisher.kafka.{ RecoveryController, SetupKafkaTopics }
-import modules.eventPublisher.streams.{ PublisherSinkProvider, PublisherSourceFactory }
+import javax.inject.{ Inject, Named, Singleton }
+
+import tasks.publish_events.kafka.{ RecoveryController, SetupKafkaTopics }
+import tasks.publish_events.streams.{ PublisherSinkProvider, PublisherSourceFactory }
 import play.api.{ Configuration, Environment }
-import play.api.inject.Module
+import play.api.inject.{ Binding, Module }
+import tasks.publish_events.EventPublisher
 
-@Singleton
-class EventPublisher @Inject() (
-    val setupKafkaTopics:          SetupKafkaTopics,
-    val recoveryController:        RecoveryController,
-    val sourceFactory:             PublisherSourceFactory,
-    val sinkProvider:              PublisherSinkProvider,
-    implicit val executionContext: EventExecutionContext
-) {
-  implicit val system: ActorSystem = ActorSystem( "eventPublisher" )
-  implicit val materializer: Materializer = ActorMaterializer()
+import tasks.publish_events.BindingProviders
 
-  val futureGraph = for {
-    _ <- setupKafkaTopics.ensureTopics
-    lastEventId <- recoveryController.lastPushedEvent()
-  } yield {
-    val source = sourceFactory.make( lastEventId )
-    source.toMat( sinkProvider.get() )( Keep.right )
-  }
-
-  val futureEnd = futureGraph.flatMap { graph =>
-    graph.run()
-  }
-}
+import scala.concurrent.ExecutionContext
 
 class EventPublisherModule extends Module {
-  def bindings( environment: Environment, configuration: Configuration ) =
-    Seq( bind[EventPublisher].toSelf.eagerly() )
+  def bindings( environment: Environment, configuration: Configuration ): Seq[Binding[_]] =
+    Seq(
+      bind[ActorSystem].qualifiedWith( "event-publisher" ).toProvider( classOf[BindingProviders.ActorSystemProvider] ),
+      bind[ExecutionContext].qualifiedWith( "event-publisher" ).toProvider( classOf[BindingProviders.ExecutionContextProvider] ),
+      bind[EventPublisher].toSelf.eagerly()
+    )
 }
-

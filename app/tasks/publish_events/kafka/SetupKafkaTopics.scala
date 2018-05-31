@@ -1,22 +1,21 @@
-package modules.eventPublisher.kafka
+package tasks.publish_events.kafka
 
 import java.util.concurrent.ExecutionException
+import javax.inject.{ Inject, Named, Singleton }
 
-import javax.inject.{ Inject, Singleton }
 import akka.Done
-import modules.EventExecutionContext
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
 import play.api.Logger
 
-import scala.concurrent.{ Future, blocking }
+import scala.concurrent.{ ExecutionContext, Future, blocking }
 import scala.util.{ Success, Try }
 
 @Singleton
 class SetupKafkaTopics @Inject() (
-    protected val kafkaTopicsConfigProvider: KafkaTopicsConfigProvider,
-    protected val kafkaAdminClientProvider:  KafkaAdminClientProvider,
-    implicit val executionContext:           EventExecutionContext
+    protected val kafkaTopicsConfigProvider:                 KafkaTopicsConfigProvider,
+    protected val kafkaAdminClientProvider:                  KafkaAdminClientProvider,
+    @Named( "event-publisher" ) implicit val executionContext:ExecutionContext
 )
   extends HasKafkaTopicsConfigProvider
   with HasKafkaAdminClientProvider {

@@ -1,21 +1,23 @@
-package modules.eventPublisher.streams
+package tasks.publish_events.streams
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{ Inject, Named, Singleton }
+
 import akka.NotUsed
 import akka.stream.{ Graph, SourceShape }
 import akka.stream.scaladsl.Source
 import models.Event
 import models.persistence.DatabaseLayer
-import modules.EventExecutionContext
 import play.api.Configuration
 import play.api.db.slick.DatabaseConfigProvider
 
+import scala.concurrent.ExecutionContext
+
 @Singleton
 class PublisherSourceFactory @Inject() (
-    protected val config:           Configuration,
-    protected val dal:              DatabaseLayer,
-    protected val dbConfigProvider: DatabaseConfigProvider,
-    implicit val executionContext:  EventExecutionContext
+    protected val config:                                    Configuration,
+    protected val dal:                                       DatabaseLayer,
+    protected val dbConfigProvider:                          DatabaseConfigProvider,
+    @Named( "event-publisher" ) implicit val executionContext:ExecutionContext
 ) {
 
   val fetchSize: Int = config.getInt( "events.fetch_size" ).getOrElse( 1 )

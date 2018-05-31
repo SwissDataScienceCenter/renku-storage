@@ -1,26 +1,26 @@
-package modules.eventPublisher.streams
+package tasks.publish_events.streams
 
 import java.time.Instant
+import javax.inject.Named
 
 import akka.Done
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import models.Event
 import models.persistence.DatabaseLayer
-import modules.EventExecutionContext
 import play.api.db.slick.HasDatabaseConfig
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.collection.mutable
-import scala.concurrent.{ Future, blocking }
+import scala.concurrent.{ ExecutionContext, Future, blocking }
 
 class PublisherSourceStage(
-    val startFrom:                 Long,
-    val fetchSize:                 Int,
-    protected val dal:             DatabaseLayer,
-    val dbConfig:                  DatabaseConfig[JdbcProfile],
-    implicit val executionContext: EventExecutionContext
+    val startFrom:                                           Long,
+    val fetchSize:                                           Int,
+    protected val dal:                                       DatabaseLayer,
+    val dbConfig:                                            DatabaseConfig[JdbcProfile],
+    @Named( "event-publisher" ) implicit val executionContext:ExecutionContext
 ) extends GraphStage[SourceShape[Event]] with HasDatabaseConfig[JdbcProfile] {
 
   val out: Outlet[Event] = Outlet[Event]( "events.out" )

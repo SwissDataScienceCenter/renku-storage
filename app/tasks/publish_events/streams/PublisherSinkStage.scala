@@ -1,4 +1,4 @@
-package modules.eventPublisher.streams
+package tasks.publish_events.streams
 
 import java.util.Properties
 

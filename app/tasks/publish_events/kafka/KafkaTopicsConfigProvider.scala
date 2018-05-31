@@ -1,4 +1,4 @@
-package modules.eventPublisher.kafka
+package tasks.publish_events.kafka
 
 import javax.inject.{ Inject, Singleton }
 

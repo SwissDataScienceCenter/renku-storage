@@ -1,20 +1,19 @@
-package modules.eventPublisher.kafka
+package tasks.publish_events.kafka
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{ Inject, Named, Singleton }
+
 import models.Event
-import modules.EventExecutionContext
 import org.apache.kafka.common.TopicPartition
 import play.api.{ Configuration, Logger }
 import play.api.libs.json.{ Json, OFormat }
 
-import scala.concurrent.Future
-import scala.concurrent.blocking
+import scala.concurrent.{ ExecutionContext, Future, blocking }
 
 @Singleton
 class RecoveryController @Inject() (
-    protected val kafkaConsumerProvider: KafkaConsumerProvider,
-    protected val config:                Configuration,
-    implicit val executionContext:       EventExecutionContext
+    protected val kafkaConsumerProvider:                     KafkaConsumerProvider,
+    protected val config:                                    Configuration,
+    @Named( "event-publisher" ) implicit val executionContext:ExecutionContext
 ) extends HasKafkaConsumerProvider {
   import scala.collection.JavaConverters._
 
