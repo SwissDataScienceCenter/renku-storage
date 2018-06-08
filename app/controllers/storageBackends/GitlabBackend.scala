@@ -33,10 +33,12 @@ import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
+import play.api.libs.ws.ahc.StreamedResponse
 import play.api.mvc._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.language.implicitConversions
 
 /**
  * Created by johann on 07/07/17.
@@ -51,17 +53,17 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
   implicit def FutureResponse2Result( response: Future[StreamedResponse] )( implicit writeable: Writeable[ByteString] ): Future[Result] = {
     response map {
       response: StreamedResponse =>
-        val headers = response.headers.headers map {
+        val headers = response.headers map {
           h => ( h._1, h._2.head )
         }
-        Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
+        Result( ResponseHeader( response.status, headers ), HttpEntity.Chunked( response.bodyAsSource.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
     }
   }
   implicit def Response2Result( response: StreamedResponse )( implicit writeable: Writeable[ByteString] ): Result = {
-    val headers = response.headers.headers map {
+    val headers = response.headers map {
       h => ( h._1, h._2.head )
     }
-    Result( ResponseHeader( response.headers.status, headers ), HttpEntity.Chunked( response.body.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
+    Result( ResponseHeader( response.status, headers ), HttpEntity.Chunked( response.bodyAsSource.map( c => HttpChunk.Chunk( writeable.transform( c ) ) ), None ) )
   }
 
   implicit def StreamResponse2Result( response: Future[WSResponse] ): Future[Result] = {
@@ -91,7 +93,7 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
       val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-upload-pack" + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
-      client.withBody( StreamedBody( source ) ).withMethod( "POST" ).stream()
+      client.withBody( SourceBody( source ) ).withMethod( "POST" ).stream()
     }
   }
 
@@ -100,7 +102,7 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
       val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-receive-pack" + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
-      client.withBody( StreamedBody( source ) ).withMethod( "POST" ).stream()
+      client.withBody( SourceBody( source ) ).withMethod( "POST" ).stream()
     }
   }
 

@@ -23,19 +23,18 @@ import java.util.UUID
 import javax.inject.{ Inject, Singleton }
 
 import authorization.JWTVerifierProvider
-import ch.datascience.service.security.ProfileFilterAction
+import ch.datascience.service.security.TokenFilterActionBuilder
 import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import controllers.storageBackends.Backends
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Created by jeberle on 25.04.17.
@@ -44,24 +43,27 @@ import scala.concurrent.Future
 class RepositoryController @Inject() (
     config:            play.api.Configuration,
     jwtVerifier:       JWTVerifierProvider,
+    tokenFilterAction: TokenFilterActionBuilder,
     backends:          Backends,
-    protected val dal: DatabaseLayer
-
-) extends Controller with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
+    protected val dal: DatabaseLayer,
+    cc:                ControllerComponents
+) extends AbstractController( cc ) with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
 
   override protected val dbConfig = dal.dbConfig
 
   lazy val logger: Logger = Logger( "application.RepositoryController" )
-  val default_backend: String = config.getString( "lfs_default_backend" ).get
+  val default_backend: String = config.get[String]( "lfs_default_backend" )
 
   implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
 
-  def listRepo() = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  implicit val ec: ExecutionContext = cc.executionContext
+
+  def listRepo: Action[Unit] = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     val all = db.run( dal.repositories.all() )
     all.map( seq => Json.toJson( seq ) ).map( json => Ok( json ) )
   }
 
-  def createRepo() = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
+  def createRepo: Action[Repository] = tokenFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
     backends.getBackend( request.body.backend.getOrElse( default_backend ) ) match {
       case Some( back ) => {
         back.createRepo( request.body ).flatMap(
@@ -76,7 +78,7 @@ class RepositoryController @Inject() (
     }
   }
 
-  def detailRepo( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  def detailRepo( id: String ): Action[Unit] = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     val json = JsString( id )
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
@@ -89,7 +91,7 @@ class RepositoryController @Inject() (
     }
   }
 
-  def updateRepo( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
+  def updateRepo( id: String ): Action[Repository] = tokenFilterAction( jwtVerifier.get ).async( bodyParseJson[Repository] ) { implicit request =>
     val json = JsString( id )
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
@@ -104,7 +106,7 @@ class RepositoryController @Inject() (
     }
   }
 
-  def repoBackends = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+  def repoBackends: Action[Unit] = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     Future( Ok( Json.toJson( backends.map.keys ) ) )
   }
 }

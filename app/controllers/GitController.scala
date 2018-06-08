@@ -20,10 +20,10 @@ package controllers
 
 import java.time.Instant
 import java.util.UUID
-
 import javax.inject.{ Inject, Singleton }
+
 import authorization.JWTVerifierProvider
-import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
+import ch.datascience.service.security.{ TokenFilter, TokenFilterActionBuilder }
 import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import com.auth0.jwt.interfaces.DecodedJWT
 import controllers.storageBackends.{ Backends, GitBackend }
@@ -47,10 +47,12 @@ import scala.concurrent.{ Await, Future }
 class GitController @Inject() (
     config:                play.api.Configuration,
     jwtVerifier:           JWTVerifierProvider,
+    tokenFilterAction:     TokenFilterActionBuilder,
     backends:              Backends,
     implicit val wsclient: WSClient,
-    protected val dal:     DatabaseLayer
-) extends Controller with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
+    protected val dal:     DatabaseLayer,
+    cc:                    ControllerComponents
+) extends AbstractController( cc ) with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
 
   override protected val dbConfig = dal.dbConfig
   import profile.api._
@@ -63,7 +65,7 @@ class GitController @Inject() (
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
 
-  def getRefs( id: String ) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+  def getRefs( id: String ) = tokenFilterAction( jwtVerifier.get ).async { implicit request =>
 
     val json = JsString( id )
     json.validate[UUID] match {
