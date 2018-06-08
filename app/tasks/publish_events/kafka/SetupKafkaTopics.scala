@@ -31,27 +31,24 @@ class SetupKafkaTopics @Inject() (
 
     val result = kafkaAdminClient.createTopics( newTopics.asJava )
 
-    val wait = Future {
+    // Get result for each topic and ignore TopicExistsException
+    val allResults = Future {
       blocking {
-        result.all().get()
+        result.values().asScala.toMap.mapValues { kf =>
+          Try {
+            kf.get()
+          }.map { _ => Done }
+            .recover {
+              case e: ExecutionException => e.getCause match {
+                case inner: TopicExistsException =>
+                  logger.info( inner.getMessage )
+                  Done
+                case _ => throw e
+              }
+            }
+        }
       }
     }
-
-    // Get result for each topic and ignore TopicExistsException
-    val allResults = wait.map( _ =>
-      result.values().asScala.toMap.mapValues { kf =>
-        Try {
-          kf.get()
-        }.map { _ => Done }
-          .recover {
-            case e: ExecutionException => e.getCause match {
-              case inner: TopicExistsException =>
-                logger.info( inner.getMessage )
-                Done
-              case _ => throw e
-            }
-          }
-      } )
 
     for {
       map <- allResults

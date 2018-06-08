@@ -19,7 +19,7 @@ class RecoveryController @Inject() (
 
   val topic: String = config.getString( "events.push_to" ).getOrElse( "events" )
 
-  lazy val logger: Logger = Logger( "application.modules.eventPublisher.SetupKafkaTopics" )
+  lazy val logger: Logger = Logger( "application.modules.eventPublisher.RecoveryController" )
 
   implicit lazy val EventFormat: OFormat[Event] = Event.format
 
@@ -31,6 +31,7 @@ class RecoveryController @Inject() (
   logger.info( s"Found ${partitions.length} partitions for topic $topic" )
 
   def lastPushedEvent(): Future[Long] = {
+    logger.debug( "Entered lastPushedEvent()" )
     // First, we seek to the end of each partition
     kafkaConsumer.assign( partitions.asJava )
     kafkaConsumer.seekToEnd( partitions.asJava )
