@@ -20,7 +20,7 @@ class PublisherSourceFactory @Inject() (
     @Named( "event-publisher" ) implicit val executionContext:ExecutionContext
 ) {
 
-  val fetchSize: Int = config.getInt( "events.fetch_size" ).getOrElse( 1 )
+  val fetchSize: Int = config.getOptional[Int]( "events.fetch_size" ).getOrElse( 1 )
 
   def make( startFrom: Long ): Source[Event, NotUsed] = {
     val graph: Graph[SourceShape[Event], NotUsed] = new PublisherSourceStage( startFrom, fetchSize, dal, dbConfigProvider.get, executionContext )

@@ -20,12 +20,12 @@ package controllers.storageBackends
 
 import java.io.{ File, FileInputStream, FileNotFoundException, FileOutputStream }
 import java.nio.file.{ FileSystems, Files }
-import javax.inject.{ Inject, Singleton }
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import javax.inject.{ Inject, Singleton }
 import models.Repository
 import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
@@ -44,7 +44,7 @@ import scala.util.matching.Regex
 @Singleton
 class LocalFSObjectBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
 
-  private[this] lazy val rootDir: String = configuration.getString( "storage.backend.local.root" ).get
+  private[this] lazy val rootDir: String = configuration.get[String]( "storage.backend.local.root" )
 
   def read( request: RequestHeader, bucket: String, name: String ): Option[Source[ByteString, _]] = {
     Try {

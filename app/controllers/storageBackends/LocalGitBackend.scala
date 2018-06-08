@@ -20,12 +20,12 @@ package controllers.storageBackends
 
 import java.io._
 import java.util.concurrent.TimeUnit
-import javax.inject.{ Inject, Singleton }
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
+import javax.inject.{ Inject, Singleton }
 import models.Repository
 import org.eclipse.jgit.errors.{ CorruptObjectException, PackProtocolException, UnpackException }
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -49,7 +49,7 @@ class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvi
 
   lazy val logger: Logger = Logger( "application.storageBackends.LocalGitBackend" )
 
-  private[this] lazy val rootDir: String = configuration.getString( "storage.backend.localgit.root" ).get
+  private[this] lazy val rootDir: String = configuration.get[String]( "storage.backend.localgit.root" )
 
   /*
    * derived from org.eclipse.jgit.http.server.ServletUtils.consumeRequestBody to remove dependencies on servlets

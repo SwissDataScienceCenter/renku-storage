@@ -17,12 +17,11 @@
  */
 
 import javax.inject.{ Inject, Provider, Singleton }
-
-import play.api.{ Configuration, Environment, OptionalSourceMapper }
 import play.api.http.DefaultHttpErrorHandler
-import play.api.mvc.{ Action, RequestHeader, Result }
 import play.api.mvc.Results.Redirect
+import play.api.mvc.{ RequestHeader, Result }
 import play.api.routing.Router
+import play.api.{ Configuration, Environment, OptionalSourceMapper }
 
 import scala.concurrent.Future
 import scala.util.matching.Regex
@@ -39,7 +38,7 @@ class ErrorHandler @Inject() (
 
   override protected def onNotFound( request: RequestHeader, message: String ): Future[Result] = request.path match {
     case endsWithASlash( _ ) =>
-      val newRequest = request.copy( path = request.path.dropRight( 1 ) )
+      val newRequest = request.withTarget( request.target.withPath( request.path.dropRight( 1 ) ) )
       router.get().handlerFor( newRequest ) match {
         case Some( _ ) => Future.successful( Redirect( newRequest.path, request.queryString, 301 ) )
         case None      => super.onNotFound( request, message )

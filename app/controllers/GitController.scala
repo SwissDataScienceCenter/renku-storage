@@ -59,8 +59,8 @@ class GitController @Inject() (
 
   lazy val logger: Logger = Logger( "application.GitController" )
 
-  val host: String = config.getString( "renku_host" ).get
-  val default_backend: String = config.getString( "lfs_default_backend" ).get
+  val host: String = config.get[String]( "renku_host" )
+  val default_backend: String = config.get[String]( "lfs_default_backend" )
 
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format

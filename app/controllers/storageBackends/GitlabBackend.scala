@@ -44,11 +44,15 @@ import scala.language.implicitConversions
  * Created by johann on 07/07/17.
  */
 @Singleton
-class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: ActorSystemProvider, implicit val wsclient: WSClient ) extends GitBackend {
+class GitlabBackend @Inject() (
+    config:                Configuration,
+    actorSystemProvider:   ActorSystemProvider,
+    implicit val wsclient: WSClient
+) extends GitBackend {
 
-  val repo_URL: String = config.getString( "storage.backend.gitlab.url" ).get
-  val username: String = config.getString( "storage.backend.gitlab.username" ).get
-  val pass: String = config.getString( "storage.backend.gitlab.pass" ).get
+  val repo_URL: String = config.get[String]( "storage.backend.gitlab.url" )
+  val username: String = config.get[String]( "storage.backend.gitlab.username" )
+  val pass: String = config.get[String]( "storage.backend.gitlab.pass" )
 
   implicit def FutureResponse2Result( response: Future[StreamedResponse] )( implicit writeable: Writeable[ByteString] ): Future[Result] = {
     response map {
@@ -69,7 +73,7 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
   implicit def StreamResponse2Result( response: Future[WSResponse] ): Future[Result] = {
     response map {
       response =>
-        val headers = response.allHeaders map {
+        val headers = response.headers map {
           h => ( h._1, h._2.head )
         }
         Result( ResponseHeader( response.status, headers ), Strict( response.bodyAsBytes, None ) )
@@ -84,7 +88,7 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
   private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def getRefs( request: RequestHeader, url: String, user: String ): Future[Result] = {
-    val result = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/info/refs?" + request.rawQueryString ).withHeaders( patchHeaders( request.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
+    val result = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/info/refs?" + request.rawQueryString ).withHttpHeaders( patchHeaders( request.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
     result.withMethod( "GET" ).stream()
   }
 
@@ -92,7 +96,7 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
-      val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-upload-pack" + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
+      val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-upload-pack" + req.rawQueryString ).withHttpHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
       client.withBody( SourceBody( source ) ).withMethod( "POST" ).stream()
     }
   }
@@ -101,13 +105,13 @@ class GitlabBackend @Inject() ( config: Configuration, actorSystemProvider: Acto
     implicit val actorSystem: ActorSystem = actorSystemProvider.get
     implicit val mat: ActorMaterializer = ActorMaterializer()
     Accumulator.source[ByteString].mapFuture { source =>
-      val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-receive-pack" + req.rawQueryString ).withHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
+      val client = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/git-receive-pack" + req.rawQueryString ).withHttpHeaders( patchHeaders( req.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )
       client.withBody( SourceBody( source ) ).withMethod( "POST" ).stream()
     }
   }
 
   def createRepo( request: Repository ): Future[Option[String]] = {
-    val client = wsclient.url( repo_URL + "/api/v4/projects" ).withHeaders( "Private-Token" -> pass, "Content-Type" -> "application/json" ).withRequestTimeout( 10000.millis )
+    val client = wsclient.url( repo_URL + "/api/v4/projects" ).withHttpHeaders( "Private-Token" -> pass, "Content-Type" -> "application/json" ).withRequestTimeout( 10000.millis )
     client.post( Json.stringify( Json.obj( "path" -> request.path, "description" -> request.description, "lfs_enabled" -> false ) ) ).map(
       result => {
         ( result.json \ "id" ).toOption.map( i => i.toString() )

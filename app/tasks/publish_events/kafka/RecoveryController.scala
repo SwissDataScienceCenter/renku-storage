@@ -17,7 +17,7 @@ class RecoveryController @Inject() (
 ) extends HasKafkaConsumerProvider {
   import scala.collection.JavaConverters._
 
-  val topic: String = config.getString( "events.push_to" ).getOrElse( "events" )
+  val topic: String = config.getOptional[String]( "events.push_to" ).getOrElse( "events" )
 
   lazy val logger: Logger = Logger( "application.modules.eventPublisher.RecoveryController" )
 

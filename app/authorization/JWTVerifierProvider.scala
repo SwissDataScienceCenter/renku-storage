@@ -19,22 +19,26 @@
 package authorization
 
 import java.security.interfaces.RSAPublicKey
-import javax.inject.{ Inject, Singleton }
 
 import ch.datascience.service.security.PublicKeyReader
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{ JWT, JWTVerifier }
+import javax.inject.{ Inject, Singleton }
 import play.api.Configuration
 import play.api.libs.ws.WSClient
 
-import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext }
 
 /**
  * Created by johann on 14/07/17.
  */
 @Singleton
-class JWTVerifierProvider @Inject() ( configuration: Configuration, wSClient: WSClient, executionContext: ExecutionContext ) {
+class JWTVerifierProvider @Inject() (
+    configuration:    Configuration,
+    wSClient:         WSClient,
+    executionContext: ExecutionContext
+) {
 
   def get: JWTVerifier = verifier
 
@@ -47,7 +51,7 @@ class JWTVerifierProvider @Inject() ( configuration: Configuration, wSClient: WS
   private[this] def getPublicKey: RSAPublicKey = {
     implicit val ws: WSClient = wSClient
     implicit val ec: ExecutionContext = executionContext
-    val futureKey = PublicKeyReader.getRSAPublicKey( configuration.getConfig( "identity-manager.key" ).get )
+    val futureKey = PublicKeyReader.getRSAPublicKey( configuration.get[Configuration]( "identity-manager.key" ) )
     Await.result( futureKey, 2.minutes )
   }
 
