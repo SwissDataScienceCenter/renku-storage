@@ -59,6 +59,9 @@ lazy val jgit_version = "4.11.0.201803080745-r"
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % jgit_version
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % jgit_version
 
+lazy val kafka_clients_version = "1.1.0"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % kafka_clients_version
+
 lazy val scalatest_plus_play_version = "3.1.2"
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % scalatest_plus_play_version % Test
 

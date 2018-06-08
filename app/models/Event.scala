@@ -19,8 +19,9 @@
 package models
 
 import java.time.Instant
+import play.api.libs.functional.syntax._
 
-import play.api.libs.json.JsValue
+import play.api.libs.json.{ JsPath, JsValue, OFormat }
 
 case class Event(
     id:      Option[Long],
@@ -30,3 +31,29 @@ case class Event(
     created: Instant
 )
 
+object Event {
+
+  def format: OFormat[Event] = (
+    ( JsPath \ "id" ).formatNullable[Long] and
+    ( JsPath \ "obj" ).format[JsValue] and
+    ( JsPath \ "action" ).format[String] and
+    ( JsPath \ "attr" ).format[JsValue] and
+    ( JsPath \ "created" ).format[Instant]
+  )( read, write )
+
+  private[this] def read(
+      id:      Option[Long],
+      obj:     JsValue,
+      action:  String,
+      attr:    JsValue,
+      created: Instant
+  ): Event = {
+    Event(
+      id, obj, action, attr, created
+    )
+  }
+
+  private[this] def write( request: Event ): ( Option[Long], JsValue, String, JsValue, Instant ) = {
+    ( request.id, request.obj, request.action, request.attr, request.created )
+  }
+}
