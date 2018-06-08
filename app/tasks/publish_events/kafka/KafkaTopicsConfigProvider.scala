@@ -1,7 +1,6 @@
 package tasks.publish_events.kafka
 
 import javax.inject.{ Inject, Singleton }
-
 import play.api.Configuration
 
 @Singleton

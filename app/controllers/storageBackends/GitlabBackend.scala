@@ -19,17 +19,16 @@
 package controllers.storageBackends
 
 import java.net.URL
-import javax.inject.{ Inject, Singleton }
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import javax.inject.{ Inject, Singleton }
 import models.Repository
 import play.api.Configuration
 import play.api.http.HttpEntity.Strict
 import play.api.http.{ HttpChunk, HttpEntity, Writeable }
 import play.api.libs.concurrent.ActorSystemProvider
-import play.api.libs.concurrent.Execution.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
@@ -47,6 +46,7 @@ import scala.language.implicitConversions
 class GitlabBackend @Inject() (
     config:                Configuration,
     actorSystemProvider:   ActorSystemProvider,
+    implicit val ec:       ExecutionContext,
     implicit val wsclient: WSClient
 ) extends GitBackend {
 
@@ -85,7 +85,6 @@ class GitlabBackend @Inject() (
     val host = new URL( repo_URL ).getHost
     h.remove( "Authorization" ).replace( ( "Host", host ) ).toSimpleMap.toArray
   }
-  private[this] implicit lazy val ex: ExecutionContext = defaultContext
 
   def getRefs( request: RequestHeader, url: String, user: String ): Future[Result] = {
     val result = wsclient.url( repo_URL + "/" + username + "/" + url + ".git/info/refs?" + request.rawQueryString ).withHttpHeaders( patchHeaders( request.headers ): _* ).withAuth( username, pass, WSAuthScheme.BASIC ).withRequestTimeout( 10000.millis )

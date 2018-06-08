@@ -37,15 +37,18 @@ import play.api.mvc.Results._
 import play.api.mvc.{ RequestHeader, Result }
 import play.api.{ Configuration, Logger }
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.Try
 /**
  * Created by julien on 01/02/18.
  */
 @Singleton
-class LocalGitBackend @Inject() ( configuration: Configuration, actorSystemProvider: ActorSystemProvider ) extends GitBackend {
+class LocalGitBackend @Inject() (
+    configuration:       Configuration,
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
+) extends GitBackend {
 
   lazy val logger: Logger = Logger( "application.storageBackends.LocalGitBackend" )
 

@@ -20,12 +20,12 @@ package controllers
 
 import java.time.Instant
 import java.util.UUID
-import javax.inject.{ Inject, Singleton }
 
 import authorization.JWTVerifierProvider
 import ch.datascience.service.security.TokenFilterActionBuilder
 import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import controllers.storageBackends.Backends
+import javax.inject.{ Inject, Singleton }
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
@@ -56,7 +56,7 @@ class RepositoryController @Inject() (
 
   implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
 
-  implicit val ec: ExecutionContext = cc.executionContext
+  implicit val ec: ExecutionContext = defaultExecutionContext
 
   def listRepo: Action[Unit] = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     val all = db.run( dal.repositories.all() )

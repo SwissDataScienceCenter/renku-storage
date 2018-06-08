@@ -37,7 +37,7 @@ class HealthCheckController @Inject() (
     cc: ControllerComponents
 ) extends AbstractController( cc ) {
 
-  implicit val ec: ExecutionContext = cc.executionContext
+  implicit val ec: ExecutionContext = defaultExecutionContext
 
   def ping: Action[Unit] = Action.async( parse.empty ) { implicit request =>
     // Perform health check
@@ -64,7 +64,7 @@ object HealthCheckController {
     val config: Configuration = Configuration( ConfigFactory.load() )
     val ws: WSClient = AhcWSClient()
 
-    val prefix: String = config.getString( "play.http.context" ).getOrElse( "/" )
+    val prefix: String = config.getOptional[String]( "play.http.context" ).getOrElse( "/" )
     val checkURL: String = s"http://localhost:9000$prefix/ping"
 
     val futureStatus = for {

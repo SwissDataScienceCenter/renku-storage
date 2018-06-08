@@ -19,6 +19,7 @@
 package models.persistence
 
 import java.time.Instant
+
 import play.api.libs.json.{ JsValue, Json }
 
 /**

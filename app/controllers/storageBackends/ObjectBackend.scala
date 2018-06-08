@@ -28,7 +28,6 @@ import org.apache.commons.codec.binary.Hex
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{ RequestHeader, Result }
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ Future, Promise }
 
 /**

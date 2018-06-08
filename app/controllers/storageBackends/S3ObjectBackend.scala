@@ -33,14 +33,17 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
-class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
+class S3ObjectBackend @Inject() (
+    config:              play.api.Configuration,
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
+) extends ObjectBackend {
 
   private[this] val subConfig = config.get[Configuration]( "storage.backend.s3" )
   lazy val minioClient = new MinioClient(

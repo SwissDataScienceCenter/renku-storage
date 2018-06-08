@@ -1,9 +1,9 @@
 package tasks.publish_events.streams
 
-import javax.inject.{ Inject, Provider, Singleton }
 import akka.Done
 import akka.stream.scaladsl.Sink
 import akka.stream.{ Graph, SinkShape }
+import javax.inject.{ Inject, Provider, Singleton }
 import models.Event
 import play.api.Configuration
 

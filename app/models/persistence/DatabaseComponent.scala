@@ -18,17 +18,14 @@
 
 package models.persistence
 
-//import ch.datascience.graph.types.persistence.DatabaseConfigComponent
 import play.api.db.slick.HasDatabaseConfig
 import slick.jdbc.JdbcProfile
 
 /**
  * Created by johann on 04/04/17.
  */
-//trait DatabaseComponent extends DatabaseConfigComponent[JdbcProfile] {
 trait DatabaseComponent extends HasDatabaseConfig[JdbcProfile] {
 
-  //  protected def dal: DatabaseStack
   protected val dal: DatabaseStack
 
   def close(): Unit = {

@@ -1,13 +1,13 @@
 package tasks.publish_events
 
-import javax.inject.{ Inject, Named, Singleton }
-
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Keep
 import akka.stream.{ ActorMaterializer, Materializer }
+import javax.inject.{ Inject, Named, Singleton }
+import play.api.Logger
 import tasks.publish_events.kafka.{ RecoveryController, SetupKafkaTopics }
 import tasks.publish_events.streams.{ PublisherSinkProvider, PublisherSourceFactory }
-import play.api.Logger
+
 import scala.concurrent.ExecutionContext
 
 @Singleton

@@ -20,18 +20,19 @@ package controllers
 
 import authorization.{ JWTVerifierProvider, MockJWTVerifierProvider }
 import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.{ OneAppPerSuite, PlaySpec }
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{ JsObject, JsPath, JsValue }
+import play.api.libs.json.{ JsObject, JsValue }
 import play.api.mvc.{ AnyContentAsEmpty, Result, Results }
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
 import scala.concurrent.Future
 
-class SwaggerControllerSpec extends PlaySpec with OneAppPerSuite with MockitoSugar with Results {
+class SwaggerControllerSpec extends PlaySpec with GuiceOneAppPerSuite with MockitoSugar with Results {
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
     .overrides( bind[JWTVerifierProvider].to[MockJWTVerifierProvider] )

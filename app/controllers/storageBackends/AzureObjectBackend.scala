@@ -35,16 +35,16 @@ import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, blocking }
+import scala.concurrent.{ Await, ExecutionContext, Future, blocking }
 import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
 class AzureObjectBackend @Inject() (
     config:              Configuration,
-    actorSystemProvider: ActorSystemProvider
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
 ) extends ObjectBackend {
 
   private[this] val subConfig = config.get[Configuration]( "storage.backend.azure" )

@@ -18,8 +18,8 @@
 
 package models
 
-import play.api.libs.json.{ JsPath, OFormat }
 import play.api.libs.functional.syntax._
+import play.api.libs.json.{ JsPath, OFormat }
 
 case class FileUpdateRequest(
     fileName: Option[String],

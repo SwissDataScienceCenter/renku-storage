@@ -1,11 +1,11 @@
 package models.persistence
 
 import java.time.Instant
-import java.util.UUID
-import play.api.libs.json.JsValue
 
 import models.Event
+import play.api.libs.json.JsValue
 import slick.lifted._
+
 import scala.language.{ higherKinds, implicitConversions }
 
 trait EventComponent {

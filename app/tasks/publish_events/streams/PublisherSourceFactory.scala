@@ -1,10 +1,9 @@
 package tasks.publish_events.streams
 
-import javax.inject.{ Inject, Named, Singleton }
-
 import akka.NotUsed
-import akka.stream.{ Graph, SourceShape }
 import akka.stream.scaladsl.Source
+import akka.stream.{ Graph, SourceShape }
+import javax.inject.{ Inject, Named, Singleton }
 import models.Event
 import models.persistence.DatabaseLayer
 import play.api.Configuration
