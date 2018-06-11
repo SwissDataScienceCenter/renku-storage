@@ -9,14 +9,14 @@ class KafkaTopicsConfigProvider @Inject() (
 ) {
 
   def get(): Seq[KafkaTopicConfig] = {
-    val topicsConfig = config.get[Configuration]( "kafka.topics" )
+    val topicsConfig = config.get[Seq[Configuration]]( "kafka.topics" )
     for {
-      topicName <- topicsConfig.subKeys.toSeq
+      c <- topicsConfig
     } yield {
-      val c = topicsConfig.get[Configuration]( topicName )
+      val n = c.get[String]( "name" )
       val p = c.getOptional[Int]( "partitions" ).getOrElse( 1 )
       val r = c.getOptional[Int]( "replication" ).getOrElse( 1 )
-      KafkaTopicConfig( topicName, p, r )
+      KafkaTopicConfig( n, p, r )
     }
   }
 

@@ -58,3 +58,5 @@ by setting the environment variable `STORAGE_BACKEND_LOCAL_ENABLED` to `true`.
 | GITLAB_PASS |  | the gitlab user's private token |
 | RENKU_ENDPOINT | http://localhost | the url to reach renku from the users perspective |
 | RENKU_STORAGE_DEFAULT_LFS_BACKEND | local | the default backend to create buckets if none is specified for a git repository |
+| RENKU_KAFKA_SERVERS | "172.17.0.1:9092," | the comma-separated list of kafka servers IP/Domain name:Port |
+| RENKU_KAFKA_TOPIC | storage_events | the kafka topic where to publish events |
