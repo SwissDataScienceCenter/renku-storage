@@ -15,7 +15,7 @@ class KafkaAdminClientProvider @Inject() (
 
   protected lazy val _adminClient: AdminClient = {
     val props = new Properties
-    props.put( "bootstrap.servers", config.get[Configuration]( "kafka.bootstrap.servers" ) )
+    props.put( "bootstrap.servers", config.get[String]( "kafka.bootstrap.servers" ) )
 
     AdminClient.create( props )
   }
