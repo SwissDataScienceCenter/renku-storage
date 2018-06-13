@@ -18,7 +18,7 @@
 
 organization := "ch.datascience"
 version := "1.0.1-SNAPSHOT"
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.6"
 name := "renku-storage"
 
 lazy val root = (project in file("."))
@@ -28,33 +28,45 @@ lazy val root = (project in file("."))
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
+libraryDependencies += filters
+
 lazy val renku_version = "0.2.0-SNAPSHOT"
 libraryDependencies += "ch.datascience" %% "renku-commons" % renku_version
 
-libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % "4.8"
+lazy val logback_encoder_version = "5.1"
+libraryDependencies += "net.logstash.logback" % "logstash-logback-encoder" % logback_encoder_version
 
-lazy val play_slick_version = "2.1.1"
-lazy val postgresql_version = "42.0.0"
-
-libraryDependencies += filters
+lazy val play_slick_version = "3.0.0"
 libraryDependencies += "com.typesafe.play" %% "play-slick" % play_slick_version
 libraryDependencies += "com.typesafe.play" %% "play-slick-evolutions" % play_slick_version
+
+lazy val postgresql_version = "42.2.2"
 libraryDependencies += "org.postgresql" % "postgresql" % postgresql_version
-libraryDependencies += "com.h2database" % "h2" % "1.4.196"
 
-libraryDependencies += "io.minio" % "minio" % "3.0.4"
-libraryDependencies += "org.javaswift" % "joss" % "0.9.7"
-libraryDependencies += "com.microsoft.azure" % "azure-storage" % "6.1.0"
+lazy val h2_version = "1.4.197"
+libraryDependencies += "com.h2database" % "h2" % h2_version
 
-libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % "4.9.2.201712150930-r"
-libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % "4.9.2.201712150930-r"
+lazy val minio_version = "4.0.0"
+libraryDependencies += "io.minio" % "minio" % minio_version
 
-// The Kafka producer API
-libraryDependencies += "org.apache.kafka" % "kafka-clients" % "1.0.0"
+lazy val joss_version = "0.10.2"
+libraryDependencies += "org.javaswift" % "joss" % joss_version
 
-libraryDependencies += cache
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
-libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
+lazy val azure_storage_version = "7.0.0"
+libraryDependencies += "com.microsoft.azure" % "azure-storage" % azure_storage_version
+
+lazy val jgit_version = "4.11.0.201803080745-r"
+libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % jgit_version
+libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % jgit_version
+
+lazy val kafka_clients_version = "1.1.0"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % kafka_clients_version
+
+lazy val scalatest_plus_play_version = "3.1.2"
+libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % scalatest_plus_play_version % Test
+
+lazy val mockito_version = "2.18.3"
+libraryDependencies += "org.mockito" % "mockito-core" % mockito_version % Test
 
 javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
 lazy val newEntrypoint = "bin/docker-entrypoint.sh"

@@ -1,7 +1,6 @@
 package tasks.publish_events.kafka
 
 import javax.inject.{ Inject, Singleton }
-
 import play.api.Configuration
 
 @Singleton
@@ -10,14 +9,14 @@ class KafkaTopicsConfigProvider @Inject() (
 ) {
 
   def get(): Seq[KafkaTopicConfig] = {
-    val topicsConfig = config.getConfig( "kafka.topics" ).get
+    val topicsConfig = config.get[Seq[Configuration]]( "kafka.topics" )
     for {
-      topicName <- topicsConfig.subKeys.toSeq
+      c <- topicsConfig
     } yield {
-      val c = topicsConfig.getConfig( topicName ).get
-      val p = c.getInt( "partitions" ).getOrElse( 1 )
-      val r = c.getInt( "replication" ).getOrElse( 1 )
-      KafkaTopicConfig( topicName, p, r )
+      val n = c.get[String]( "name" )
+      val p = c.getOptional[Int]( "partitions" ).getOrElse( 1 )
+      val r = c.getOptional[Int]( "replication" ).getOrElse( 1 )
+      KafkaTopicConfig( n, p, r )
     }
   }
 

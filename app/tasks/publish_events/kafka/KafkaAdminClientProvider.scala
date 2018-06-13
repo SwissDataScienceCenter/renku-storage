@@ -15,15 +15,9 @@ class KafkaAdminClientProvider @Inject() (
 
   protected lazy val _adminClient: AdminClient = {
     val props = new Properties
-    props.put( "bootstrap.servers", config.getString( "kafka.bootstrap.servers" ).get )
+    props.put( "bootstrap.servers", config.get[String]( "kafka.bootstrap.servers" ) )
 
     AdminClient.create( props )
   }
-
-  /*
-  EventPublisherModule.addStopHook {
-    _adminClient.close()
-  }
-  */
 
 }

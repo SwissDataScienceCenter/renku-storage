@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
+import ch.datascience.service.utils.AccessLoggingFilter
 import javax.inject.Inject
-
 import play.api.http.DefaultHttpFilters
 import play.filters.cors.CORSFilter
 import play.filters.headers.SecurityHeadersFilter
 import play.filters.hosts.AllowedHostsFilter
-import ch.datascience.service.utils.AccessLoggingFilter
 
 /**
  * Add the following filters by default to all projects

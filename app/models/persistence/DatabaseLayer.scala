@@ -19,14 +19,12 @@
 package models.persistence
 
 import javax.inject.{ Inject, Singleton }
-
 import play.api.Logger
 import play.api.db.slick.DatabaseConfigProvider
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.jdbc.meta.MTable
 
-import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ Await, ExecutionContext }
 import scala.util.control.NonFatal
 
 /**
@@ -35,11 +33,11 @@ import scala.util.control.NonFatal
 
 @Singleton
 class DatabaseLayer @Inject() (
-    protected val dbConfigProvider: DatabaseConfigProvider
-)
-  extends DatabaseStack(
-    dbConfig = dbConfigProvider.get
-  ) {
+    protected val dbConfigProvider: DatabaseConfigProvider,
+    implicit val ec:                ExecutionContext
+) extends DatabaseStack(
+  dbConfig = dbConfigProvider.get
+) {
   import profile.api._
 
   lazy val logger: Logger = Logger( "application.DatabaseLayer" )
@@ -51,7 +49,7 @@ class DatabaseLayer @Inject() (
     TableQuery[Events]
   )
 
-  val init = db.run( MTable.getTables ).flatMap( v => {
+  private[this] val init = db.run( MTable.getTables ).flatMap( v => {
     val names = v.map( mt => mt.name.name )
     val createIfNotExist = tables.filter( table =>
       !names.contains( table.baseTableRow.tableName ) ).map( _.schema.create )
@@ -59,7 +57,7 @@ class DatabaseLayer @Inject() (
   } )
   Await.result( init, Duration.Inf )
 
-  init.onFailure {
+  init.failed.foreach {
     case NonFatal( t ) =>
       logger.error( t.getMessage )
   }

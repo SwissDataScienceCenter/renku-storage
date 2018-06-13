@@ -30,7 +30,7 @@ class BackendModule extends Module {
   def bindings( environment: Environment, configuration: Configuration ): Seq[Binding[StorageBackend]] = {
     for {
       ( name, clazz ) <- availableBindings.toSeq
-      if configuration.getBoolean( s"storage.backend.$name.enabled" ).getOrElse( false )
+      if configuration.getOptional[Boolean]( s"storage.backend.$name.enabled" ).getOrElse( false )
     } yield bind( classOf[StorageBackend] ).qualifiedWith( name ).to( clazz )
   }
 

@@ -19,8 +19,8 @@
 package models
 
 import java.time.Instant
-import play.api.libs.functional.syntax._
 
+import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, JsValue, OFormat }
 
 case class Event(

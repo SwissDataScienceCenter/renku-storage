@@ -1,17 +1,9 @@
 package modules
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Keep
-import akka.stream.{ ActorMaterializer, Materializer }
-import javax.inject.{ Inject, Named, Singleton }
-
-import tasks.publish_events.kafka.{ RecoveryController, SetupKafkaTopics }
-import tasks.publish_events.streams.{ PublisherSinkProvider, PublisherSourceFactory }
-import play.api.{ Configuration, Environment }
 import play.api.inject.{ Binding, Module }
-import tasks.publish_events.EventPublisher
-
-import tasks.publish_events.BindingProviders
+import play.api.{ Configuration, Environment }
+import tasks.publish_events.{ BindingProviders, EventPublisher }
 
 import scala.concurrent.ExecutionContext
 

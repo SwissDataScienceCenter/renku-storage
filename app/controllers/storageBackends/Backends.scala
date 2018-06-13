@@ -18,8 +18,7 @@
 
 package controllers.storageBackends
 
-import javax.inject._
-
+import javax.inject.{ Inject, Singleton }
 import play.api.Configuration
 import play.api.inject.{ BindingKey, Injector }
 
@@ -35,10 +34,10 @@ class Backends @Inject() ( injector: Injector, configuration: Configuration ) {
 
   private[this] def loadBackends: Map[String, StorageBackend] = {
     val it = for {
-      conf <- configuration.getConfig( "storage.backend" )
+      conf <- configuration.getOptional[Configuration]( "storage.backend" )
     } yield for {
       name <- conf.subKeys
-      if conf.getBoolean( s"$name.enabled" ).getOrElse( false )
+      if conf.getOptional[Boolean]( s"$name.enabled" ).getOrElse( false )
     } yield {
       val key = BindingKey( classOf[StorageBackend] ).qualifiedWith( name )
       name -> injector.instanceOf( key )

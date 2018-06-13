@@ -1,11 +1,10 @@
 package tasks.publish_events.kafka
 
 import javax.inject.{ Inject, Named, Singleton }
-
 import models.Event
 import org.apache.kafka.common.TopicPartition
-import play.api.{ Configuration, Logger }
 import play.api.libs.json.{ Json, OFormat }
+import play.api.{ Configuration, Logger }
 
 import scala.concurrent.{ ExecutionContext, Future, blocking }
 
@@ -17,7 +16,7 @@ class RecoveryController @Inject() (
 ) extends HasKafkaConsumerProvider {
   import scala.collection.JavaConverters._
 
-  val topic: String = config.getString( "events.push_to" ).getOrElse( "events" )
+  val topic: String = config.getOptional[String]( "events.push_to" ).getOrElse( "events" )
 
   lazy val logger: Logger = Logger( "application.modules.eventPublisher.RecoveryController" )
 

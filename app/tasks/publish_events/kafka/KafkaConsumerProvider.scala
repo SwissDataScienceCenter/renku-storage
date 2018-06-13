@@ -15,19 +15,13 @@ class KafkaConsumerProvider @Inject() (
 
   protected lazy val _kafkaConsumer: KafkaConsumer[Long, Array[Byte]] = {
     val props = new Properties
-    props.put( "bootstrap.servers", config.getString( "kafka.bootstrap.servers" ).get )
-    props.put( "group.id", config.getString( "kafka.group.id" ).get )
-    props.put( "enable.auto.commit", config.getString( "kafka.enable.auto.commit" ).get )
-    props.put( "key.deserializer", config.getString( "kafka.key.deserializer" ).get )
-    props.put( "value.deserializer", config.getString( "kafka.value.deserializer" ).get )
+    props.put( "bootstrap.servers", config.get[String]( "kafka.bootstrap.servers" ) )
+    props.put( "group.id", config.get[String]( "kafka.group.id" ) )
+    props.put( "enable.auto.commit", config.get[String]( "kafka.enable.auto.commit" ) )
+    props.put( "key.deserializer", config.get[String]( "kafka.key.deserializer" ) )
+    props.put( "value.deserializer", config.get[String]( "kafka.value.deserializer" ) )
 
     new KafkaConsumer[Long, Array[Byte]]( props )
   }
 
-  /*
-  EventPublisherModule.addStopHook {
-    _kafkaConsumer.unsubscribe()
-    _kafkaConsumer.close()
-  }
-  */
 }

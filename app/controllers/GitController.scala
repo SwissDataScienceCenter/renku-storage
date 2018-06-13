@@ -21,17 +21,16 @@ package controllers
 import java.time.Instant
 import java.util.UUID
 
-import javax.inject.{ Inject, Singleton }
 import authorization.JWTVerifierProvider
-import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
+import ch.datascience.service.security.{ TokenFilter, TokenFilterActionBuilder }
 import ch.datascience.service.utils.ControllerWithBodyParseTolerantJson
 import com.auth0.jwt.interfaces.DecodedJWT
 import controllers.storageBackends.{ Backends, GitBackend }
+import javax.inject.{ Inject, Singleton }
 import models._
 import models.persistence.DatabaseLayer
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.libs.ws._
@@ -39,7 +38,7 @@ import play.api.mvc._
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 /**
  * Created by jeberle on 25.04.17.
  */
@@ -47,23 +46,27 @@ import scala.concurrent.{ Await, Future }
 class GitController @Inject() (
     config:                play.api.Configuration,
     jwtVerifier:           JWTVerifierProvider,
+    tokenFilterAction:     TokenFilterActionBuilder,
     backends:              Backends,
     implicit val wsclient: WSClient,
-    protected val dal:     DatabaseLayer
-) extends Controller with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
+    protected val dal:     DatabaseLayer,
+    cc:                    ControllerComponents
+) extends AbstractController( cc ) with ControllerWithBodyParseTolerantJson with HasDatabaseConfig[JdbcProfile] {
 
   override protected val dbConfig = dal.dbConfig
   import profile.api._
 
   lazy val logger: Logger = Logger( "application.GitController" )
 
-  val host: String = config.getString( "renku_host" ).get
-  val default_backend: String = config.getString( "lfs_default_backend" ).get
+  val host: String = config.get[String]( "renku_host" )
+  val default_backend: String = config.get[String]( "lfs_default_backend" )
 
   implicit lazy val LFSBatchResponseFormat: OFormat[LFSBatchResponse] = LFSBatchResponse.format
   implicit lazy val LFSBatchResponseUpFormat: OFormat[LFSBatchResponseUp] = LFSBatchResponseUp.format
 
-  def getRefs( id: String ) = ProfileFilterAction( jwtVerifier.get ).async { implicit request =>
+  implicit val ec: ExecutionContext = defaultExecutionContext
+
+  def getRefs( id: String ) = tokenFilterAction( jwtVerifier.get ).async { implicit request =>
 
     val json = JsString( id )
     json.validate[UUID] match {

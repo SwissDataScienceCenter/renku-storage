@@ -1,15 +1,15 @@
 package tasks.publish_events.kafka
 
 import java.util.concurrent.ExecutionException
-import javax.inject.{ Inject, Named, Singleton }
 
 import akka.Done
+import javax.inject.{ Inject, Named, Singleton }
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
 import play.api.Logger
 
 import scala.concurrent.{ ExecutionContext, Future, blocking }
-import scala.util.{ Success, Try }
+import scala.util.Try
 
 @Singleton
 class SetupKafkaTopics @Inject() (

@@ -18,26 +18,28 @@
 
 package controllers
 
-import javax.inject.{ Inject, Singleton }
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import javax.inject.{ Inject, Singleton }
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClient
 import play.api.mvc._
 import play.api.{ Configuration, Logger }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.Try
 
 @Singleton
-class HealthCheckController @Inject() () extends Controller {
+class HealthCheckController @Inject() (
+    cc: ControllerComponents
+) extends AbstractController( cc ) {
 
-  def ping: Action[Unit] = Action.async( BodyParsers.parse.empty ) { implicit request =>
+  implicit val ec: ExecutionContext = defaultExecutionContext
+
+  def ping: Action[Unit] = Action.async( parse.empty ) { implicit request =>
     // Perform health check
     Future {
       Ok
@@ -54,13 +56,15 @@ object HealthCheckController {
   def main( args: Array[String] ): Unit = {
     lazy val logger: Logger = Logger( "application.HealthCheckController" )
 
+    implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
     implicit val system: ActorSystem = ActorSystem()
     implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     val config: Configuration = Configuration( ConfigFactory.load() )
     val ws: WSClient = AhcWSClient()
 
-    val prefix: String = config.getString( "play.http.context" ).getOrElse( "/" )
+    val prefix: String = config.getOptional[String]( "play.http.context" ).getOrElse( "/" )
     val checkURL: String = s"http://localhost:9000$prefix/ping"
 
     val futureStatus = for {

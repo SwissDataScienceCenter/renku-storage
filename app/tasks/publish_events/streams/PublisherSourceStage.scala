@@ -1,11 +1,11 @@
 package tasks.publish_events.streams
 
 import java.time.Instant
-import javax.inject.Named
 
 import akka.Done
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
 import akka.stream.{ Attributes, Outlet, SourceShape }
+import javax.inject.Named
 import models.Event
 import models.persistence.DatabaseLayer
 import play.api.db.slick.HasDatabaseConfig

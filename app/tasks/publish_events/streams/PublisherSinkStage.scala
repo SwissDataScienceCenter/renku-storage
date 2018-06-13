@@ -18,7 +18,7 @@ class PublisherSinkStage(
 
   implicit lazy val EventFormat: OFormat[Event] = Event.format
 
-  val topic: String = config.getString( "events.push_to" ).getOrElse( "events" )
+  val topic: String = config.getOptional[String]( "events.push_to" ).getOrElse( "events" )
 
   val in: Inlet[Event] = Inlet[Event]( "events.in" )
 
@@ -70,10 +70,10 @@ class PublisherSinkStage(
     Thread.currentThread().setContextClassLoader( null ) // https://stackoverflow.com/questions/37363119/kafka-producer-org-apache-kafka-common-serialization-stringserializer-could-no
 
     val props = new Properties
-    props.put( "bootstrap.servers", config.getString( "kafka.bootstrap.servers" ).get )
-    props.put( "client.id", config.getString( "kafka.client.id" ).get )
-    props.put( "key.serializer", config.getString( "kafka.key.serializer" ).get )
-    props.put( "value.serializer", config.getString( "kafka.value.serializer" ).get )
+    props.put( "bootstrap.servers", config.get[String]( "kafka.bootstrap.servers" ) )
+    props.put( "client.id", config.get[String]( "kafka.client.id" ) )
+    props.put( "key.serializer", config.get[String]( "kafka.key.serializer" ) )
+    props.put( "value.serializer", config.get[String]( "kafka.value.serializer" ) )
 
     new KafkaProducer[Long, Array[Byte]]( props )
   }

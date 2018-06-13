@@ -1,9 +1,7 @@
 package tasks.publish_events
 
-import javax.inject.{ Inject, Named, Provider, Singleton }
-
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import javax.inject.{ Inject, Named, Provider }
 
 import scala.concurrent.ExecutionContext
 
