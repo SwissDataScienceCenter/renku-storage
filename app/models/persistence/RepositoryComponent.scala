@@ -7,7 +7,6 @@ import models.{ Event, Repository }
 import play.api.libs.json._
 import slick.lifted._
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait RepositoryComponent {

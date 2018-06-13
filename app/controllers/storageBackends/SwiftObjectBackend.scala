@@ -19,36 +19,40 @@
 package controllers.storageBackends
 
 import java.util.concurrent.TimeUnit
-import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
+import javax.inject._
 import models.Repository
 import org.javaswift.joss.client.factory.{ AccountConfig, AccountFactory }
 import org.javaswift.joss.headers.`object`.range.{ FirstPartRange, LastPartRange, MidPartRange }
 import org.javaswift.joss.instructions.DownloadInstructions
 import org.javaswift.joss.model.Account
+import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.matching.Regex
 
 @Singleton
-class SwiftObjectBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
+class SwiftObjectBackend @Inject() (
+    config:              play.api.Configuration,
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
+) extends ObjectBackend {
 
   val swiftConfig = new AccountConfig()
-  private[this] val subConfig = config.getConfig( "storage.backend.swift" ).get
-  swiftConfig.setUsername( subConfig.getString( "username" ).get )
-  swiftConfig.setPassword( subConfig.getString( "password" ).get )
-  swiftConfig.setAuthUrl( subConfig.getString( "auth_url" ).get )
-  swiftConfig.setTenantId( subConfig.getString( "project" ).get )
+  private[this] val subConfig = config.get[Configuration]( "storage.backend.swift" )
+  swiftConfig.setUsername( subConfig.get[String]( "username" ) )
+  swiftConfig.setPassword( subConfig.get[String]( "password" ) )
+  swiftConfig.setAuthUrl( subConfig.get[String]( "auth_url" ) )
+  swiftConfig.setTenantId( subConfig.get[String]( "project" ) )
   lazy val swiftAccount: Account = new AccountFactory( swiftConfig ).createAccount()
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r

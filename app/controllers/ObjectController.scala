@@ -22,23 +22,22 @@ import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 
-import javax.inject.{ Inject, Singleton }
 import authorization.JWTVerifierProvider
-import ch.datascience.service.security.{ ProfileFilterAction, TokenFilter }
+import ch.datascience.service.security.{ TokenFilter, TokenFilterActionBuilder }
 import ch.datascience.service.utils.ControllerWithBodyParseJson
 import controllers.storageBackends.{ Backends, ObjectBackend }
+import javax.inject.{ Inject, Singleton }
 import models.persistence.DatabaseLayer
 import models.{ FileObject, FileObjectRepository, Repository }
 import play.api.Logger
 import play.api.db.slick.HasDatabaseConfig
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{ Action, BodyParsers, Controller, EssentialAction }
+import play.api.mvc._
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
 /**
  * Created by jeberle on 25.04.17.
@@ -47,21 +46,25 @@ import scala.concurrent.{ Await, Future }
 class ObjectController @Inject() (
     config:            play.api.Configuration,
     jwtVerifier:       JWTVerifierProvider,
+    tokenFilterAction: TokenFilterActionBuilder,
     backends:          Backends,
-    protected val dal: DatabaseLayer
-) extends Controller with ControllerWithBodyParseJson with HasDatabaseConfig[JdbcProfile] {
+    protected val dal: DatabaseLayer,
+    cc:                ControllerComponents
+) extends AbstractController( cc ) with ControllerWithBodyParseJson with HasDatabaseConfig[JdbcProfile] {
 
   override protected val dbConfig = dal.dbConfig
   import profile.api._
 
   lazy val logger: Logger = Logger( "application.AuthorizeController" )
-  val default_backend: String = config.getString( "lfs_default_backend" ).get
+  val default_backend: String = config.get[String]( "lfs_default_backend" )
 
   implicit lazy val FileObjectFormat: OFormat[FileObject] = FileObject.format
   implicit lazy val RepositoryFormat: OFormat[Repository] = Repository.format
   implicit lazy val FileObjectRepositoryFormat: OFormat[FileObjectRepository] = FileObjectRepository.format
 
-  def listObject( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  implicit val ec: ExecutionContext = defaultExecutionContext
+
+  def listObject( id: String ) = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     val json = JsString( id )
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
@@ -71,7 +74,7 @@ class ObjectController @Inject() (
     }
   }
 
-  def listAllObject( hash: Option[String] ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  def listAllObject( hash: Option[String] ) = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     db.run( hash match {
       case Some( hashValue ) =>
         dal.fileObjectRepositories.listByFileObjectHash( hashValue )
@@ -128,7 +131,7 @@ class ObjectController @Inject() (
     }
   }
 
-  def downloadObject( id: String, oid: String ) = Action.async( BodyParsers.parse.empty ) { implicit request =>
+  def downloadObject( id: String, oid: String ) = Action.async( parse.empty ) { implicit request =>
     val valid = for (
       repo_id <- JsString( id ).validate[UUID].asOpt;
       obj_id <- JsString( oid ).validate[UUID].asOpt
@@ -153,7 +156,7 @@ class ObjectController @Inject() (
     valid.getOrElse( Future.successful( BadRequest ) )
   }
 
-  def detailObject( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( BodyParsers.parse.empty ) { implicit request =>
+  def detailObject( id: String ) = tokenFilterAction( jwtVerifier.get ).async( parse.empty ) { implicit request =>
     val json = JsString( id )
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )
@@ -166,7 +169,7 @@ class ObjectController @Inject() (
     }
   }
 
-  def updateObject( id: String ) = ProfileFilterAction( jwtVerifier.get ).async( bodyParseJson[FileObject] ) { implicit request =>
+  def updateObject( id: String ) = tokenFilterAction( jwtVerifier.get ).async( bodyParseJson[FileObject] ) { implicit request =>
     val json = JsString( id )
     json.validate[UUID] match {
       case JsError( e ) => Future.successful( BadRequest( JsError.toJson( e ) ) )

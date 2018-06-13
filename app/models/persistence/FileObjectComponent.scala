@@ -8,7 +8,6 @@ import play.api.libs.json.{ JsObject, JsString, Json, OFormat }
 import slick.lifted._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 trait FileObjectComponent {
 

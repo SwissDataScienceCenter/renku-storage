@@ -19,33 +19,37 @@
 package controllers.storageBackends
 
 import java.util.concurrent.TimeUnit
-import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import io.minio.MinioClient
+import javax.inject._
 import models.Repository
+import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
-class S3ObjectBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
+class S3ObjectBackend @Inject() (
+    config:              play.api.Configuration,
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
+) extends ObjectBackend {
 
-  private[this] val subConfig = config.getConfig( "storage.backend.s3" ).get
+  private[this] val subConfig = config.get[Configuration]( "storage.backend.s3" )
   lazy val minioClient = new MinioClient(
-    subConfig.getString( "url" ).get,
-    subConfig.getString( "access_key" ).get,
-    subConfig.getString( "secret_key" ).get
+    subConfig.get[String]( "url" ),
+    subConfig.get[String]( "access_key" ),
+    subConfig.get[String]( "secret_key" )
   )
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r

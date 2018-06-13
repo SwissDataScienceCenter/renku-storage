@@ -20,7 +20,6 @@ package controllers.storageBackends
 
 import java.io.{ PipedInputStream, PipedOutputStream }
 import java.util.concurrent.TimeUnit
-import javax.inject._
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -28,25 +27,29 @@ import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.util.ByteString
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.blob.{ CloudBlobClient, CopyStatus }
+import javax.inject._
 import models.Repository
+import play.api.Configuration
 import play.api.libs.concurrent.ActorSystemProvider
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results._
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.blocking
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, Future, blocking }
 import scala.util.Try
 import scala.util.matching.Regex
 
 @Singleton
-class AzureObjectBackend @Inject() ( config: play.api.Configuration, actorSystemProvider: ActorSystemProvider ) extends ObjectBackend {
+class AzureObjectBackend @Inject() (
+    config:              Configuration,
+    actorSystemProvider: ActorSystemProvider,
+    implicit val ec:     ExecutionContext
+) extends ObjectBackend {
 
-  private[this] val subConfig = config.getConfig( "storage.backend.azure" ).get
+  private[this] val subConfig = config.get[Configuration]( "storage.backend.azure" )
 
-  lazy val account: CloudStorageAccount = CloudStorageAccount.parse( subConfig.getString( "connection_string" ).get )
+  lazy val account: CloudStorageAccount = CloudStorageAccount.parse( subConfig.get[String]( "connection_string" ) )
   lazy val serviceClient: CloudBlobClient = account.createCloudBlobClient
 
   val RangePattern: Regex = """bytes=(\d+)?-(\d+)?.*""".r
