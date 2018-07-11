@@ -153,7 +153,10 @@ class GitController @Inject() (
     val objects = request.body.objects.map( lfsObject => {
       db.run( dal.fileObjectRepositories.listByFileObjectHash( lfsObject.oid ) ).map( _.headOption.map {
         case ( repository, _, fileObject ) => {
-          val head = Map( "Content-Hash" -> lfsObject.oid ) ++ tokenOrError.fold( _ => Map.empty[String, String], t => Map( "Authorization" -> t.getToken ) )
+          val head = Map( "Content-Hash" -> lfsObject.oid ) ++ tokenOrError.fold( _ => Map.empty[String, String], token => {
+            val t = token.getToken
+            Map( "Authorization" -> s"Bearer $t" )
+          } )
           LFSObjectResponse( lfsObject.oid, lfsObject.size, true, Some( LFSDownload( host + "/api/storage/repo/" + repository.uuid + "/object/" + fileObject.uuid, head, 600 ) ) )
         }
       } )
@@ -184,10 +187,11 @@ class GitController @Inject() (
             case None => {}
           }
         }
+        val t = token.getToken
         val objects = request.body.objects.map( lfsObject =>
           db.run( dal.fileObjects.findByHash( lfsObject.oid ) ) map {
             case Some( obj ) => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, None ) )
-            case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> token.getToken, "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
+            case None        => Some( LFSObjectResponseUp( lfsObject.oid, lfsObject.size, true, Some( LFSUpload( host + "/api/storage/repo/" + repo.lfs_store.getOrElse( new_uuid ) + "/object/" + UUID.randomUUID(), Map( "Authorization" -> s"Bearer $t", "Content-Hash" -> lfsObject.oid ), 600 ) ) ) )
           } )
         Future.sequence( objects ).map( l => Ok( Json.toJson( LFSBatchResponseUp( request.body.transfers, l.filter( _.nonEmpty ).map( _.get ) ) ) ) )
       }
