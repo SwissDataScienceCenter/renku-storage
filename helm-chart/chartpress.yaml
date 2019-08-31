@@ -1,0 +1,14 @@
+charts:
+  - name: renku-storage
+    imagePrefix: renku/
+    repo:
+      git: SwissDataScienceCenter/helm-charts
+      published: https://swissdatasciencecenter.github.io/helm-charts
+    paths:
+      - ..
+    images:
+      renku-storage:
+        # Context to send to docker build for use by the Dockerfile
+        contextPath: ..
+        # path in values.yaml to be updated with image name and tag
+        valuesPath: image
